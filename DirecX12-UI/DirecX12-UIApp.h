@@ -9,6 +9,7 @@
 #include "FBXLoader.h"
 #include "SkinnedData.h"
 #include "TextureLoader.h"
+#include "Materials.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -125,6 +126,7 @@ enum class RenderLayer : int
 	Reflected,
 	Transparent,
 	Shadow,
+	UI,
 	Count
 };
 
@@ -167,7 +169,6 @@ private:
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildRenderItems();
-	void BuildObjectShadows();
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
@@ -181,7 +182,7 @@ private:
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
-	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
+	//std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSOs;
@@ -214,6 +215,7 @@ private:
 	bool mFbxWireframe = false;
 
 	Light mMainLight;
+	Materials mMaterials;
 	Camera mCamera;
 
 	POINT mLastMousePos;

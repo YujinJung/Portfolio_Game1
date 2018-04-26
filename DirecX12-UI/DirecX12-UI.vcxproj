@@ -152,10 +152,13 @@
     <ClCompile Include="..\Common\GeometryGenerator.cpp" />
     <ClCompile Include="..\Common\MathHelper.cpp" />
     <ClCompile Include="Camera.cpp" />
+    <ClCompile Include="Character.cpp" />
     <ClCompile Include="DDSTextureLoader.cpp" />
+    <ClCompile Include="DXUI.cpp" />
     <ClCompile Include="FbxLoader.cpp" />
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="DirecX12-UIApp.cpp" />
+    <ClCompile Include="Materials.cpp" />
     <ClCompile Include="SkinnedData.cpp" />
     <ClCompile Include="TextureLoader.cpp" />
   </ItemGroup>
@@ -168,10 +171,13 @@
     <ClInclude Include="..\Common\MathHelper.h" />
     <ClInclude Include="..\Common\UploadBuffer.h" />
     <ClInclude Include="Camera.h" />
+    <ClInclude Include="Character.h" />
     <ClInclude Include="DDSTextureLoader.h" />
+    <ClInclude Include="DXUI.h" />
     <ClInclude Include="FbxLoader.h" />
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="DirecX12-UIApp.h" />
+    <ClInclude Include="Materials.h" />
     <ClInclude Include="SkinnedData.h" />
     <ClInclude Include="TextureLoader.h" />
     <ClInclude Include="VertexHash.h" />

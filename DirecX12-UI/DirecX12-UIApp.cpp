@@ -272,11 +272,12 @@ void FBXLoaderApp::UpdateObjectCBs(const GameTimer& gt)
 	{
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
-		XMMATRIX world = XMLoadFloat4x4(&e->World);
-		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
-
+		
 		if (e->NumFramesDirty > 0)
 		{
+			XMMATRIX world = XMLoadFloat4x4(&e->World);
+			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
+
 			ObjectConstants objConstants;
 			XMStoreFloat4x4(&objConstants.World, XMMatrixTranspose(world));
 			XMStoreFloat4x4(&objConstants.TexTransform, XMMatrixTranspose(texTransform));
@@ -287,7 +288,6 @@ void FBXLoaderApp::UpdateObjectCBs(const GameTimer& gt)
 			e->NumFramesDirty--;
 		}
 	}
-
 }
 
 void FBXLoaderApp::UpdateMainPassCB(const GameTimer& gt)
@@ -328,7 +328,8 @@ void FBXLoaderApp::UpdateMainPassCB(const GameTimer& gt)
 void FBXLoaderApp::UpdateMaterialCB(const GameTimer & gt)
 {
 	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
-	for (auto& e : mMaterials)
+	mMaterials.UpdateMaterialCB(currMaterialCB);
+	/*for (auto& e : mMaterials)
 	{
 		Material* mat = e.second.get();
 		if (mat->NumFramesDirty > 0)
@@ -345,7 +346,7 @@ void FBXLoaderApp::UpdateMaterialCB(const GameTimer & gt)
 
 			mat->NumFramesDirty--;
 		}
-	}
+	}*/
 }
 
 void FBXLoaderApp::UpdateAnimationCBs(const GameTimer & gt)
@@ -390,7 +391,7 @@ void FBXLoaderApp::BuildDescriptorHeaps()
 {
 	mObjCbvOffset = (UINT)mTextures.size();
 	UINT objCount = (UINT)mAllRitems.size();
-	UINT matCount = (UINT)mMaterials.size();
+	UINT matCount = mMaterials.GetSize();
 	UINT skinCount = (UINT)mRitems[(int)RenderLayer::SkinnedOpaque].size();
 
 	// Need a CBV descriptor for each object for each frame resource,
@@ -476,7 +477,7 @@ void FBXLoaderApp::BuildConstantBufferViews()
 	}
 
 	UINT materialCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
-	UINT materialCount = (UINT)mMaterials.size();
+	UINT materialCount = mMaterials.GetSize();
 
 	// Need a CBV descriptor for each object for each frame resource.
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
@@ -764,7 +765,7 @@ void FBXLoaderApp::BuildFrameResources()
 		mFrameResources.push_back(std::make_unique<FrameResource>(
 			md3dDevice.Get(),
 			1, (UINT)mAllRitems.size(),
-			(UINT)mMaterials.size(), mSkinnedInfo.BoneCount()));
+			mMaterials.GetSize(), mSkinnedInfo.BoneCount()));
 	}
 }
 
@@ -906,8 +907,8 @@ void FBXLoaderApp::BuildFbxGeometry()
 	std::vector<SkinnedVertex> outVertices;
 	std::vector<std::uint16_t> outIndices;
 	std::vector<Material> outMaterial;
-	//std::string FileName = "../Resource/FBX/Capoeira.FBX";
-	std::string FileName = "../Resource/FBX/Boxing_male.FBX";
+	std::string FileName = "../Resource/FBX/Capoeira.FBX";
+	//std::string FileName = "../Resource/FBX/Boxing_male.FBX";
 
 	fbx.LoadFBX(outVertices, outIndices, mSkinnedInfo, outMaterial, FileName);
 
@@ -968,7 +969,7 @@ void FBXLoaderApp::BuildFbxGeometry()
 	mGeometries[geo->Name] = std::move(geo);
 
 	// Load Texture and Material
-	int MatIndex = mMaterials.size();
+	int MatIndex = mMaterials.GetSize();
 	for (int i = 0; i < outMaterial.size(); ++i)
 	{
 		// Load Texture 
@@ -988,18 +989,7 @@ void FBXLoaderApp::BuildFbxGeometry()
 		std::string MaterialName = "material_";
 		MaterialName.push_back(i + 48);
 
-		auto Mat = std::make_unique<Material>();
-		Mat->Name = MaterialName;
-		Mat->MatCBIndex = MatIndex++;
-		Mat->DiffuseSrvHeapIndex = 5;
-		Mat->Ambient = outMaterial[i].Ambient;
-		Mat->DiffuseAlbedo = outMaterial[i].DiffuseAlbedo;
-		Mat->FresnelR0 = outMaterial[i].FresnelR0;
-		Mat->Roughness = outMaterial[i].Roughness;
-		Mat->Specular = outMaterial[i].Specular;
-		Mat->Emissive = outMaterial[i].Emissive;
-
-		mMaterials[MaterialName] = std::move(Mat);
+		mMaterials.SetMaterial(MaterialName, MatIndex++, 5, outMaterial[i].DiffuseAlbedo, outMaterial[i].FresnelR0, outMaterial[i].Roughness);
 	}
 }
 
@@ -1050,73 +1040,38 @@ void FBXLoaderApp::LoadTextures()
 
 void FBXLoaderApp::BuildMaterials()
 {
-	int MatIndex = mMaterials.size();
+	int MatIndex = mMaterials.GetSize();
 
-	auto bricks0 = std::make_unique<Material>();
-	bricks0->Name = "bricks0";
-	bricks0->MatCBIndex = MatIndex++;
-	bricks0->DiffuseSrvHeapIndex = 0;
-	bricks0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	bricks0->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
-	bricks0->Roughness = 0.1f;
-
-	auto bricks3 = std::make_unique<Material>();
-	bricks3->Name = "bricks3";
-	bricks3->MatCBIndex = MatIndex++;
-	bricks3->DiffuseSrvHeapIndex = 1;
-	bricks3->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	bricks3->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
-	bricks3->Roughness = 0.1f;
-
-	auto stone0 = std::make_unique<Material>();
-	stone0->Name = "stone0";
-	stone0->MatCBIndex = MatIndex++;
-	stone0->DiffuseSrvHeapIndex = 2;
-	stone0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	stone0->FresnelR0 = XMFLOAT3(0.05f, 0.05f, 0.05f);
-	stone0->Roughness = 0.3f;
-
-	auto tile0 = std::make_unique<Material>();
-	tile0->Name = "tile0";
-	tile0->MatCBIndex = MatIndex++;
-	tile0->DiffuseSrvHeapIndex = 3;
-	tile0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	tile0->FresnelR0 = XMFLOAT3(0.02f, 0.02f, 0.02f);
-	tile0->Roughness = 0.2f;
-
-	auto grass0 = std::make_unique<Material>();
-	grass0->Name = "grass0";
-	grass0->MatCBIndex = MatIndex++;
-	grass0->DiffuseSrvHeapIndex = 4;
-	grass0->DiffuseAlbedo = XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
-	grass0->FresnelR0 = XMFLOAT3(0.05f, 0.02f, 0.02f);
-	grass0->Roughness = 0.1f;
-
-	auto shadow0 = std::make_unique<Material>();
-	shadow0->Name = "shadow0";
-	shadow0->MatCBIndex = MatIndex++;
-	shadow0->DiffuseSrvHeapIndex = 4;
-	shadow0->DiffuseAlbedo = XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f);
-	shadow0->FresnelR0 = XMFLOAT3(0.001f, 0.001f, 0.001f);
-	shadow0->Roughness = 0.0f;
-
-	mMaterials["bricks0"] = std::move(bricks0);
-	mMaterials["bricks3"] = std::move(bricks3);
-	mMaterials["stone0"] = std::move(stone0);
-	mMaterials["tile0"] = std::move(tile0);
-	mMaterials["grass0"] = std::move(grass0);
-	mMaterials["shadow0"] = std::move(shadow0);
+	mMaterials.SetMaterial("bricks0", MatIndex++, 0, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.02f, 0.02f, 0.02f), 0.1f);
+	mMaterials.SetMaterial("bricks3", MatIndex++, 1, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.02f, 0.02f, 0.02f), 0.1f);
+	mMaterials.SetMaterial("stone0", MatIndex++, 2, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.05f, 0.05f, 0.05), 0.3f);
+	mMaterials.SetMaterial("tile0", MatIndex++, 3, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.02f, 0.02f, 0.02f), 0.2f);
+	mMaterials.SetMaterial("grass0", MatIndex++, 4, XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), XMFLOAT3(0.05f, 0.02f, 0.02f), 0.1f);
+	mMaterials.SetMaterial("shadow0", MatIndex++, 4, XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f), XMFLOAT3(0.001f, 0.001f, 0.001f), 0.0f);
 }
 
 void FBXLoaderApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
 
+	auto quadRitem = std::make_unique<RenderItem>();
+	quadRitem->World = MathHelper::Identity4x4();
+	quadRitem->TexTransform = MathHelper::Identity4x4();
+	quadRitem->ObjCBIndex = 1;
+	quadRitem->Mat = mMaterials.Get("bricks0");
+	quadRitem->Geo = mGeometries["shapeGeo"].get();
+	quadRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	quadRitem->IndexCount = quadRitem->Geo->DrawArgs["grid"].IndexCount;
+	quadRitem->StartIndexLocation = quadRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+	quadRitem->BaseVertexLocation = quadRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
+	mRitems[(int)RenderLayer::UI].push_back(quadRitem.get());
+	mAllRitems.push_back(std::move(quadRitem));
+
 	auto gridRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(2.0f, 1.0f, 10.0f));
 	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(8.0f, 80.0f, 1.0f));
 	gridRitem->ObjCBIndex = objCBIndex++;
-	gridRitem->Mat = mMaterials["grass0"].get();
+	gridRitem->Mat = mMaterials.Get("grass0");
 	gridRitem->Geo = mGeometries["shapeGeo"].get();
 	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
@@ -1137,7 +1092,7 @@ void FBXLoaderApp::BuildRenderItems()
 		XMStoreFloat4x4(&FbxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));
 		FbxRitem->TexTransform = MathHelper::Identity4x4();
 		FbxRitem->ObjCBIndex = objCBIndex++;
-		FbxRitem->Mat = mMaterials[MaterialName].get();
+		FbxRitem->Mat = mMaterials.Get(MaterialName);
 		FbxRitem->Geo = mGeometries["FbxGeo"].get();
 		FbxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		FbxRitem->StartIndexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
@@ -1156,7 +1111,7 @@ void FBXLoaderApp::BuildRenderItems()
 		auto shadowedObjectRitem = std::make_unique<RenderItem>();
 		*shadowedObjectRitem = *e;
 		shadowedObjectRitem->ObjCBIndex = objCBIndex++;
-		shadowedObjectRitem->Mat = mMaterials["shadow0"].get();
+		shadowedObjectRitem->Mat = mMaterials.Get("shadow0");
 		shadowedObjectRitem->NumFramesDirty = gNumFrameResources;
 
 		shadowedObjectRitem->SkinnedCBIndex = 0;
@@ -1190,7 +1145,7 @@ void FBXLoaderApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std
 		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		cbvHandle.Offset(cbvIndex, mCbvSrvDescriptorSize);
 
-		UINT matCbvIndex = mMatCbvOffset + mCurrFrameResourceIndex * (UINT)mMaterials.size() + ri->Mat->MatCBIndex;
+		UINT matCbvIndex = mMatCbvOffset + mCurrFrameResourceIndex * mMaterials.GetSize() + ri->Mat->MatCBIndex;
 		auto matCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		matCbvHandle.Offset(matCbvIndex, mCbvSrvDescriptorSize);
 
