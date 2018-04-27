@@ -12,25 +12,17 @@ public:
 	void SetProj(float fovY, float aspect, float zn, float zf);
 
 	void AddYaw(float dx);
-
 	void AddPitch(float dy);
 
 	void Walk(float velocity);
-
 	void WalkSideway(float velocity);
 
 	DirectX::XMVECTOR GetEyePosition() const;
-
 	DirectX::XMFLOAT3 GetEyePosition3f() const;
-
 	DirectX::XMVECTOR GetEyeLook() const;
-
 	DirectX::XMVECTOR GetEyeUp() const;
-
 	DirectX::XMVECTOR GetEyeRight() const;
-
 	DirectX::XMMATRIX GetView() const;
-
 	DirectX::XMMATRIX GetProj() const;
 
 	void UpdateViewMatrix();

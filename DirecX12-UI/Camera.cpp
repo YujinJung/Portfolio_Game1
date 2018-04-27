@@ -53,19 +53,19 @@ void Camera::AddPitch(float dy)
 
 void Camera::Walk(float velocity)
 {
-	XMVECTOR Velocity		= XMVectorSet(velocity, velocity, velocity, velocity);
-	XMVECTOR Look				= XMLoadFloat3(&mEyeLook);
-	XMVECTOR Position		= XMLoadFloat3(&mEyePosition);
+	XMVECTOR Velocity	= XMVectorSet(velocity, velocity, velocity, velocity);
+	XMVECTOR Position	= XMLoadFloat3(&mEyePosition);
+	XMVECTOR Look	= XMLoadFloat3(&mEyeLook);
 	XMStoreFloat3(&mEyePosition, XMVectorMultiplyAdd(Velocity, Look, Position));
 
 	mViewDirty = true;
 }
 
-void Camera::WalkSideway(float velocity)
+void Camera::WalkSideway(float inVelocity)
 {
-	XMVECTOR Velocity = XMVectorSet(velocity, velocity, velocity, velocity);
-	XMVECTOR Right = XMLoadFloat3(&mEyeRight);
+	XMVECTOR Velocity = XMVectorSet(inVelocity, inVelocity, inVelocity, inVelocity);
 	XMVECTOR Position = XMLoadFloat3(&mEyePosition);
+	XMVECTOR Right = XMLoadFloat3(&mEyeRight);
 	XMStoreFloat3(&mEyePosition, XMVectorMultiplyAdd(Velocity, Right, Position));
 
 	mViewDirty = true;

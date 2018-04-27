@@ -267,6 +267,27 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 		mCamera.WalkSideway(10.0f * dt);
 	}
 
+	if (GetAsyncKeyState('T') & 0x8000)
+	{
+		mPlayer.Walk(2.0f * dt);
+	}
+	else if (GetAsyncKeyState('G') & 0x8000)
+	{
+		mPlayer.Walk(-2.0f * dt);
+	}
+
+	if (GetAsyncKeyState('F') & 0x8000)
+	{
+		mPlayer.AddYaw(-0.5f * dt);
+		//mPlayer.Walk(2.0f * dt);
+	}
+	else if (GetAsyncKeyState('H') & 0x8000)
+	{
+		mPlayer.AddYaw(0.5f * dt);
+		//mPlayer.Walk(-2.0f * dt);
+	}
+
+	mPlayer.UpdateTransformationMatrix();
 	mCamera.UpdateViewMatrix();
 }
 
@@ -825,8 +846,8 @@ void DirecX12UIApp::BuildFbxGeometry()
 	std::vector<Material> outMaterial;
 	SkinnedData outSkinnedInfo;
 
-	std::string FileName = "../Resource/FBX/Capoeira.FBX";
-	//std::string FileName = "../Resource/FBX/Boxing_male.FBX";
+	//std::string FileName = "../Resource/FBX/Capoeira.FBX";
+	std::string FileName = "../Resource/FBX/Boxing_male.FBX";
 	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, outMaterial, FileName);
 
 	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo);

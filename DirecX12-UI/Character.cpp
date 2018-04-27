@@ -36,6 +36,12 @@ const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type)
 	return mRitems[(int)Type];
 }
 
+void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
+{
+	XMStoreFloat4x4(&mWorldTransform, inWorldTransform);
+	mTransformDirty = true;
+}
+
 void Character::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int gNumFrameResources, int mChaCbvOffset)
 {
 	UINT characterCount = GetAllRitemsSize();
@@ -190,7 +196,7 @@ void Character::UpdateCharacterCBs(UploadBuffer<SkinnedConstants>* currSkinnedCB
 				&skinnedConstants.BoneTransforms[0]);
 
 			// TODO : player constroller
-			XMMATRIX world = XMLoadFloat4x4(&e->World);
+			XMMATRIX world = XMLoadFloat4x4(&e->World) * XMLoadFloat4x4(&mWorldTransform);
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
 			XMStoreFloat4x4(&skinnedConstants.World, XMMatrixTranspose(world));
@@ -227,3 +233,4 @@ void Character::UpdateCharacterShadows(const Light& mMainLight)
 	}
 
 }
+
