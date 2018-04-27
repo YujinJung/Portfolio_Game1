@@ -10,6 +10,7 @@
 #include "SkinnedData.h"
 #include "TextureLoader.h"
 #include "Materials.h"
+#include "RenderItem.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -17,118 +18,34 @@ using namespace DirectX::PackedVector;
 
 const int gNumFrameResources = 3;
 
-struct CollisionSphere
-{
-	CollisionSphere() = default;
+//struct SkinnedModelInstance
+//{
+//	SkinnedData* SkinnedInfo = nullptr;
+//	std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
+//	std::string ClipName;
+//	float TimePos = 0.0f;
+//
+//	// Called every frame and increments the time position, interpolates the 
+//	// animations for each bone based on the current animation clip, and 
+//	// generates the final transforms which are ultimately set to the effect
+//	// for processing in the vertex shader.
+//	void UpdateSkinnedAnimation(float dt)
+//	{
+//		TimePos += dt;
+//
+//		// Loop animation
+//		if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
+//			TimePos = 0.0f;
+//
+//		// Compute the final transforms for this time position.
+//		SkinnedInfo->GetFinalTransforms(ClipName, TimePos, FinalTransforms);
+//	}
+//
+//	// TODO SetClipName?
+//};
 
-	XMFLOAT3 originVector = { 0.0f, 0.0f, 0.0f };
-	float radius = 0.0f;
-};
 
-class PlayerInfo
-{
-private:
-	XMFLOAT3 mPos;
-	XMFLOAT3 mTarget;
-	float mYaw, mRoll;
-	float mRadius;
-	float mPlayerVelocity;
-	UINT score;
-
-public:
-	PlayerInfo() : mPos(0.0f, 2.0f, 0.0f), mTarget(0.0f, 2.0f, 15.0f), mRadius(2.0f), mPlayerVelocity(0.0f), mYaw(0.0f), mRoll(0.0f)
-	{  }
-
-	XMFLOAT3 getPos() const { return mPos; }
-	XMFLOAT3 getTarget() const { return mTarget; }
-	float getYaw() const { return mYaw; }
-	float getRoll() const { return mRoll; }
-	float getRadius() const { return mRadius; }
-	float getVelocity() const { return mPlayerVelocity; }
-
-	void setPos(const XMFLOAT3& pos) { mPos = pos; }
-	void setTarget(const XMFLOAT3& target) { mTarget = target; }
-	void setYaw(const float& yaw) { mYaw = yaw; }
-	void setRoll(const float& roll) { mRoll = roll; }
-	void setRadius(const float& radius) { mRadius = radius; }
-	void setVelocity(const float& velocity) { mPlayerVelocity = velocity; }
-};
-
-struct SkinnedModelInstance
-{
-	SkinnedData* SkinnedInfo = nullptr;
-	std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
-	std::string ClipName;
-	float TimePos = 0.0f;
-
-	// Called every frame and increments the time position, interpolates the 
-	// animations for each bone based on the current animation clip, and 
-	// generates the final transforms which are ultimately set to the effect
-	// for processing in the vertex shader.
-	void UpdateSkinnedAnimation(float dt)
-	{
-		TimePos += dt;
-
-		// Loop animation
-		if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
-			TimePos = 0.0f;
-
-		// Compute the final transforms for this time position.
-		SkinnedInfo->GetFinalTransforms(ClipName, TimePos, FinalTransforms);
-	}
-
-	// TODO SetClipName?
-};
-
-struct RenderItem
-{
-	RenderItem() = default;
-	RenderItem(const RenderItem& rhs) = delete;
-
-	// World matrix of the shape that describes the object's local space
-	// relative to the world space, which defines the position, orientation,
-	// and scale of the object in the world.
-	XMFLOAT4X4 World = MathHelper::Identity4x4();
-	XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
-
-	// Dirty flag indicating the object data has changed and we need to update the constant buffer.
-	// Because we have an object cbuffer for each FrameResource, we have to apply the
-	// update to each FrameResource.  Thus, when we modify obect data we should set 
-	// NumFramesDirty = gNumFrameResources so that each frame resource gets the update.
-	int NumFramesDirty = gNumFrameResources;
-
-	// Index into GPU constant buffer corresponding to the ObjectCB for this render item.
-	UINT ObjCBIndex = -1;
-
-	Material* Mat = nullptr;
-	MeshGeometry* Geo = nullptr;
-
-	// Primitive topology.
-	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-
-	// Only applicable to skinned render-items.
-	UINT SkinnedCBIndex = -1;
-
-	// nullptr if this render-item is not animated by skinned mesh.
-	SkinnedModelInstance* SkinnedModelInst = nullptr;
-
-	// DrawIndexedInstanced parameters.
-	UINT IndexCount = 0;
-	UINT StartIndexLocation = 0;
-	int BaseVertexLocation = 0;
-};
-
-enum class RenderLayer : int
-{
-	Opaque = 0,
-	SkinnedOpaque,
-	Mirrors,
-	Reflected,
-	Transparent,
-	Shadow,
-	UI,
-	Count
-};
+class Character;
 
 class FBXLoaderApp : public D3DApp
 {
@@ -154,7 +71,7 @@ private:
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
 	void UpdateMaterialCB(const GameTimer& gt);
-	void UpdateAnimationCBs(const GameTimer & gt);
+	void UpdateCharacterCBs(const GameTimer & gt);
 	void UpdateObjectShadows(const GameTimer & gt);
 
 	void LoadTextures();
@@ -195,17 +112,12 @@ private:
 
 	// List of all the render items.
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
-	std::vector<std::unique_ptr<CollisionSphere>> mCollisionRitems;
 
 	// Render items divided by PSO.
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 
-	// For FBX
-	SkinnedData mSkinnedInfo;
-	UINT mSkinnedSrvHeapStart = 0;
-	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
-
 	UINT mObjCbvOffset = 0;
+	UINT mChaCbvOffset = 0;
 	UINT mPassCbvOffset = 0;
 	UINT mMatCbvOffset = 0;
 	UINT mSkinCbvOffset = 0;
@@ -214,9 +126,12 @@ private:
 	bool mIsWireframe = false;
 	bool mFbxWireframe = false;
 
-	Light mMainLight;
-	Materials mMaterials;
+
 	Camera mCamera;
+	Light mMainLight;
+
+	Materials mMaterials;
+	Character mCharacter;
 
 	POINT mLastMousePos;
 };

@@ -90,6 +90,9 @@
     <ClInclude Include="DXUI.h" />
     <ClInclude Include="Character.h" />
     <ClInclude Include="Materials.h" />
+    <ClInclude Include="RenderItem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Source Files">

@@ -6,7 +6,7 @@
 
 struct ObjectConstants
 {
-    DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
 };
 
@@ -34,6 +34,8 @@ struct PassConstants
 struct SkinnedConstants
 {
 	DirectX::XMFLOAT4X4 BoneTransforms[96];
+	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
 };
 
 struct Vertex

@@ -178,6 +178,7 @@
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="DirecX12-UIApp.h" />
     <ClInclude Include="Materials.h" />
+    <ClInclude Include="RenderItem.h" />
     <ClInclude Include="SkinnedData.h" />
     <ClInclude Include="TextureLoader.h" />
     <ClInclude Include="VertexHash.h" />

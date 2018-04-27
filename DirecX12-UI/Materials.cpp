@@ -34,6 +34,36 @@ UINT Materials::GetSize() const
 	return (UINT)mMaterials.size();
 }
 
+void Materials::BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int gNumFrameResources, int mMatCbvOffset)
+{
+	UINT materialCount = GetSize();
+	UINT materialCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
+	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
+	{
+		auto materialCB = mFrameResources[frameIndex]->MaterialCB->Resource();
+		for (UINT i = 0; i < materialCount; ++i)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = materialCB->GetGPUVirtualAddress();
+
+			// Offset to the ith object constant buffer in the buffer.
+			cbAddress += i * materialCBByteSize;
+
+			// Offset to the object cbv in the descriptor heap.
+			int heapIndex = mMatCbvOffset + frameIndex * materialCount + i;
+			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
+
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+			cbvDesc.BufferLocation = cbAddress;
+			cbvDesc.SizeInBytes = materialCBByteSize;
+
+			device->CreateConstantBufferView(&cbvDesc, handle);
+		}
+	}
+}
+
 void Materials::UpdateMaterialCB(UploadBuffer<MaterialConstants>* currMaterialCB)
 {
 	for (auto& e : mMaterials)

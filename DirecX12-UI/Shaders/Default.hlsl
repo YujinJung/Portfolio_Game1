@@ -51,8 +51,15 @@ VertexOut VS(VertexIn vin)
 	vin.NormalL = normalL;
 
 	vout.BoneIndices = vin.BoneIndices;
-#endif
 
+	float4 posW = mul(float4(vin.PosL, 1.0f), gChaWorld);
+	vout.PosW = posW.xyz;
+
+	vout.NormalW = mul(vin.NormalL, (float3x3)gChaWorld);
+
+	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gChaTexTransform);
+	vout.TexC = mul(texC, gMatTransform).xy;
+#else
 	// Transform to world space.
 	float4 posW = mul(float4(vin.PosL, 1.0f), gWorld);
 	vout.PosW = posW.xyz;
@@ -60,13 +67,14 @@ VertexOut VS(VertexIn vin)
 	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
 	vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
 
-	// Transform to homogeneous clip space.
-	vout.PosH = mul(posW, gViewProj);
-
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
 	vout.TexC = mul(texC, gMatTransform).xy;
+#endif
 
+	// Transform to homogeneous clip space.
+	vout.PosH = mul(posW, gViewProj);
+	
 	return vout;
 }
 

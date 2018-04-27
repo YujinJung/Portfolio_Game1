@@ -15,6 +15,8 @@ public:
 
 	UINT GetSize() const;
 
+	void BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int gNumFrameResources, int mMatCbvOffset);
+
 	void UpdateMaterialCB(UploadBuffer<MaterialConstants>* currMaterialCB);
 
 private:
