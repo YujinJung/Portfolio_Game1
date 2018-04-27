@@ -45,9 +45,11 @@ public:
 	Character();
 	~Character();
 
+	UINT GetCharacterMeshSize() const;
+
 	UINT GetAllRitemsSize() const;
 
-	UINT GetBoneCount() const;
+	UINT GetBoneSize() const;
 
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer type);
 
@@ -55,7 +57,7 @@ public:
 
 	void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint16_t>& inIndices, const SkinnedData& inSkinInfo);
 
-	void BuildRenderItem(int BoneCount, int objCBIndex, Materials& mMaterials);
+	void BuildRenderItem(Materials& mMaterials);
 	
 	void UpdateCharacterCBs(UploadBuffer<SkinnedConstants>* currSkinnedCB, const Light& mMainLight, const GameTimer& gt);
 
@@ -65,7 +67,8 @@ private:
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
-	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
+
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
+	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 };
 

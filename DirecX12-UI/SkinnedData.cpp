@@ -194,7 +194,7 @@ void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos,
 		XMMATRIX offset = XMLoadFloat4x4(&mBoneOffsets[i]);
 		XMMATRIX toRoot = XMLoadFloat4x4(&toParentTransforms[i]);
 		XMMATRIX finalTransform = XMMatrixMultiply(offset, toRoot);
-		finalTransform *= XMMatrixScaling(0.04f, 0.04f, 0.04f);
+		finalTransform *= XMMatrixScaling(0.01f, 0.01f, 0.01f);
 
 		//printMatrix(L"Offset", i, offset);
 		//printMatrix(L"toRoot", i, toRoot);
@@ -204,25 +204,25 @@ void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos,
 	}
 }
 
-void printMatrix(const std::wstring& Name, const int& i, const DirectX::XMMATRIX &M)
-{
-	std::wstring text = Name + std::to_wstring(i) + L"\n";
-	::OutputDebugString(text.c_str());
-
-	for (int j = 0; j < 4; ++j)
-	{
-		for (int k = 0; k < 4; ++k)
-		{
-			std::wstring text =
-				std::to_wstring(M.r[j].m128_f32[k]) + L" ";
-
-			::OutputDebugString(text.c_str());
-		}
-		std::wstring text = L"\n";
-		::OutputDebugString(text.c_str());
-
-	}
-}
+//void printMatrix(const std::wstring& Name, const int& i, const DirectX::XMMATRIX &M)
+//{
+//	std::wstring text = Name + std::to_wstring(i) + L"\n";
+//	::OutputDebugString(text.c_str());
+//
+//	for (int j = 0; j < 4; ++j)
+//	{
+//		for (int k = 0; k < 4; ++k)
+//		{
+//			std::wstring text =
+//				std::to_wstring(M.r[j].m128_f32[k]) + L" ";
+//
+//			::OutputDebugString(text.c_str());
+//		}
+//		std::wstring text = L"\n";
+//		::OutputDebugString(text.c_str());
+//
+//	}
+//}
 
 DirectX::XMFLOAT4X4 SkinnedData::getBoneOffsets(int num) const
 {

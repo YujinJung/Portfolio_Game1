@@ -17,12 +17,17 @@ Character::~Character()
 {
 }
 
+UINT Character::GetCharacterMeshSize() const
+{
+	return (UINT)mRitems[(int)RenderLayer::Character].size();
+}
+
 UINT Character::GetAllRitemsSize() const
 {
 	return (UINT)mAllRitems.size();
 }
 
-UINT Character::GetBoneCount() const
+UINT Character::GetBoneSize() const
 {
 	return (UINT)mSkinnedInfo.BoneCount();
 }
@@ -124,9 +129,11 @@ void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* 
 	mGeometry = std::move(geo);
 }
 
-void Character::BuildRenderItem(int BoneCount, int objCBIndex,  Materials& mMaterials)
+void Character::BuildRenderItem(Materials& mMaterials)
 {
-	int objIndex = 0;
+	int chaIndex = 0;
+	int BoneCount = GetBoneSize();
+
 	for (int i = 0; i < BoneCount - 1; ++i)
 	{
 		std::string SubmeshName = "submesh_";
@@ -137,7 +144,6 @@ void Character::BuildRenderItem(int BoneCount, int objCBIndex,  Materials& mMate
 		auto FbxRitem = std::make_unique<RenderItem>();
 		XMStoreFloat4x4(&FbxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));
 		FbxRitem->TexTransform = MathHelper::Identity4x4();
-		FbxRitem->ObjCBIndex = objIndex++;
 		FbxRitem->Mat = mMaterials.Get(MaterialName);
 		FbxRitem->Geo = mGeometry.get();
 		FbxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -145,7 +151,7 @@ void Character::BuildRenderItem(int BoneCount, int objCBIndex,  Materials& mMate
 		FbxRitem->BaseVertexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].BaseVertexLocation;
 		FbxRitem->IndexCount = FbxRitem->Geo->DrawArgs[SubmeshName].IndexCount;
 
-		FbxRitem->SkinnedCBIndex = 0;
+		FbxRitem->SkinnedCBIndex = chaIndex++;
 		FbxRitem->SkinnedModelInst = mSkinnedModelInst.get();
 
 		mRitems[(int)RenderLayer::Character].push_back(FbxRitem.get());
@@ -156,11 +162,10 @@ void Character::BuildRenderItem(int BoneCount, int objCBIndex,  Materials& mMate
 	{
 		auto shadowedObjectRitem = std::make_unique<RenderItem>();
 		*shadowedObjectRitem = *e;
-		shadowedObjectRitem->ObjCBIndex = objIndex++;
 		shadowedObjectRitem->Mat = mMaterials.Get("shadow0");
 		shadowedObjectRitem->NumFramesDirty = gNumFrameResources;
 
-		shadowedObjectRitem->SkinnedCBIndex = 0;
+		shadowedObjectRitem->SkinnedCBIndex = chaIndex++;
 		shadowedObjectRitem->SkinnedModelInst = mSkinnedModelInst.get();
 
 		mRitems[(int)RenderLayer::Shadow].push_back(shadowedObjectRitem.get());
@@ -171,31 +176,32 @@ void Character::BuildRenderItem(int BoneCount, int objCBIndex,  Materials& mMate
 void Character::UpdateCharacterCBs(UploadBuffer<SkinnedConstants>* currSkinnedCB, const Light& mMainLight, const GameTimer & gt)
 {
 	UpdateCharacterShadows(mMainLight);
+	// if(Animation) ...
 	mSkinnedModelInst->UpdateSkinnedAnimation(gt.DeltaTime());
-
-	SkinnedConstants AnimationConstants;
-	std::copy(
-		std::begin(mSkinnedModelInst->FinalTransforms),
-		std::end(mSkinnedModelInst->FinalTransforms),
-		&AnimationConstants.BoneTransforms[0]);
-
-	currSkinnedCB->CopyData(0, AnimationConstants);
 
 	for (auto& e : mAllRitems)
 	{
 		if (e->NumFramesDirty > 0)
 		{
 			SkinnedConstants skinnedConstants;
+
+			std::copy(
+				std::begin(mSkinnedModelInst->FinalTransforms),
+				std::end(mSkinnedModelInst->FinalTransforms),
+				&skinnedConstants.BoneTransforms[0]);
+
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
 			XMStoreFloat4x4(&skinnedConstants.World, XMMatrixTranspose(world));
 			XMStoreFloat4x4(&skinnedConstants.TexTransform, XMMatrixTranspose(texTransform));
 
-			currSkinnedCB->CopyData(e->ObjCBIndex, skinnedConstants);
+			currSkinnedCB->CopyData(e->SkinnedCBIndex, skinnedConstants);
 
 			// Next FrameResource need to be updated too.
-			e->NumFramesDirty--;
+
+			// TODO:
+			//e->NumFramesDirty--;
 		}
 	}
 }
@@ -216,7 +222,8 @@ void Character::UpdateCharacterShadows(const Light& mMainLight)
 		XMStoreFloat4x4(&e->World, shadowWorld * S * shadowOffsetY);
 		e->NumFramesDirty = gNumFrameResources;
 
+		//printMatrix(L"shadow ", i, XMLoadFloat4x4(&e->World));
 		++i;
 	}
-}
 
+}

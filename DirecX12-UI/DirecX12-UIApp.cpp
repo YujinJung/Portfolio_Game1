@@ -372,7 +372,7 @@ void FBXLoaderApp::BuildDescriptorHeaps()
 	UINT objCount = (UINT)mAllRitems.size();
 	UINT chaCount = mCharacter.GetAllRitemsSize();
 	UINT matCount = mMaterials.GetSize();
-	UINT skinCount = (UINT)mRitems[(int)RenderLayer::Character].size();
+	UINT skinCount = mCharacter.GetCharacterMeshSize();
 
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
@@ -383,7 +383,7 @@ void FBXLoaderApp::BuildDescriptorHeaps()
 	mChaCbvOffset = objCount * gNumFrameResources + mObjCbvOffset;
 	mMatCbvOffset = chaCount * gNumFrameResources + mChaCbvOffset;
 	mPassCbvOffset = matCount * gNumFrameResources + mMatCbvOffset;
-	//mSkinCbvOffset = 1 * gNumFrameResources + mPassCbvOffset;
+	mSkinCbvOffset = 1 * gNumFrameResources + mPassCbvOffset;
 
 	// mPassCbvOffset + (passSize)
 	// passSize = 1 * gNumFrameResources
@@ -430,6 +430,7 @@ void FBXLoaderApp::BuildTextureBufferViews()
 
 void FBXLoaderApp::BuildConstantBufferViews()
 {
+	// Object 
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
 	UINT objCount = (UINT)mAllRitems.size();
 
@@ -457,47 +458,15 @@ void FBXLoaderApp::BuildConstantBufferViews()
 		}
 	}
 
-	mCharacter.BuildConstantBufferViews(
-		md3dDevice.Get(),
-		mCbvHeap.Get(),
-		mFrameResources,
-		gNumFrameResources,
-		mChaCbvOffset);
-
+	// Material 
 	mMaterials.BuildConstantBufferViews(
 		md3dDevice.Get(),
 		mCbvHeap.Get(),
 		mFrameResources,
 		gNumFrameResources,
 		mMatCbvOffset);
-	/*
-	UINT materialCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
-	UINT materialCount = mMaterials.GetSize();
-	// Need a CBV descriptor for each object for each frame resource.
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	{
-		auto materialCB = mFrameResources[frameIndex]->MaterialCB->Resource();
-		for (UINT i = 0; i < materialCount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = materialCB->GetGPUVirtualAddress();
-
-			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * materialCBByteSize;
-
-			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mMatCbvOffset + frameIndex * materialCount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = materialCBByteSize;
-
-			md3dDevice->CreateConstantBufferView(&cbvDesc, handle);
-		}
-	}
-	*/
-
+	
+	// Pass - 4
 	// Last three descriptors are the pass CBVs for each frame resource.
 	UINT passCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
@@ -517,30 +486,13 @@ void FBXLoaderApp::BuildConstantBufferViews()
 		md3dDevice->CreateConstantBufferView(&cbvDesc, handle);
 	}
 
-	// Animation Skin
-	//UINT skinnedCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(SkinnedConstants));
-	//UINT skinnedCount = mSkinnedInfo.BoneCount() - 1;
-	//for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	//{
-	//	auto skinnedCB = mFrameResources[frameIndex]->SkinnedCB->Resource();
-	//	for (UINT i = 0; i < skinnedCount; ++i)
-	//	{
-	//		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = skinnedCB->GetGPUVirtualAddress();
-
-	//		cbAddress += i * skinnedCBByteSize;
-	//		
-	//		// Offset to the pass cbv in the descriptor heap.
-	//		int heapIndex = mSkinCbvOffset + frameIndex * skinnedCount + i;
-	//		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-	//		handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-	//		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-	//		cbvDesc.BufferLocation = cbAddress;
-	//		cbvDesc.SizeInBytes = skinnedCBByteSize;
-
-	//		md3dDevice->CreateConstantBufferView(&cbvDesc, handle);
-	//	}
-	//}
+	// Character
+	mCharacter.BuildConstantBufferViews(
+		md3dDevice.Get(),
+		mCbvHeap.Get(),
+		mFrameResources,
+		gNumFrameResources,
+		mChaCbvOffset);
 }
 
 void FBXLoaderApp::BuildRootSignature()
@@ -1026,19 +978,6 @@ void FBXLoaderApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
 
-	auto quadRitem = std::make_unique<RenderItem>();
-	quadRitem->World = MathHelper::Identity4x4();
-	quadRitem->TexTransform = MathHelper::Identity4x4();
-	quadRitem->ObjCBIndex = 1;
-	quadRitem->Mat = mMaterials.Get("bricks0");
-	quadRitem->Geo = mGeometries["shapeGeo"].get();
-	quadRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	quadRitem->IndexCount = quadRitem->Geo->DrawArgs["grid"].IndexCount;
-	quadRitem->StartIndexLocation = quadRitem->Geo->DrawArgs["grid"].StartIndexLocation;
-	quadRitem->BaseVertexLocation = quadRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
-	mRitems[(int)RenderLayer::UI].push_back(quadRitem.get());
-	mAllRitems.push_back(std::move(quadRitem));
-
 	auto gridRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(2.0f, 1.0f, 10.0f));
 	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(8.0f, 80.0f, 1.0f));
@@ -1052,50 +991,7 @@ void FBXLoaderApp::BuildRenderItems()
 	mRitems[(int)RenderLayer::Opaque].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
 
-	int BoneCount = mCharacter.GetBoneCount();
-
-	mCharacter.BuildRenderItem(BoneCount, 0, mMaterials);
-	/*
-	for (int i = 0; i < BoneCount - 1; ++i)
-	{
-		std::string SubmeshName = "submesh_";
-		SubmeshName.push_back(i + 48); // ASCII
-		std::string MaterialName = "material_0";
-		// TODO : Setting the Name
-
-		auto FbxRitem = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&FbxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));
-		FbxRitem->TexTransform = MathHelper::Identity4x4();
-		FbxRitem->ObjCBIndex = objCBIndex++;
-		FbxRitem->Mat = mMaterials.Get(MaterialName);
-		FbxRitem->Geo = mGeometries["FbxGeo"].get();
-		FbxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		FbxRitem->StartIndexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
-		FbxRitem->BaseVertexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].BaseVertexLocation;
-		FbxRitem->IndexCount = FbxRitem->Geo->DrawArgs[SubmeshName].IndexCount;
-
-		FbxRitem->SkinnedCBIndex = 0;
-		FbxRitem->SkinnedModelInst = mSkinnedModelInst.get();
-
-		mRitems[(int)RenderLayer::SkinnedOpaque].push_back(FbxRitem.get());
-		mAllRitems.push_back(std::move(FbxRitem));
-	}
-
-	for (auto& e : mRitems[(int)RenderLayer::SkinnedOpaque])
-	{
-		auto shadowedObjectRitem = std::make_unique<RenderItem>();
-		*shadowedObjectRitem = *e;
-		shadowedObjectRitem->ObjCBIndex = objCBIndex++;
-		shadowedObjectRitem->Mat = mMaterials.Get("shadow0");
-		shadowedObjectRitem->NumFramesDirty = gNumFrameResources;
-
-		shadowedObjectRitem->SkinnedCBIndex = 0;
-		shadowedObjectRitem->SkinnedModelInst = mSkinnedModelInst.get();
-
-		mRitems[(int)RenderLayer::Shadow].push_back(shadowedObjectRitem.get());
-		mAllRitems.push_back(std::move(shadowedObjectRitem));
-	}
-	*/
+	mCharacter.BuildRenderItem(mMaterials);
 }
 
 
@@ -1124,14 +1020,13 @@ void FBXLoaderApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std
 		auto matCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		matCbvHandle.Offset(matCbvIndex, mCbvSrvDescriptorSize);
 
-		cmdList->SetGraphicsRootDescriptorTable(0, tex);
-		cmdList->SetGraphicsRootDescriptorTable(1, cbvHandle);
-		cmdList->SetGraphicsRootDescriptorTable(2, matCbvHandle);
-
 		UINT skinnedIndex = mChaCbvOffset + mCurrFrameResourceIndex * mCharacter.GetAllRitemsSize() + ri->SkinnedCBIndex;
 		auto skinCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		skinCbvHandle.Offset(skinnedIndex, mCbvSrvDescriptorSize);
 
+		cmdList->SetGraphicsRootDescriptorTable(0, tex);
+		cmdList->SetGraphicsRootDescriptorTable(1, cbvHandle);
+		cmdList->SetGraphicsRootDescriptorTable(2, matCbvHandle);
 		if (ri->SkinnedModelInst != nullptr)
 		{
 			cmdList->SetGraphicsRootDescriptorTable(4, skinCbvHandle);

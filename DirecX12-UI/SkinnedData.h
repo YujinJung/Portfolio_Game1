@@ -65,8 +65,6 @@ struct AnimationClip
 	std::vector<BoneAnimation> BoneAnimations;
 };
 
-void printMatrix(const std::wstring& Name, const int& i, const DirectX::XMMATRIX & M);
-
 class SkinnedData
 {
 public:
