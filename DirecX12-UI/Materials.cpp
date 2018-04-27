@@ -53,7 +53,7 @@ void Materials::End()
 	mInBeginEndPair = false;
 }
 
-void Materials::BuildConstantBufferViews(const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int gNumFrameResources, int mMatCbvOffset)
+void Materials::BuildConstantBufferViews(const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mMatCbvOffset)
 {
 	UINT materialCount = GetSize();
 	UINT materialCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));

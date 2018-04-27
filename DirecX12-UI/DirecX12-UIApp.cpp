@@ -159,9 +159,16 @@ void DirecX12UIApp::Draw(const GameTimer& gt)
 	int passCbvIndex = mPassCbvOffset + mCurrFrameResourceIndex;
 	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 	passCbvHandle.Offset(passCbvIndex, mCbvSrvDescriptorSize);
+
+	// Object
 	mCommandList->SetGraphicsRootDescriptorTable(3, passCbvHandle);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Opaque]);
 
+	// UI
+	mCommandList->SetPipelineState(mPSOs["uiOpaque"].Get());
+	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::Rect));
+
+	// Character
 	if (!mFbxWireframe)
 	{
 		mCommandList->SetPipelineState(mPSOs["skinnedOpaque"].Get());
@@ -173,6 +180,7 @@ void DirecX12UIApp::Draw(const GameTimer& gt)
 	}
 	DrawRenderItems(mCommandList.Get(), mPlayer.GetRenderItem(RenderLayer::Character));
 
+	// Shadow
 	mCommandList->OMSetStencilRef(0);
 	mCommandList->SetPipelineState(mPSOs["skinned_shadow"].Get());
 	DrawRenderItems(mCommandList.Get(), mPlayer.GetRenderItem(RenderLayer::Shadow));
@@ -269,21 +277,21 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 
 	if (GetAsyncKeyState('T') & 0x8000)
 	{
-		mPlayer.Walk(2.0f * dt);
+		mPlayer.PlayerMove(PlayerMoveList::Walk, 2.0f * dt);
 	}
 	else if (GetAsyncKeyState('G') & 0x8000)
 	{
-		mPlayer.Walk(-2.0f * dt);
+		mPlayer.PlayerMove(PlayerMoveList::Walk, -2.0f * dt);
 	}
 
 	if (GetAsyncKeyState('F') & 0x8000)
 	{
-		mPlayer.AddYaw(-0.5f * dt);
+		mPlayer.PlayerMove(PlayerMoveList::AddYaw, -0.5f * dt);
 		//mPlayer.Walk(2.0f * dt);
 	}
 	else if (GetAsyncKeyState('H') & 0x8000)
 	{
-		mPlayer.AddYaw(0.5f * dt);
+		mPlayer.PlayerMove(PlayerMoveList::AddYaw, 0.5f * dt);
 		//mPlayer.Walk(-2.0f * dt);
 	}
 
@@ -299,7 +307,6 @@ void DirecX12UIApp::UpdateObjectCBs(const GameTimer& gt)
 	{
 		// Only update the cbuffer data if the constants have changed.  
 		// This needs to be tracked per frame resource.
-
 		if (e->NumFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
@@ -378,9 +385,7 @@ void DirecX12UIApp::UpdateMaterialCB(const GameTimer & gt)
 
 void DirecX12UIApp::UpdateCharacterCBs(const GameTimer & gt)
 {
-	auto currSkinnedCB = mCurrFrameResource->SkinnedCB.get();
-
-	mPlayer.UpdateCharacterCBs(currSkinnedCB, mMainLight, gt);
+	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 }
 
 void DirecX12UIApp::UpdateObjectShadows(const GameTimer& gt)
@@ -398,17 +403,19 @@ void DirecX12UIApp::BuildDescriptorHeaps()
 	UINT chaCount = mPlayer.GetAllRitemsSize();
 	UINT matCount = mMaterials.GetSize();
 	UINT skinCount = mPlayer.GetCharacterMeshSize();
+	UINT uiCount = mPlayer.mUI.GetSize();
 
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
 	// +matCount for the Materials for each frame resources.
-	UINT numDescriptors = mObjCbvOffset + (objCount + chaCount + matCount + skinCount + 1) * gNumFrameResources;
+	UINT numDescriptors = mObjCbvOffset + (objCount + chaCount + matCount + skinCount + uiCount + 1) * gNumFrameResources;
 
 	// Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
 	mChaCbvOffset = objCount * gNumFrameResources + mObjCbvOffset;
 	mMatCbvOffset = chaCount * gNumFrameResources + mChaCbvOffset;
 	mPassCbvOffset = matCount * gNumFrameResources + mMatCbvOffset;
 	mSkinCbvOffset = 1 * gNumFrameResources + mPassCbvOffset;
+	mUICbvOffset = uiCount * gNumFrameResources + mSkinCbvOffset;
 
 	// mPassCbvOffset + (passSize)
 	// passSize = 1 * gNumFrameResources
@@ -462,7 +469,6 @@ void DirecX12UIApp::BuildConstantBufferViews()
 	mMaterials.Begin(md3dDevice.Get(), mCbvHeap.Get());
 	mMaterials.BuildConstantBufferViews(
 		mFrameResources,
-		gNumFrameResources,
 		mMatCbvOffset);
 	mMaterials.End();
 	
@@ -491,25 +497,32 @@ void DirecX12UIApp::BuildConstantBufferViews()
 		md3dDevice.Get(),
 		mCbvHeap.Get(),
 		mFrameResources,
-		gNumFrameResources,
 		mChaCbvOffset);
+
+	// UI
+	mPlayer.mUI.BuildConstantBufferViews(
+		md3dDevice.Get(),
+		mCbvHeap.Get(),
+		mFrameResources,
+		mUICbvOffset);
 }
 
 void DirecX12UIApp::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE cbvTable[4];
+	CD3DX12_DESCRIPTOR_RANGE cbvTable[5];
 
 	cbvTable[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
 	cbvTable[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
 	cbvTable[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
 	cbvTable[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 3);
+	cbvTable[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 4);
 
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	// Objects, Materials, Passes
-	CD3DX12_ROOT_PARAMETER slotRootParameter[5];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[6];
 
 	// Create root CBVs.
 	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
@@ -517,11 +530,12 @@ void DirecX12UIApp::BuildRootSignature()
 	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable[1]);
 	slotRootParameter[3].InitAsDescriptorTable(1, &cbvTable[2]);
 	slotRootParameter[4].InitAsDescriptorTable(1, &cbvTable[3]);
+	slotRootParameter[5].InitAsDescriptorTable(1, &cbvTable[4]);
 
 	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(5, slotRootParameter,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(6, slotRootParameter,
 		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -553,8 +567,16 @@ void DirecX12UIApp::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
+	const D3D_SHADER_MACRO uiDefines[] =
+	{
+		"UI", "2",
+		NULL, NULL
+	};
+
 	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["skinnedVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "VS", "vs_5_1");
+	mShaders["uiVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", uiDefines, "VS", "vs_5_1");
+
 	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["skinnedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "PS", "ps_5_1");
 
@@ -607,6 +629,16 @@ void DirecX12UIApp::BuildPSOs()
 	opaquePsoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
 	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
+
+	//
+	// PSO for ui
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC uiOpaquePsoDesc = opaquePsoDesc;
+	uiOpaquePsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["uiVS"]->GetBufferPointer()),
+		mShaders["uiVS"]->GetBufferSize()
+	};
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&uiOpaquePsoDesc, IID_PPV_ARGS(&mPSOs["uiOpaque"])));
 
 	//
 	// PSO for skinned
@@ -702,7 +734,8 @@ void DirecX12UIApp::BuildFrameResources()
 		mFrameResources.push_back(std::make_unique<FrameResource>(
 			md3dDevice.Get(),
 			1, (UINT)mAllRitems.size(),
-			mMaterials.GetSize(), mPlayer.GetAllRitemsSize()));
+			mMaterials.GetSize(), 
+			mPlayer.GetAllRitemsSize(), mPlayer.mUI.GetSize()));
 	}
 }
 
@@ -854,7 +887,6 @@ void DirecX12UIApp::BuildFbxGeometry()
 
 	// Begin
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
-
 	// Load Texture and Material
 	int MatIndex = mMaterials.GetSize();
 	for (int i = 0; i < outMaterial.size(); ++i)
@@ -881,9 +913,7 @@ void DirecX12UIApp::BuildFbxGeometry()
 			outMaterial[i].FresnelR0,
 			outMaterial[i].Roughness);
 	}
-
 	mTextures.End();
-
 }
 
 void DirecX12UIApp::LoadTextures()
@@ -983,6 +1013,8 @@ void DirecX12UIApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(gridRitem));
 
 	mPlayer.BuildRenderItem(mMaterials);
+
+	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
 }
 
 
@@ -1015,9 +1047,14 @@ void DirecX12UIApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const st
 		auto skinCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		skinCbvHandle.Offset(skinnedIndex, mCbvSrvDescriptorSize);
 
+		UINT uiIndex = mUICbvOffset + mCurrFrameResourceIndex * mPlayer.mUI.GetSize() + ri->ObjCBIndex;
+		auto uiCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+		uiCbvHandle.Offset(uiIndex, mCbvSrvDescriptorSize);
+
 		cmdList->SetGraphicsRootDescriptorTable(0, tex);
 		cmdList->SetGraphicsRootDescriptorTable(1, cbvHandle);
 		cmdList->SetGraphicsRootDescriptorTable(2, matCbvHandle);
+		cmdList->SetGraphicsRootDescriptorTable(5, uiCbvHandle);
 		if (ri->SkinnedModelInst != nullptr)
 		{
 			cmdList->SetGraphicsRootDescriptorTable(4, skinCbvHandle);

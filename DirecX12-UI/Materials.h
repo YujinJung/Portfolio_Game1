@@ -18,7 +18,7 @@ public:
 	void Begin(ID3D12Device* device, ID3D12DescriptorHeap* cbvHeap);
 	void End();
 
-	void BuildConstantBufferViews(const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int gNumFrameResources, int mMatCbvOffset);
+	void BuildConstantBufferViews(const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mMatCbvOffset);
 
 	void UpdateMaterialCB(UploadBuffer<MaterialConstants>* currMaterialCB);
 

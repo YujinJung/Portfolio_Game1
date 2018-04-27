@@ -124,7 +124,7 @@ float SkinnedData::GetClipEndTime(const std::string& clipName)const
 
 UINT SkinnedData::BoneCount()const
 {
-	return mBoneHierarchy.size();
+	return (UINT)mBoneHierarchy.size();
 }
 
 void SkinnedData::Set(std::vector<int>& boneHierarchy,
@@ -158,7 +158,7 @@ std::vector<int> SkinnedData::GetSubmeshOffset() const
 
 void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos, std::vector<XMFLOAT4X4>& finalTransforms)const
 {
-	UINT numBones = mBoneOffsets.size();
+	UINT numBones = (UINT)mBoneOffsets.size();
 
 	std::vector<XMFLOAT4X4> toParentTransforms(numBones);
 

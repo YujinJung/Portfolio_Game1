@@ -1,8 +1,18 @@
 #pragma once
 
 #include "Character.h"
+#include "DXUI.h"
+#include "RenderItem.h"
+#include "PlayerMovement.h"
+#include "PlayerController.h"
 
-class PlayerController;
+enum PlayerMoveList
+{
+	Walk,
+	SideWalk,
+	AddYaw,
+	AddPitch
+};
 
 class Player : public Character
 {
@@ -10,25 +20,15 @@ public:
 	Player();
 	~Player();
 
-	void AddYaw(float dx);
-	void AddPitch(float dy);
+	DXUI mUI;
 
-	void Walk(float velocity);
-	void SideWalk(float inVelocity);
-
+	void PlayerMove(PlayerMoveList move, float velocity);
+	virtual void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt) override;
 	void UpdateTransformationMatrix();
 
 private:
-	PlayerController * mPlayerController;
-
-	DirectX::XMFLOAT3 mPlayerPosition;
-	DirectX::XMFLOAT3 mPlayerLook;
-	DirectX::XMFLOAT3 mPlayerUp;
-	DirectX::XMFLOAT3 mPlayerRight;
-
-	DirectX::XMFLOAT4X4 mRotation = MathHelper::Identity4x4();
-
-	bool mTransformDirty;
+	PlayerMovement mPlayerMovement;
+	PlayerController mPlayerController;
 };
 
 /*

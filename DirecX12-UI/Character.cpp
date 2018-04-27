@@ -1,15 +1,17 @@
-﻿#include <string>
+﻿
+#include <string>
 #include "../Common/MathHelper.h"
 #include "../Common/GameTimer.h"
+#include <DirectXMath.h>
 #include "FrameResource.h"
 #include "Character.h"
-#include <DirectXMath.h>
 
 using namespace DirectX;
 using namespace DirectX::PackedVector;
 
 Character::Character()
 {
+	XMStoreFloat4x4(&mWorldTransform, XMMatrixIdentity());
 }
 
 Character::~Character()
@@ -20,21 +22,23 @@ UINT Character::GetCharacterMeshSize() const
 {
 	return (UINT)mRitems[(int)RenderLayer::Character].size();
 }
-
 UINT Character::GetAllRitemsSize() const
 {
 	return (UINT)mAllRitems.size();
 }
-
 UINT Character::GetBoneSize() const
 {
 	return (UINT)mSkinnedInfo.BoneCount();
 }
-
-const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type)
+DirectX::XMFLOAT4X4 Character::GetWorld() const
+{
+	return mWorldTransform;
+}
+const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type) const
 {
 	return mRitems[(int)Type];
 }
+
 
 void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
 {
@@ -42,7 +46,8 @@ void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
 	mTransformDirty = true;
 }
 
-void Character::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int gNumFrameResources, int mChaCbvOffset)
+
+void Character::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mChaCbvOffset)
 {
 	UINT characterCount = GetAllRitemsSize();
 	UINT chaCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(SkinnedConstants));
@@ -72,7 +77,6 @@ void Character::BuildConstantBufferViews(ID3D12Device * device, ID3D12Descriptor
 		}
 	}
 }
-
 void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint16_t>& inIndices, const SkinnedData& inSkinInfo)
 {
 	mSkinnedInfo = inSkinInfo;
@@ -133,7 +137,6 @@ void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* 
 
 	mGeometry = std::move(geo);
 }
-
 void Character::BuildRenderItem(Materials& mMaterials)
 {
 	int chaIndex = 0;
@@ -178,14 +181,18 @@ void Character::BuildRenderItem(Materials& mMaterials)
 	}
 }
 
-void Character::UpdateCharacterCBs(UploadBuffer<SkinnedConstants>* currSkinnedCB, const Light& mMainLight, const GameTimer & gt)
+
+void Character::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt)
 {
+	auto currSkinnedCB = mCurrFrameResource->SkinnedCB.get();
+
 	UpdateCharacterShadows(mMainLight);
 	// if(Animation) ...
 	mSkinnedModelInst->UpdateSkinnedAnimation(gt.DeltaTime());
 
 	for (auto& e : mAllRitems)
 	{
+		if (mTransformDirty) { e->NumFramesDirty = gNumFrameResources; }
 		if (e->NumFramesDirty > 0)
 		{
 			SkinnedConstants skinnedConstants;
@@ -207,11 +214,10 @@ void Character::UpdateCharacterCBs(UploadBuffer<SkinnedConstants>* currSkinnedCB
 			// Next FrameResource need to be updated too.
 
 			// TODO:
-			//e->NumFramesDirty--;
+			e->NumFramesDirty--;
 		}
 	}
 }
-
 void Character::UpdateCharacterShadows(const Light& mMainLight)
 {
 	int i = 0;

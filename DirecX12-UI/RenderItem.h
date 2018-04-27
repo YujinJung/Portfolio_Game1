@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../Common/d3dUtil.h"
+//#include "../Common/d3dUtil.h"
+#include "SkinnedData.h"
 
 struct SkinnedModelInstance
 {
@@ -71,6 +72,12 @@ enum class RenderLayer : int
 	Character,
 	Shadow,
 	UI,
+	Count
+};
+
+enum eUIList
+{
+	Rect,
 	Count
 };
 

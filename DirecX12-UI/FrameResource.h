@@ -38,6 +38,12 @@ struct SkinnedConstants
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
 };
 
+struct UIConstants
+{
+	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
+};
+
 struct Vertex
 {
     DirectX::XMFLOAT3 Pos;
@@ -76,7 +82,7 @@ struct FrameResource
 {
 public:
     
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT skinnedObjectCount);
+    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT skinnedObjectCount, UINT UICount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -91,6 +97,7 @@ public:
 	std::unique_ptr<UploadBuffer<SkinnedConstants>> SkinnedCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialConstants>>  MaterialCB = nullptr;
     std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
+    std::unique_ptr<UploadBuffer<UIConstants>> UICB = nullptr;
 
     // Fence value to mark commands up to this fence point.  This lets us
     // check if these frame resources are still in use by the GPU.
