@@ -65,10 +65,10 @@ struct RenderItem
 enum class RenderLayer : int
 {
 	Opaque = 0,
-	Character,
 	Mirrors,
 	Reflected,
 	Transparent,
+	Character,
 	Shadow,
 	UI,
 	Count

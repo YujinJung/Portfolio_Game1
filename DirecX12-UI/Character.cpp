@@ -12,7 +12,6 @@ Character::Character()
 {
 }
 
-
 Character::~Character()
 {
 }
@@ -32,9 +31,9 @@ UINT Character::GetBoneSize() const
 	return (UINT)mSkinnedInfo.BoneCount();
 }
 
-const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer type)
+const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type)
 {
-	return mRitems[(int)type];
+	return mRitems[(int)Type];
 }
 
 void Character::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int gNumFrameResources, int mChaCbvOffset)
@@ -190,6 +189,7 @@ void Character::UpdateCharacterCBs(UploadBuffer<SkinnedConstants>* currSkinnedCB
 				std::end(mSkinnedModelInst->FinalTransforms),
 				&skinnedConstants.BoneTransforms[0]);
 
+			// TODO : player constroller
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 

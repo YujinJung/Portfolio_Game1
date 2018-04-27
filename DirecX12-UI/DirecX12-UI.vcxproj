@@ -159,8 +159,11 @@
     <ClCompile Include="FrameResource.cpp" />
     <ClCompile Include="DirecX12-UIApp.cpp" />
     <ClCompile Include="Materials.cpp" />
+    <ClCompile Include="Player.cpp" />
+    <ClCompile Include="PlayerController.cpp" />
     <ClCompile Include="SkinnedData.cpp" />
     <ClCompile Include="TextureLoader.cpp" />
+    <ClCompile Include="Textures.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Common\d3dApp.h" />
@@ -178,9 +181,12 @@
     <ClInclude Include="FrameResource.h" />
     <ClInclude Include="DirecX12-UIApp.h" />
     <ClInclude Include="Materials.h" />
+    <ClInclude Include="Player.h" />
+    <ClInclude Include="PlayerController.h" />
     <ClInclude Include="RenderItem.h" />
     <ClInclude Include="SkinnedData.h" />
     <ClInclude Include="TextureLoader.h" />
+    <ClInclude Include="Textures.h" />
     <ClInclude Include="VertexHash.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

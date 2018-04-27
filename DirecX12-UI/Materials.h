@@ -9,17 +9,25 @@ public:
 	Materials();
 	~Materials();
 
-	void SetMaterial(std::string Name, int MatIndex, int DiffuseSrvHeapIndex, DirectX::XMFLOAT4 DiffuseAlbedo, DirectX::XMFLOAT3 FresnelR0, float Roughness);
+	UINT GetSize() const;
 
 	Material* Get(std::string Name);
 
-	UINT GetSize() const;
+	void SetMaterial(const std::string& Name, const int& MatIndex, const int& DiffuseSrvHeapIndex, const DirectX::XMFLOAT4& DiffuseAlbedo, const DirectX::XMFLOAT3& FresnelR0, const float& Roughness);
 
-	void BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int gNumFrameResources, int mMatCbvOffset);
+	void Begin(ID3D12Device* device, ID3D12DescriptorHeap* cbvHeap);
+	void End();
+
+	void BuildConstantBufferViews(const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int gNumFrameResources, int mMatCbvOffset);
 
 	void UpdateMaterialCB(UploadBuffer<MaterialConstants>* currMaterialCB);
 
 private:
+	ID3D12Device * mDevice;
+	ID3D12DescriptorHeap* mCbvHeap;
+
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
+
+	bool mInBeginEndPair;
 };
 

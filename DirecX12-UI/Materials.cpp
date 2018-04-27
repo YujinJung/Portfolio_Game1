@@ -1,17 +1,26 @@
-#include "Materials.h"
 #include "../Common/UploadBuffer.h"
-
+#include "Materials.h"
 
 Materials::Materials()
+	: mInBeginEndPair(false)
 {
 }
-
 
 Materials::~Materials()
 {
 }
 
-void Materials::SetMaterial(std::string Name, int MatIndex, int DiffuseSrvHeapIndex, DirectX::XMFLOAT4 DiffuseAlbedo, DirectX::XMFLOAT3 FresnelR0, float Roughness)
+UINT Materials::GetSize() const
+{
+	return (UINT)mMaterials.size();
+}
+
+Material * Materials::Get(std::string Name)
+{
+	return mMaterials[Name].get();
+}
+
+void Materials::SetMaterial(const std::string& Name, const int& MatIndex, const int& DiffuseSrvHeapIndex, const DirectX::XMFLOAT4& DiffuseAlbedo, const DirectX::XMFLOAT3& FresnelR0, const float& Roughness)
 {
 	auto temp = std::make_unique<Material>();
 	temp->Name = Name;
@@ -24,21 +33,31 @@ void Materials::SetMaterial(std::string Name, int MatIndex, int DiffuseSrvHeapIn
 	mMaterials[Name] = std::move(temp);
 }
 
-Material * Materials::Get(std::string Name)
+void Materials::Begin(ID3D12Device * device, ID3D12DescriptorHeap * cbvHeap)
 {
-	return mMaterials[Name].get();
+	if (mInBeginEndPair)
+		throw std::exception("Cannot nest Begin calls on a Material");
+
+	mDevice = device;
+	mCbvHeap = cbvHeap;
+	mInBeginEndPair = true;
 }
 
-UINT Materials::GetSize() const
+void Materials::End()
 {
-	return (UINT)mMaterials.size();
+	if (!mInBeginEndPair)
+		throw std::exception("Begin must be called before End");
+
+	mDevice = nullptr;
+	mCbvHeap = nullptr;
+	mInBeginEndPair = false;
 }
 
-void Materials::BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int gNumFrameResources, int mMatCbvOffset)
+void Materials::BuildConstantBufferViews(const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int gNumFrameResources, int mMatCbvOffset)
 {
 	UINT materialCount = GetSize();
 	UINT materialCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
-	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+	UINT mCbvSrvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
 	{
@@ -59,7 +78,7 @@ void Materials::BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorH
 			cbvDesc.BufferLocation = cbAddress;
 			cbvDesc.SizeInBytes = materialCBByteSize;
 
-			device->CreateConstantBufferView(&cbvDesc, handle);
+			mDevice->CreateConstantBufferView(&cbvDesc, handle);
 		}
 	}
 }

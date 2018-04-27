@@ -9,7 +9,6 @@
 #include "FBXLoader.h"
 #include "SkinnedData.h"
 #include "TextureLoader.h"
-#include "Materials.h"
 #include "RenderItem.h"
 
 using Microsoft::WRL::ComPtr;
@@ -18,42 +17,17 @@ using namespace DirectX::PackedVector;
 
 const int gNumFrameResources = 3;
 
-//struct SkinnedModelInstance
-//{
-//	SkinnedData* SkinnedInfo = nullptr;
-//	std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
-//	std::string ClipName;
-//	float TimePos = 0.0f;
-//
-//	// Called every frame and increments the time position, interpolates the 
-//	// animations for each bone based on the current animation clip, and 
-//	// generates the final transforms which are ultimately set to the effect
-//	// for processing in the vertex shader.
-//	void UpdateSkinnedAnimation(float dt)
-//	{
-//		TimePos += dt;
-//
-//		// Loop animation
-//		if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
-//			TimePos = 0.0f;
-//
-//		// Compute the final transforms for this time position.
-//		SkinnedInfo->GetFinalTransforms(ClipName, TimePos, FinalTransforms);
-//	}
-//
-//	// TODO SetClipName?
-//};
+class Player;
+class Materials;
+class Textures;
 
-
-class Character;
-
-class FBXLoaderApp : public D3DApp
+class DirecX12UIApp : public D3DApp
 {
 public:
-	FBXLoaderApp(HINSTANCE hInstance);
-	FBXLoaderApp(const FBXLoaderApp& rhs) = delete;
-	FBXLoaderApp& operator=(const FBXLoaderApp& rhs) = delete;
-	~FBXLoaderApp();
+	DirecX12UIApp(HINSTANCE hInstance);
+	DirecX12UIApp(const DirecX12UIApp& rhs) = delete;
+	DirecX12UIApp& operator=(const DirecX12UIApp& rhs) = delete;
+	~DirecX12UIApp();
 
 	virtual bool Initialize()override;
 
@@ -99,7 +73,6 @@ private:
 	ComPtr<ID3D12DescriptorHeap> mSrvDescriptorHeap = nullptr;
 
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>> mGeometries;
-	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
 	std::unordered_map<std::string, ComPtr<ID3DBlob>> mShaders;
 	std::unordered_map<std::string, ComPtr<ID3D12PipelineState>> mPSOs;
 
@@ -129,8 +102,9 @@ private:
 	Camera mCamera;
 	Light mMainLight;
 
+	Textures mTextures;
 	Materials mMaterials;
-	Character mCharacter;
+	Player mPlayer;
 
 	POINT mLastMousePos;
 };

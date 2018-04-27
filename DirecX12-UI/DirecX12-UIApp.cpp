@@ -7,7 +7,11 @@
 //
 // Hold down '1' key to view scene in wireframe mode.
 //***************************************************************************************
+
+#include "Player.h"
 #include "Character.h"
+#include "Textures.h"
+#include "Materials.h"
 #include "DirecX12-UIApp.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -20,7 +24,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 
 	try
 	{
-		FBXLoaderApp theApp(hInstance);
+		DirecX12UIApp theApp(hInstance);
 		if (!theApp.Initialize())
 			return 0;
 
@@ -33,19 +37,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	}
 }
 
-FBXLoaderApp::FBXLoaderApp(HINSTANCE hInstance)
+DirecX12UIApp::DirecX12UIApp(HINSTANCE hInstance)
 	: D3DApp(hInstance)
 {
 }
 
-FBXLoaderApp::~FBXLoaderApp()
+DirecX12UIApp::~DirecX12UIApp()
 {
 	if (md3dDevice != nullptr)
 		FlushCommandQueue();
 }
 
 ///
-bool FBXLoaderApp::Initialize()
+bool DirecX12UIApp::Initialize()
 {
 	if (!D3DApp::Initialize())
 		return false;
@@ -56,8 +60,8 @@ bool FBXLoaderApp::Initialize()
 	// TODO : DELETE
 	mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	BuildFbxGeometry();
 	LoadTextures();
+	BuildFbxGeometry();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
 	BuildShapeGeometry();
@@ -80,7 +84,7 @@ bool FBXLoaderApp::Initialize()
 	return true;
 }
 
-void FBXLoaderApp::OnResize()
+void DirecX12UIApp::OnResize()
 {
 	D3DApp::OnResize();
 
@@ -89,7 +93,7 @@ void FBXLoaderApp::OnResize()
 	mCamera.SetProj(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 }
 
-void FBXLoaderApp::Update(const GameTimer& gt)
+void DirecX12UIApp::Update(const GameTimer& gt)
 {
 	OnKeyboardInput(gt);
 
@@ -114,7 +118,7 @@ void FBXLoaderApp::Update(const GameTimer& gt)
 	UpdateMaterialCB(gt);
 }
 
-void FBXLoaderApp::Draw(const GameTimer& gt)
+void DirecX12UIApp::Draw(const GameTimer& gt)
 {
 	auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
 
@@ -167,11 +171,11 @@ void FBXLoaderApp::Draw(const GameTimer& gt)
 		mCommandList->SetPipelineState(mPSOs["skinnedOpaque_wireframe"].Get());
 		
 	}
-	DrawRenderItems(mCommandList.Get(), mCharacter.GetRenderItem(RenderLayer::Character));
+	DrawRenderItems(mCommandList.Get(), mPlayer.GetRenderItem(RenderLayer::Character));
 
 	mCommandList->OMSetStencilRef(0);
 	mCommandList->SetPipelineState(mPSOs["skinned_shadow"].Get());
-	DrawRenderItems(mCommandList.Get(), mCharacter.GetRenderItem(RenderLayer::Shadow));
+	DrawRenderItems(mCommandList.Get(), mPlayer.GetRenderItem(RenderLayer::Shadow));
 
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -198,7 +202,7 @@ void FBXLoaderApp::Draw(const GameTimer& gt)
 }
 
 
-void FBXLoaderApp::OnMouseDown(WPARAM btnState, int x, int y)
+void DirecX12UIApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
 	mLastMousePos.x = x;
 	mLastMousePos.y = y;
@@ -206,12 +210,12 @@ void FBXLoaderApp::OnMouseDown(WPARAM btnState, int x, int y)
 	SetCapture(mhMainWnd);
 }
 
-void FBXLoaderApp::OnMouseUp(WPARAM btnState, int x, int y)
+void DirecX12UIApp::OnMouseUp(WPARAM btnState, int x, int y)
 {
 	ReleaseCapture();
 }
 
-void FBXLoaderApp::OnMouseMove(WPARAM btnState, int x, int y)
+void DirecX12UIApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
 	float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
 	float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
@@ -231,7 +235,7 @@ void FBXLoaderApp::OnMouseMove(WPARAM btnState, int x, int y)
 	mLastMousePos.y = y;
 }
 
-void FBXLoaderApp::OnKeyboardInput(const GameTimer& gt)
+void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
 
@@ -266,7 +270,7 @@ void FBXLoaderApp::OnKeyboardInput(const GameTimer& gt)
 	mCamera.UpdateViewMatrix();
 }
 
-void FBXLoaderApp::UpdateObjectCBs(const GameTimer& gt)
+void DirecX12UIApp::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
 
@@ -292,7 +296,7 @@ void FBXLoaderApp::UpdateObjectCBs(const GameTimer& gt)
 	}
 }
 
-void FBXLoaderApp::UpdateMainPassCB(const GameTimer& gt)
+void DirecX12UIApp::UpdateMainPassCB(const GameTimer& gt)
 {
 	XMMATRIX view = mCamera.GetView();
 	XMMATRIX proj = mCamera.GetProj();
@@ -327,7 +331,7 @@ void FBXLoaderApp::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
-void FBXLoaderApp::UpdateMaterialCB(const GameTimer & gt)
+void DirecX12UIApp::UpdateMaterialCB(const GameTimer & gt)
 {
 	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
 	mMaterials.UpdateMaterialCB(currMaterialCB);
@@ -351,14 +355,14 @@ void FBXLoaderApp::UpdateMaterialCB(const GameTimer & gt)
 	}*/
 }
 
-void FBXLoaderApp::UpdateCharacterCBs(const GameTimer & gt)
+void DirecX12UIApp::UpdateCharacterCBs(const GameTimer & gt)
 {
 	auto currSkinnedCB = mCurrFrameResource->SkinnedCB.get();
 
-	mCharacter.UpdateCharacterCBs(currSkinnedCB, mMainLight, gt);
+	mPlayer.UpdateCharacterCBs(currSkinnedCB, mMainLight, gt);
 }
 
-void FBXLoaderApp::UpdateObjectShadows(const GameTimer& gt)
+void DirecX12UIApp::UpdateObjectShadows(const GameTimer& gt)
 {
 	auto currSkinnedCB = mCurrFrameResource->SkinnedCB.get();
 	//mCharacter.UpdateCharacterShadows(mMainLight);
@@ -366,13 +370,13 @@ void FBXLoaderApp::UpdateObjectShadows(const GameTimer& gt)
 
 
 ///
-void FBXLoaderApp::BuildDescriptorHeaps()
+void DirecX12UIApp::BuildDescriptorHeaps()
 {
-	mObjCbvOffset = (UINT)mTextures.size();
+	mObjCbvOffset = mTextures.GetSize();
 	UINT objCount = (UINT)mAllRitems.size();
-	UINT chaCount = mCharacter.GetAllRitemsSize();
+	UINT chaCount = mPlayer.GetAllRitemsSize();
 	UINT matCount = mMaterials.GetSize();
-	UINT skinCount = mCharacter.GetCharacterMeshSize();
+	UINT skinCount = mPlayer.GetCharacterMeshSize();
 
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
@@ -396,39 +400,14 @@ void FBXLoaderApp::BuildDescriptorHeaps()
 		IID_PPV_ARGS(&mCbvHeap)));
 }
 
-void FBXLoaderApp::BuildTextureBufferViews()
+void DirecX12UIApp::BuildTextureBufferViews()
 {
-	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-
-	auto bricksTex = mTextures["bricksTex"]->Resource;
-	
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	srvDesc.Format = bricksTex->GetDesc().Format;
-	srvDesc.Texture2D.MipLevels = bricksTex->GetDesc().MipLevels;
-	md3dDevice->CreateShaderResourceView(bricksTex.Get(), &srvDesc, hDescriptor);
-	
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> vTex;
-	vTex.push_back(mTextures["bricks3Tex"]->Resource);
-	vTex.push_back(mTextures["stoneTex"]->Resource);
-	vTex.push_back(mTextures["tileTex"]->Resource);
-	vTex.push_back(mTextures["grassTex"]->Resource);
-	vTex.push_back(mTextures["texture_0"]->Resource);
-
-	for (auto &e : vTex)
-	{
-		hDescriptor.Offset(1, mCbvSrvDescriptorSize);
-
-		srvDesc.Format = e->GetDesc().Format;
-		srvDesc.Texture2D.MipLevels = e->GetDesc().MipLevels;
-		md3dDevice->CreateShaderResourceView(e.Get(), &srvDesc, hDescriptor);
-	}
+	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+	mTextures.BuildConstantBufferViews();
+	mTextures.End();
 }
 
-void FBXLoaderApp::BuildConstantBufferViews()
+void DirecX12UIApp::BuildConstantBufferViews()
 {
 	// Object 
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
@@ -459,12 +438,12 @@ void FBXLoaderApp::BuildConstantBufferViews()
 	}
 
 	// Material 
+	mMaterials.Begin(md3dDevice.Get(), mCbvHeap.Get());
 	mMaterials.BuildConstantBufferViews(
-		md3dDevice.Get(),
-		mCbvHeap.Get(),
 		mFrameResources,
 		gNumFrameResources,
 		mMatCbvOffset);
+	mMaterials.End();
 	
 	// Pass - 4
 	// Last three descriptors are the pass CBVs for each frame resource.
@@ -487,7 +466,7 @@ void FBXLoaderApp::BuildConstantBufferViews()
 	}
 
 	// Character
-	mCharacter.BuildConstantBufferViews(
+	mPlayer.BuildConstantBufferViews(
 		md3dDevice.Get(),
 		mCbvHeap.Get(),
 		mFrameResources,
@@ -495,7 +474,7 @@ void FBXLoaderApp::BuildConstantBufferViews()
 		mChaCbvOffset);
 }
 
-void FBXLoaderApp::BuildRootSignature()
+void DirecX12UIApp::BuildRootSignature()
 {
 	CD3DX12_DESCRIPTOR_RANGE cbvTable[4];
 
@@ -545,7 +524,7 @@ void FBXLoaderApp::BuildRootSignature()
 
 }
 
-void FBXLoaderApp::BuildShadersAndInputLayout()
+void DirecX12UIApp::BuildShadersAndInputLayout()
 {
 	const D3D_SHADER_MACRO skinnedDefines[] =
 	{
@@ -575,7 +554,7 @@ void FBXLoaderApp::BuildShadersAndInputLayout()
 	};
 }
 
-void FBXLoaderApp::BuildPSOs()
+void DirecX12UIApp::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
 
@@ -695,20 +674,20 @@ void FBXLoaderApp::BuildPSOs()
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&skinnedShadowPsoDesc, IID_PPV_ARGS(&mPSOs["skinned_shadow"])));
 }
 
-void FBXLoaderApp::BuildFrameResources()
+void DirecX12UIApp::BuildFrameResources()
 {
 	for (int i = 0; i < gNumFrameResources; ++i)
 	{
 		mFrameResources.push_back(std::make_unique<FrameResource>(
 			md3dDevice.Get(),
 			1, (UINT)mAllRitems.size(),
-			mMaterials.GetSize(), mCharacter.GetAllRitemsSize()));
+			mMaterials.GetSize(), mPlayer.GetAllRitemsSize()));
 	}
 }
 
 
 ///
-void FBXLoaderApp::BuildShapeGeometry()
+void DirecX12UIApp::BuildShapeGeometry()
 {
 	mMainLight.Direction = { 0.57735f, -0.57735f, 0.57735f };
 	mMainLight.Strength = { 0.6f, 0.6f, 0.6f };
@@ -837,7 +816,7 @@ void FBXLoaderApp::BuildShapeGeometry()
 	mGeometries[geo->Name] = std::move(geo);
 }
 
-void FBXLoaderApp::BuildFbxGeometry()
+void DirecX12UIApp::BuildFbxGeometry()
 {
 	FbxLoader fbx;
 
@@ -850,7 +829,10 @@ void FBXLoaderApp::BuildFbxGeometry()
 	//std::string FileName = "../Resource/FBX/Boxing_male.FBX";
 	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, outMaterial, FileName);
 
-	mCharacter.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo);
+	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo);
+
+	// Begin
+	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
 
 	// Load Texture and Material
 	int MatIndex = mMaterials.GetSize();
@@ -859,70 +841,58 @@ void FBXLoaderApp::BuildFbxGeometry()
 		// Load Texture 
 		std::string TextureName = "texture_";
 		TextureName.push_back(i + 48);
+		std::wstring TextureFileName;
+		TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
 
-		auto Tex = std::make_unique<Texture>();
-		Tex->Name = TextureName;
-		Tex->Filename.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
-		ThrowIfFailed(DirectX::CreateImageDataTextureFromFile(md3dDevice.Get(),
-			mCommandList.Get(), Tex->Filename.c_str(),
-			Tex->Resource, Tex->UploadHeap));
-
-		mTextures[Tex->Name] = std::move(Tex);
+		mTextures.SetTexture(
+			TextureName,
+			TextureFileName);
 
 		// Load Material
 		std::string MaterialName = "material_";
 		MaterialName.push_back(i + 48);
 
-		mMaterials.SetMaterial(MaterialName, MatIndex++, 5, outMaterial[i].DiffuseAlbedo, outMaterial[i].FresnelR0, outMaterial[i].Roughness);
+		mMaterials.SetMaterial(
+			MaterialName,
+			MatIndex++,
+			5,
+			outMaterial[i].DiffuseAlbedo,
+			outMaterial[i].FresnelR0,
+			outMaterial[i].Roughness);
 	}
+
+	mTextures.End();
+
 }
 
-void FBXLoaderApp::LoadTextures()
+void DirecX12UIApp::LoadTextures()
 {
-	auto bricksTex = std::make_unique<Texture>();
-	bricksTex->Name = "bricksTex";
-	bricksTex->Filename = L"../Resource/Textures/bricks.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), bricksTex->Filename.c_str(),
-		bricksTex->Resource, bricksTex->UploadHeap));
+	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
 
-	auto bricks3Tex = std::make_unique<Texture>();
-	bricks3Tex->Name = "bricks3Tex";
-	bricks3Tex->Filename = L"../Resource/Textures/bricks3.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), bricks3Tex->Filename.c_str(),
-		bricks3Tex->Resource, bricks3Tex->UploadHeap));
+	mTextures.SetTexture(
+		"bricksTex",
+		L"../Resource/Textures/bricks.dds");
 
-	auto stoneTex = std::make_unique<Texture>();
-	stoneTex->Name = "stoneTex";
-	stoneTex->Filename = L"../Resource/Textures/stone.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), stoneTex->Filename.c_str(),
-		stoneTex->Resource, stoneTex->UploadHeap));
+	mTextures.SetTexture(
+		"bricks3Tex",
+		L"../Resource/Textures/bricks3.dds");
 
-	auto grassTex = std::make_unique<Texture>();
-	grassTex->Name = "grassTex";
-	grassTex->Filename = L"../Resource/Textures/grass.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), grassTex->Filename.c_str(),
-		grassTex->Resource, grassTex->UploadHeap));
+	mTextures.SetTexture(
+		"stoneTex",
+		L"../Resource/Textures/stone.dds");
 
-	auto tileTex = std::make_unique<Texture>();
-	tileTex->Name = "tileTex";
-	tileTex->Filename = L"../Resource/Textures/tile.dds";
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), tileTex->Filename.c_str(),
-		tileTex->Resource, tileTex->UploadHeap));
+	mTextures.SetTexture(
+		"tileTex",
+		L"../Resource/Textures/tile.dds");
 
-	mTextures[bricksTex->Name] = std::move(bricksTex);
-	mTextures[bricks3Tex->Name] = std::move(bricks3Tex);
-	mTextures[stoneTex->Name] = std::move(stoneTex);
-	mTextures[grassTex->Name] = std::move(grassTex);
-	mTextures[tileTex->Name] = std::move(tileTex);
+	mTextures.SetTexture(
+		"grassTex",
+		L"../Resource/Textures/grass.dds");
 
+	mTextures.End();
 }
 
-void FBXLoaderApp::BuildMaterials()
+void DirecX12UIApp::BuildMaterials()
 {
 	int MatIndex = mMaterials.GetSize();
 
@@ -974,7 +944,7 @@ void FBXLoaderApp::BuildMaterials()
 		0.0f);
 }
 
-void FBXLoaderApp::BuildRenderItems()
+void DirecX12UIApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
 
@@ -991,12 +961,12 @@ void FBXLoaderApp::BuildRenderItems()
 	mRitems[(int)RenderLayer::Opaque].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
 
-	mCharacter.BuildRenderItem(mMaterials);
+	mPlayer.BuildRenderItem(mMaterials);
 }
 
 
 ///
-void FBXLoaderApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
+void DirecX12UIApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
 {
 	// For each render item...
 	for (size_t i = 0; i < ritems.size(); ++i)
@@ -1020,7 +990,7 @@ void FBXLoaderApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std
 		auto matCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		matCbvHandle.Offset(matCbvIndex, mCbvSrvDescriptorSize);
 
-		UINT skinnedIndex = mChaCbvOffset + mCurrFrameResourceIndex * mCharacter.GetAllRitemsSize() + ri->SkinnedCBIndex;
+		UINT skinnedIndex = mChaCbvOffset + mCurrFrameResourceIndex * mPlayer.GetAllRitemsSize() + ri->SkinnedCBIndex;
 		auto skinCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		skinCbvHandle.Offset(skinnedIndex, mCbvSrvDescriptorSize);
 
@@ -1036,7 +1006,7 @@ void FBXLoaderApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std
 	}
 }
 
-std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> FBXLoaderApp::GetStaticSamplers()
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> DirecX12UIApp::GetStaticSamplers()
 {
 	const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
 		0, // shaderRegister
