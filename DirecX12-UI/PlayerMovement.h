@@ -9,6 +9,12 @@ public:
 	PlayerMovement(DirectX::XMFLOAT3 inPlayerPosition, DirectX::XMFLOAT3 inPlayerLook, DirectX::XMFLOAT3 inPlayerUp, DirectX::XMFLOAT3 inPlayerRight);
 	~PlayerMovement();
 
+	// Get Member variable
+	DirectX::XMVECTOR GetPlayerPosition() const;
+	DirectX::XMVECTOR GetPlayerLook() const;
+	DirectX::XMVECTOR GetPlayerUp() const;
+	DirectX::XMVECTOR GetPlayerRight() const;
+
 	void AddYaw(float dx);
 	void AddPitch(float dy);
 

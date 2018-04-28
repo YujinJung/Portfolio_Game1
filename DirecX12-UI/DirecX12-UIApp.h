@@ -99,8 +99,6 @@ private:
 	bool mIsWireframe = false;
 	bool mFbxWireframe = false;
 
-
-	Camera mCamera;
 	Light mMainLight;
 
 	Textures mTextures;

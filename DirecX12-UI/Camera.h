@@ -7,6 +7,12 @@ class Camera
 {
 public:
 	Camera();
+	/*Camera(
+		DirectX::XMFLOAT3 inPlayerPosition,
+		DirectX::XMFLOAT3 inPlayerLook,
+		DirectX::XMFLOAT3 inPlayerUp,
+		DirectX::XMFLOAT3 inPlayerRight
+	);*/
 	~Camera();
 
 	void SetProj(float fovY, float aspect, float zn, float zf);
@@ -25,7 +31,14 @@ public:
 	DirectX::XMMATRIX GetView() const;
 	DirectX::XMMATRIX GetProj() const;
 
+	void SetEyePosition(DirectX::XMVECTOR inEyePosition);
+	void SetEyeLook(DirectX::XMVECTOR inEyeLook);
+	void SetEyeUp(DirectX::XMVECTOR inEyeUp);
+	void SetEyeRight(DirectX::XMVECTOR inEyeRight);
+
 	void UpdateViewMatrix();
+
+	bool mViewDirty = true;
 
 private:
 	DirectX::XMFLOAT4X4 mView = MathHelper::Identity4x4();
@@ -37,6 +50,7 @@ private:
 	* w s - playerTarget, EyePos Move // EyeDirection based on playerTarget
 	* mouse click - EyeTarget Move
 	*/
+	// Character View
 	DirectX::XMFLOAT3 mEyePosition = { -10.0f, 3.0f, 12.0f };
 	DirectX::XMFLOAT3 mEyeLook = { 0.5f, 0.0f, -0.5f };
 	DirectX::XMFLOAT3 mEyeUp = { 0.0f, 1.0f, 0.0f };
@@ -49,8 +63,6 @@ private:
 	float mFovY = 0.0f;
 	float mNearWindowHeight = 0.0f;
 	float mFarWindowHeight = 0.0f;
-
-	bool mViewDirty = true;
 };
 
 #endif

@@ -58,7 +58,8 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 	// TODO : Setting the Name
 
 	auto temp = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&temp->World, XMMatrixScaling(0.1f, 0.1f, 0.1f) * XMMatrixRotationX(XM_PIDIV2) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(2.0f, 7.5f, 7.5f));
+	// atan(theta) : Theta is associated with PlayerCamera
+	XMStoreFloat4x4(&temp->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI));
 	temp->TexTransform = MathHelper::Identity4x4();
 	temp->Mat = mMaterials.Get("tile0");
 	temp->Geo = mGeometries["shapeGeo"].get();
@@ -67,13 +68,27 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 	temp->StartIndexLocation = temp->Geo->DrawArgs["grid"].StartIndexLocation;
 	temp->BaseVertexLocation = temp->Geo->DrawArgs["grid"].BaseVertexLocation;
 	temp->IndexCount = temp->Geo->DrawArgs["grid"].IndexCount;
-
 	mRitems[(int)eUIList::Rect].push_back(temp.get());
 	mAllRitems.push_back(std::move(temp));
+
+	auto mana = std::make_unique<RenderItem>();
+	// atan(theta) : Theta is associated with PlayerCamera
+	XMStoreFloat4x4(&mana->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 2.0f, 0.0f));
+	mana->TexTransform = MathHelper::Identity4x4();
+	mana->Mat = mMaterials.Get("grass0");
+	mana->Geo = mGeometries["shapeGeo"].get();
+	mana->ObjCBIndex = UIIndex++;
+	mana->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	mana->StartIndexLocation = mana->Geo->DrawArgs["grid"].StartIndexLocation;
+	mana->BaseVertexLocation = mana->Geo->DrawArgs["grid"].BaseVertexLocation;
+	mana->IndexCount = mana->Geo->DrawArgs["grid"].IndexCount;
+	mRitems[(int)eUIList::Rect].push_back(mana.get());
+	mAllRitems.push_back(std::move(mana));
 }
 
 void DXUI::UpdateUICBs(UploadBuffer<UIConstants>* currUICB, XMMATRIX playerWorld, bool mTransformDirty)
 {
+
 	for (auto& e : mAllRitems)
 	{
 		// if Transform then Reset the Dirty flag

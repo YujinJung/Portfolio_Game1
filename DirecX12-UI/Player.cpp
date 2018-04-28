@@ -4,9 +4,16 @@
 using namespace DirectX;
 
 Player::Player()
-	: Character()
+	: Character(),
+	mPlayerMovement()
+	/*mCamera(
+		XMFLOAT3(0.0f, 0.0f, 0.0f),
+		XMFLOAT3(0.0f, 0.0f, 1.0f),
+		XMFLOAT3(0.0f, 1.0f, 0.0f),
+		XMFLOAT3(1.0f, 0.0f, 0.0f)
+	)*/
 {
-
+	
 }
 
 
@@ -36,6 +43,12 @@ void Player::PlayerMove(PlayerMoveList move, float velocity)
 		break;
 	}
 
+	mCamera.UpdatePosition(
+		mPlayerMovement.GetPlayerPosition(),
+		mPlayerMovement.GetPlayerLook(),
+		mPlayerMovement.GetPlayerUp(),
+		mPlayerMovement.GetPlayerRight());
+
 	mTransformDirty = true;
 }
 
@@ -43,9 +56,12 @@ void Player::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& 
 {
 	Character::UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 
+	mCamera.UpdateViewMatrix();
+
+	XMVECTOR Trnaslation = 0.9 * XMVectorSubtract(mCamera.GetEyePosition(), mPlayerMovement.GetPlayerPosition());
 	// UI
 	auto currUICB = mCurrFrameResource->UICB.get();
-	mUI.UpdateUICBs(currUICB, XMLoadFloat4x4(&GetWorld()), mTransformDirty);
+	mUI.UpdateUICBs(currUICB, XMLoadFloat4x4(&GetWorld()) * XMMatrixTranslationFromVector(Trnaslation), mTransformDirty);
 }
 
 void Player::UpdateTransformationMatrix()

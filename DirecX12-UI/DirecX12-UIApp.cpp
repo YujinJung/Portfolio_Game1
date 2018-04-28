@@ -90,7 +90,7 @@ void DirecX12UIApp::OnResize()
 
 	// The window resized, so update the aspect ratio and recompute the projection matrix.
 	//XMMATRIX P = XMMatrixPerspectiveFovLH(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
-	mCamera.SetProj(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
+	mPlayer.mCamera.SetProj(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 }
 
 void DirecX12UIApp::Update(const GameTimer& gt)
@@ -230,17 +230,23 @@ void DirecX12UIApp::OnMouseMove(WPARAM btnState, int x, int y)
 
 	if ((btnState & MK_LBUTTON) != 0)
 	{
-		mCamera.AddPitch(dy);
-		mCamera.AddYaw(dx);
+		mPlayer.mCamera.AddPitch(dy);
+
+		mPlayer.mCamera.AddYaw(dx);
+		//mPlayer.PlayerMove(PlayerMoveList::AddYaw, dx);
 	}
 	else if ((btnState & MK_RBUTTON) != 0)
 	{
-		mCamera.AddPitch(dy);
-		mCamera.AddYaw(dx);
+		mPlayer.mCamera.AddPitch(dy);
+
+		mPlayer.mCamera.AddYaw(dx);
+		//mPlayer.PlayerMove(PlayerMoveList::AddYaw, dx);
 	}
 
 	mLastMousePos.x = x;
 	mLastMousePos.y = y;
+
+	mPlayer.UpdateTransformationMatrix();
 }
 
 void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
@@ -259,30 +265,25 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 
 	if (GetAsyncKeyState('W') & 0x8000)
 	{
-		mCamera.Walk(10.0f * dt);
+		mPlayer.PlayerMove(PlayerMoveList::Walk, 2.0f * dt);
 	}
 	else if (GetAsyncKeyState('S') & 0x8000) 
 	{
-		mCamera.Walk(-10.0f * dt);
+		mPlayer.PlayerMove(PlayerMoveList::Walk, -2.0f * dt);
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
-		mCamera.WalkSideway(-10.0f * dt);
+		mPlayer.PlayerMove(PlayerMoveList::AddYaw, -1.0f * dt);
+		//mCamera.WalkSideway(-10.0f * dt);
 	}
 	else if (GetAsyncKeyState('D') & 0x8000)
 	{
-		mCamera.WalkSideway(10.0f * dt);
+		mPlayer.PlayerMove(PlayerMoveList::AddYaw, 1.0f * dt);
+		//mCamera.WalkSideway(10.0f * dt);
 	}
 
-	if (GetAsyncKeyState('T') & 0x8000)
-	{
-		mPlayer.PlayerMove(PlayerMoveList::Walk, 2.0f * dt);
-	}
-	else if (GetAsyncKeyState('G') & 0x8000)
-	{
-		mPlayer.PlayerMove(PlayerMoveList::Walk, -2.0f * dt);
-	}
+	
 
 	if (GetAsyncKeyState('F') & 0x8000)
 	{
@@ -296,7 +297,6 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 	}
 
 	mPlayer.UpdateTransformationMatrix();
-	mCamera.UpdateViewMatrix();
 }
 
 void DirecX12UIApp::UpdateObjectCBs(const GameTimer& gt)
@@ -326,8 +326,8 @@ void DirecX12UIApp::UpdateObjectCBs(const GameTimer& gt)
 
 void DirecX12UIApp::UpdateMainPassCB(const GameTimer& gt)
 {
-	XMMATRIX view = mCamera.GetView();
-	XMMATRIX proj = mCamera.GetProj();
+	XMMATRIX view = mPlayer.mCamera.GetView();
+	XMMATRIX proj = mPlayer.mCamera.GetProj();
 
 	XMMATRIX viewProj = XMMatrixMultiply(view, proj);
 	XMMATRIX invView = XMMatrixInverse(&XMMatrixDeterminant(view), view);
@@ -340,7 +340,7 @@ void DirecX12UIApp::UpdateMainPassCB(const GameTimer& gt)
 	XMStoreFloat4x4(&mMainPassCB.InvProj, XMMatrixTranspose(invProj));
 	XMStoreFloat4x4(&mMainPassCB.ViewProj, XMMatrixTranspose(viewProj));
 	XMStoreFloat4x4(&mMainPassCB.InvViewProj, XMMatrixTranspose(invViewProj));
-	mMainPassCB.EyePosW = mCamera.GetEyePosition3f();
+	mMainPassCB.EyePosW = mPlayer.mCamera.GetEyePosition3f();
 	mMainPassCB.RenderTargetSize = XMFLOAT2((float)mClientWidth, (float)mClientHeight);
 	mMainPassCB.InvRenderTargetSize = XMFLOAT2(1.0f / mClientWidth, 1.0f / mClientHeight);
 	mMainPassCB.NearZ = 1.0f;

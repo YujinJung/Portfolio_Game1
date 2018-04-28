@@ -4,9 +4,9 @@ using namespace DirectX;
 
 PlayerMovement::PlayerMovement()
 	: mPlayerPosition(0.0f, 0.0f, 0.0f),
-	mPlayerLook(0.0f, 0.0f, 1.0f),
-	mPlayerUp(0.0f, 1.0f, 0.0f),
-	mPlayerRight(1.0f, 0.0f, 0.0f)
+		mPlayerLook(0.0f, 0.0f, 1.0f),
+		mPlayerUp(0.0f, 1.0f, 0.0f),
+		mPlayerRight(1.0f, 0.0f, 0.0f)
 {
 }
 
@@ -16,15 +16,32 @@ PlayerMovement::PlayerMovement(
 	XMFLOAT3 inPlayerUp,
 	XMFLOAT3 inPlayerRight)
 	: mPlayerPosition(inPlayerPosition),
-	mPlayerLook(inPlayerLook),
-	mPlayerUp(inPlayerUp),
-	mPlayerRight(inPlayerRight)
+		mPlayerLook(inPlayerLook),
+		mPlayerUp(inPlayerUp),
+		mPlayerRight(inPlayerRight)
 {
 
 }
 
 PlayerMovement::~PlayerMovement()
 {
+}
+
+DirectX::XMVECTOR PlayerMovement::GetPlayerPosition() const
+{
+	return XMLoadFloat3(&mPlayerPosition);
+}
+DirectX::XMVECTOR PlayerMovement::GetPlayerLook() const
+{
+	return XMLoadFloat3(&mPlayerLook);
+}
+DirectX::XMVECTOR PlayerMovement::GetPlayerUp() const
+{
+	return XMLoadFloat3(&mPlayerUp);
+}
+DirectX::XMVECTOR PlayerMovement::GetPlayerRight() const
+{
+	return XMLoadFloat3(&mPlayerRight);
 }
 
 void PlayerMovement::AddYaw(float dx)

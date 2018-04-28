@@ -3,6 +3,7 @@
 #include "Character.h"
 #include "DXUI.h"
 #include "RenderItem.h"
+#include "PlayerCamera.h"
 #include "PlayerMovement.h"
 #include "PlayerController.h"
 
@@ -21,11 +22,12 @@ public:
 	~Player();
 
 	DXUI mUI;
+	PlayerCamera mCamera;
 
 	void PlayerMove(PlayerMoveList move, float velocity);
 	virtual void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt) override;
 	void UpdateTransformationMatrix();
-
+	
 private:
 	PlayerMovement mPlayerMovement;
 	PlayerController mPlayerController;

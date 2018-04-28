@@ -8,6 +8,30 @@ Camera::Camera()
 	UpdateViewMatrix();
 }
 
+//Camera::Camera(
+//	XMFLOAT3 inPlayerPosition,
+//	XMFLOAT3 inPlayerLook,
+//	XMFLOAT3 inPlayerUp,
+//	XMFLOAT3 inPlayerRight)
+//	: mEyeRight(inPlayerRight)
+//{
+//	XMVECTOR P = XMLoadFloat3(&inPlayerPosition);
+//	XMVECTOR L = XMLoadFloat3(&inPlayerLook);
+//	XMVECTOR U = XMLoadFloat3(&inPlayerUp);
+//	XMVECTOR R = XMLoadFloat3(&inPlayerRight);
+//
+//XMVECTOR mP = XMVectorAdd(XMVectorSubtract(P, 10.0f * L), 10.0f * U);
+//	XMVECTOR mL = XMVector3Normalize(XMVectorSubtract(mP, P));
+//	XMVECTOR mU = XMVector3Normalize(XMVector3Cross(R, mL));
+//
+//	XMStoreFloat3(&mEyePosition, mP);
+//	XMStoreFloat3(&mEyeLook, mL);
+//	XMStoreFloat3(&mEyeUp, mU);
+//
+//	SetProj(0.25f*MathHelper::Pi, 1.0f, 1.0f, 1000.0f);
+//	UpdateViewMatrix();	
+//}
+
 Camera::~Camera()
 {
 }
@@ -40,7 +64,6 @@ void Camera::AddYaw(float dx)
 
 	mViewDirty = true;
 }
-
 void Camera::AddPitch(float dy)
 {
 	XMMATRIX R = XMMatrixRotationAxis(XMLoadFloat3(&mEyeRight), dy);
@@ -50,7 +73,6 @@ void Camera::AddPitch(float dy)
 
 	mViewDirty = true;
 }
-
 void Camera::Walk(float velocity)
 {
 	XMVECTOR Velocity	= XMVectorSet(velocity, velocity, velocity, velocity);
@@ -60,7 +82,6 @@ void Camera::Walk(float velocity)
 
 	mViewDirty = true;
 }
-
 void Camera::WalkSideway(float inVelocity)
 {
 	XMVECTOR Velocity = XMVectorSet(inVelocity, inVelocity, inVelocity, inVelocity);
@@ -71,40 +92,50 @@ void Camera::WalkSideway(float inVelocity)
 	mViewDirty = true;
 }
 
-
 XMVECTOR Camera::GetEyePosition() const
 {
 	return XMLoadFloat3(&mEyePosition);
 }
-
 XMFLOAT3 Camera::GetEyePosition3f() const
 {
 	return mEyePosition;
 }
-
 XMVECTOR Camera::GetEyeLook() const
 {
 	return XMLoadFloat3(&mEyeLook);
 }
-
 XMVECTOR Camera::GetEyeUp() const
 {
 	return XMLoadFloat3(&mEyeUp);
 }
-
 XMVECTOR Camera::GetEyeRight() const
 {
 	return XMLoadFloat3(&mEyeRight);
 }
-
 XMMATRIX Camera::GetView() const
 {
 	return XMLoadFloat4x4(&mView);
 }
-
 XMMATRIX Camera::GetProj() const
 {
 	return XMLoadFloat4x4(&mProj);
+}
+
+void Camera::SetEyePosition(DirectX::XMVECTOR inEyePosition)
+{
+	XMStoreFloat3(&mEyePosition, inEyePosition);
+}
+void Camera::SetEyeLook(DirectX::XMVECTOR inEyeLook)
+{
+	XMStoreFloat3(&mEyeLook, inEyeLook);
+}
+void Camera::SetEyeUp(DirectX::XMVECTOR inEyeUp)
+{
+	XMStoreFloat3(&mEyeUp, inEyeUp);
+}
+void Camera::SetEyeRight(DirectX::XMVECTOR inEyeRight)
+{
+	XMStoreFloat3(&mEyeRight, inEyeRight);
 }
 
 void Camera::UpdateViewMatrix()
