@@ -234,6 +234,7 @@ void DirecX12UIApp::OnMouseMove(WPARAM btnState, int x, int y)
 	{
 		mPlayer.mCamera.AddPitch(dy);
 
+		// Rotate Camera only
 		mPlayer.mCamera.AddYaw(dx);
 		//mPlayer.PlayerMove(PlayerMoveList::AddYaw, dx);
 	}
@@ -241,8 +242,9 @@ void DirecX12UIApp::OnMouseMove(WPARAM btnState, int x, int y)
 	{
 		mPlayer.mCamera.AddPitch(dy);
 
+		// Rotate Camera with Player
 		mPlayer.mCamera.AddYaw(dx);
-		//mPlayer.PlayerMove(PlayerMoveList::AddYaw, dx);
+		mPlayer.PlayerMove(PlayerMoveList::AddYaw, dx);
 	}
 
 	mLastMousePos.x = x;
@@ -255,10 +257,14 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
 
-	if (GetAsyncKeyState('1') & 0x8000)
+	if (GetAsyncKeyState('7') & 0x8000)
 		mIsWireframe = true;
-	else if (GetAsyncKeyState('2') & 0x8000)
+	else if (GetAsyncKeyState('8') & 0x8000)
 		mFbxWireframe = true;
+	else if (GetAsyncKeyState('9') & 0x8000)
+		mCameraDetach = true;
+	else if (GetAsyncKeyState('0') & 0x8000)
+		mCameraDetach = false;
 	else
 	{
 		mIsWireframe = false;
@@ -267,35 +273,46 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 
 	if (GetAsyncKeyState('W') & 0x8000)
 	{
-		mPlayer.PlayerMove(PlayerMoveList::Walk, 2.0f * dt);
+		if (!mCameraDetach)
+		{
+			mPlayer.PlayerMove(PlayerMoveList::Walk, 5.0f * dt);
+			mPlayer.SetClipName("Walk");
+		}
+		else
+		{
+			mPlayer.mCamera.Walk(10.0f * dt);
+		}
 	}
 	else if (GetAsyncKeyState('S') & 0x8000) 
 	{
-		mPlayer.PlayerMove(PlayerMoveList::Walk, -2.0f * dt);
+		if (!mCameraDetach)
+		{
+			mPlayer.PlayerMove(PlayerMoveList::Walk, -5.0f * dt);
+			mPlayer.SetClipName("Walk");
+		}
+		else
+		{
+			mPlayer.mCamera.Walk(-10.0f * dt);
+		}
+	}
+	else
+	{
+		mPlayer.SetClipName("Idle");
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
-		mPlayer.PlayerMove(PlayerMoveList::AddYaw, -1.0f * dt);
-		//mCamera.WalkSideway(-10.0f * dt);
+		if (!mCameraDetach)
+			mPlayer.PlayerMove(PlayerMoveList::AddYaw, -1.0f * dt);
+		else
+			mPlayer.mCamera.WalkSideway(-10.0f * dt);
 	}
 	else if (GetAsyncKeyState('D') & 0x8000)
 	{
-		mPlayer.PlayerMove(PlayerMoveList::AddYaw, 1.0f * dt);
-		//mCamera.WalkSideway(10.0f * dt);
-	}
-
-	
-
-	if (GetAsyncKeyState('F') & 0x8000)
-	{
-		mPlayer.PlayerMove(PlayerMoveList::AddYaw, -0.5f * dt);
-		//mPlayer.Walk(2.0f * dt);
-	}
-	else if (GetAsyncKeyState('H') & 0x8000)
-	{
-		mPlayer.PlayerMove(PlayerMoveList::AddYaw, 0.5f * dt);
-		//mPlayer.Walk(-2.0f * dt);
+		if (!mCameraDetach)
+			mPlayer.PlayerMove(PlayerMoveList::AddYaw, 1.0f * dt);
+		else
+			mPlayer.mCamera.WalkSideway(10.0f * dt);
 	}
 
 	mPlayer.UpdateTransformationMatrix();
@@ -864,8 +881,13 @@ void DirecX12UIApp::BuildFbxGeometry()
 	SkinnedData outSkinnedInfo;
 
 	//std::string FileName = "../Resource/FBX/Capoeira.FBX";
-	std::string FileName = "../Resource/FBX/Boxing_male.FBX";
-	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, outMaterial, FileName);
+	std::string FileName = "../Resource/FBX/Character/Idle.FBX";
+	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
+
+	AnimationClip animation;
+	FileName =  "../Resource/FBX/Character/Walk.FBX";
+	fbx.LoadFBX(animation, "Walk", FileName);
+	outSkinnedInfo.SetAnimation(animation, "Walk");
 
 	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo);
 
@@ -876,14 +898,17 @@ void DirecX12UIApp::BuildFbxGeometry()
 	for (int i = 0; i < outMaterial.size(); ++i)
 	{
 		// Load Texture 
-		std::string TextureName = "texture_";
-		TextureName.push_back(i + 48);
-		std::wstring TextureFileName;
-		TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
+		if (!outMaterial[i].Name.empty())
+		{
+			std::string TextureName = "texture_";
+			TextureName.push_back(i + 48);
+			std::wstring TextureFileName;
+			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
 
-		mTextures.SetTexture(
-			TextureName,
-			TextureFileName);
+			mTextures.SetTexture(
+				TextureName,
+				TextureFileName);
+		}
 
 		// Load Material
 		std::string MaterialName = "material_";

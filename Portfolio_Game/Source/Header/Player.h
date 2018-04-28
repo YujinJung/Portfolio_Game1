@@ -31,6 +31,7 @@ public:
 private:
 	PlayerMovement mPlayerMovement;
 	PlayerController mPlayerController;
+
 };
 
 /*

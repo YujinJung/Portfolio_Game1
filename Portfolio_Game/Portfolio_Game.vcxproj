@@ -157,7 +157,6 @@
     <ClCompile Include="Source\Source\Character\SkinnedData.cpp" />
     <ClCompile Include="Source\Source\Common\d3dApp.cpp" />
     <ClCompile Include="Source\Source\Common\d3dUtil.cpp" />
-    <ClCompile Include="Source\Source\Common\DDSTextureLoader.cpp" />
     <ClCompile Include="Source\Source\Common\FrameResource.cpp" />
     <ClCompile Include="Source\Source\Common\GameTimer.cpp" />
     <ClCompile Include="Source\Source\Common\GeometryGenerator.cpp" />

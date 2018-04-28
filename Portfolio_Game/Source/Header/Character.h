@@ -20,10 +20,11 @@ public:
 	DirectX::XMFLOAT4X4 GetWorld() const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
 
+	void SetClipName(const std::string& inClipName);
 	void SetWorldTransform(DirectX::XMMATRIX inWorldTransform);
 
 	void BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mChaCbvOffset);
-	void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint16_t>& inIndices, const SkinnedData& inSkinInfo);
+	virtual void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint16_t>& inIndices, const SkinnedData& inSkinInfo);
 	void BuildRenderItem(Materials& mMaterials);
 	
 	virtual void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt);
@@ -35,6 +36,7 @@ private:
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
+	std::string mClipName;
 	
 	DirectX::XMFLOAT4X4 mWorldTransform;
 

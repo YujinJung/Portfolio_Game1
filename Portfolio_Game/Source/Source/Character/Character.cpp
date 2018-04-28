@@ -12,6 +12,7 @@ using namespace DirectX::PackedVector;
 Character::Character()
 {
 	XMStoreFloat4x4(&mWorldTransform, XMMatrixIdentity());
+	mClipName = "Idle";
 }
 
 Character::~Character()
@@ -39,7 +40,10 @@ const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type) const
 	return mRitems[(int)Type];
 }
 
-
+void Character::SetClipName(const std::string& inClipName)
+{
+	mClipName = inClipName;
+}
 void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
 {
 	XMStoreFloat4x4(&mWorldTransform, inWorldTransform);
@@ -77,6 +81,7 @@ void Character::BuildConstantBufferViews(ID3D12Device * device, ID3D12Descriptor
 		}
 	}
 }
+
 void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint16_t>& inIndices, const SkinnedData& inSkinInfo)
 {
 	mSkinnedInfo = inSkinInfo;
@@ -84,7 +89,6 @@ void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* 
 	mSkinnedModelInst = std::make_unique<SkinnedModelInstance>();
 	mSkinnedModelInst->SkinnedInfo = &mSkinnedInfo;
 	mSkinnedModelInst->FinalTransforms.resize(mSkinnedInfo.BoneCount());
-	mSkinnedModelInst->ClipName = mSkinnedInfo.GetAnimationName(0);
 	mSkinnedModelInst->TimePos = 0.0f;
 
 	if (inVertices.size() == 0)
@@ -137,6 +141,7 @@ void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* 
 
 	mGeometry = std::move(geo);
 }
+
 void Character::BuildRenderItem(Materials& mMaterials)
 {
 	int chaIndex = 0;
@@ -188,7 +193,7 @@ void Character::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Ligh
 
 	UpdateCharacterShadows(mMainLight);
 	// if(Animation) ...
-	mSkinnedModelInst->UpdateSkinnedAnimation(gt.DeltaTime());
+	mSkinnedModelInst->UpdateSkinnedAnimation(mClipName, gt.DeltaTime());
 
 	for (auto& e : mAllRitems)
 	{

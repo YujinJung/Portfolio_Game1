@@ -15,11 +15,11 @@ FbxLoader::~FbxLoader()
 
 FbxManager * gFbxManager = nullptr;
 
-HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint16_t>& outIndexVector, SkinnedData& outSkinnedData, std::vector<Material>& outMaterial, std::string fileName)
+HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint16_t>& outIndexVector, SkinnedData& outSkinnedData, const std::string& ClipName, std::vector<Material>& outMaterial, std::string fileName)
 {
 	if (gFbxManager == nullptr)
 	{
-	    gFbxManager = FbxManager::Create();
+		gFbxManager = FbxManager::Create();
 
 		FbxIOSettings* pIOsettings = FbxIOSettings::Create(gFbxManager, IOSROOT);
 		gFbxManager->SetIOSettings(pIOsettings);
@@ -84,8 +84,9 @@ HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vec
 
 				// Get Animation Clip
 				std::string outAnimationName;
-				GetAnimation(pFbxScene, pFbxChildNode, outAnimationName);
-				outSkinnedData.SetAnimationName(outAnimationName);
+				GetAnimation(pFbxScene, pFbxChildNode, outAnimationName, ClipName);
+				outSkinnedData.SetAnimationName(ClipName);
+				//outSkinnedData.SetAnimationName(outAnimationName);
 
 				// Get Vertices and indices info
 				GetVerticesAndIndice(pMesh, outVertexVector, outIndexVector, outSkinnedData);
@@ -102,6 +103,59 @@ HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vec
 	return S_OK;
 }
 
+HRESULT FbxLoader::LoadFBX(AnimationClip & Animation, const std::string& ClipName, std::string fileName)
+{
+	if (gFbxManager == nullptr)
+	{
+		gFbxManager = FbxManager::Create();
+
+		FbxIOSettings* pIOsettings = FbxIOSettings::Create(gFbxManager, IOSROOT);
+		gFbxManager->SetIOSettings(pIOsettings);
+	}
+
+	FbxImporter* pImporter = FbxImporter::Create(gFbxManager, "");
+
+	bool bSuccess = pImporter->Initialize(fileName.c_str(), -1, gFbxManager->GetIOSettings());
+	if (!bSuccess) return E_FAIL;
+
+	FbxScene* pFbxScene = FbxScene::Create(gFbxManager, "");
+
+	bSuccess = pImporter->Import(pFbxScene);
+	if (!bSuccess) return E_FAIL;
+
+	pImporter->Destroy();
+
+	FbxAxisSystem sceneAxisSystem = pFbxScene->GetGlobalSettings().GetAxisSystem();
+	FbxAxisSystem::MayaZUp.ConvertScene(pFbxScene); // Delete?
+
+	// Convert quad to triangle
+	FbxGeometryConverter geometryConverter(gFbxManager);
+	geometryConverter.Triangulate(pFbxScene, true);
+
+	// Start to RootNode
+	FbxNode* pFbxRootNode = pFbxScene->GetRootNode();
+	if (pFbxRootNode)
+	{
+		// Animation Data
+		for (int i = 0; i < pFbxRootNode->GetChildCount(); i++)
+		{
+			FbxNode* pFbxChildNode = pFbxRootNode->GetChild(i);
+			FbxMesh* pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute();
+			FbxNodeAttribute::EType AttributeType = pMesh->GetAttributeType();
+			if (!pMesh || !AttributeType) { continue; }
+
+			if (AttributeType == FbxNodeAttribute::eMesh)
+			{
+				// Get Animation Clip
+				GetOnlyAnimation(pFbxScene, pFbxChildNode, Animation);
+			}
+		}
+		return S_OK;
+	}
+
+	return S_OK;
+}
+
 void FbxLoader::GetSkeletonHierarchy(FbxNode * pNode, int curIndex, int parentIndex)
 {
 	mBoneHierarchy.push_back(parentIndex);
@@ -112,7 +166,6 @@ void FbxLoader::GetSkeletonHierarchy(FbxNode * pNode, int curIndex, int parentIn
 		GetSkeletonHierarchy(pNode->GetChild(i), mBoneHierarchy.size(), curIndex);
 	}
 }
-
 void FbxLoader::GetControlPoints(fbxsdk::FbxNode * pFbxRootNode)
 {
 	FbxMesh * pCurrMesh = (FbxMesh*)pFbxRootNode->GetNodeAttribute();
@@ -121,7 +174,7 @@ void FbxLoader::GetControlPoints(fbxsdk::FbxNode * pFbxRootNode)
 	for (unsigned int i = 0; i < ctrlPointCount; ++i)
 	{
 		CtrlPoint* currCtrlPoint = new CtrlPoint();
-		
+
 		DirectX::XMFLOAT3 currPosition;
 		currPosition.x = static_cast<float>(pCurrMesh->GetControlPointAt(i).mData[0]);
 		currPosition.y = static_cast<float>(pCurrMesh->GetControlPointAt(i).mData[1]);
@@ -131,8 +184,7 @@ void FbxLoader::GetControlPoints(fbxsdk::FbxNode * pFbxRootNode)
 		mControlPoints[i] = currCtrlPoint;
 	}
 }
-
-void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::string &outAnimationName)
+void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::string &outAnimationName, const std::string& ClipName)
 {
 	FbxMesh* pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute();
 	FbxAMatrix geometryTransform = GetGeometryTransformation(pFbxChildNode);
@@ -142,7 +194,7 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 
 	// Initialize BoneAnimations
 	animation.BoneAnimations.resize(mBoneName.size());
-	
+
 
 	// Deformer - Cluster - Link
 	// Deformer
@@ -150,7 +202,7 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 	{
 		FbxSkin* pCurrSkin = reinterpret_cast<FbxSkin*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eSkin));
 		if (!pCurrSkin) { continue; }
-		
+
 		// Cluster
 		for (uint32_t clusterIndex = 0; clusterIndex < pCurrSkin->GetClusterCount(); ++clusterIndex)
 		{
@@ -166,7 +218,7 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 			// To find the index that matches the name of the current joint
 			std::string currJointName = pCurrCluster->GetLink()->GetName();
 			BYTE currJointIndex; // current joint index
-			for (currJointIndex = 0; currJointIndex< mBoneName.size(); ++currJointIndex)
+			for (currJointIndex = 0; currJointIndex < mBoneName.size(); ++currJointIndex)
 			{
 				if (mBoneName[currJointIndex] == currJointName)
 					break;
@@ -184,7 +236,7 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 			mBoneOffsets[currJointIndex] = boneOffset;
 
 			// Set the Bone index and weight ./ Max 4
-			auto controlPointIndices =  pCurrCluster->GetControlPointIndices();
+			auto controlPointIndices = pCurrCluster->GetControlPointIndices();
 			for (uint32_t i = 0; i < pCurrCluster->GetControlPointIndicesCount(); ++i)
 			{
 				BoneIndexAndWeight currBoneIndexAndWeight;
@@ -194,19 +246,19 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 				mControlPoints[controlPointIndices[i]]->mBoneInfo.push_back(currBoneIndexAndWeight);
 				mControlPoints[controlPointIndices[i]]->mBoneName = currJointName;
 			}
-			
+
 			// Set the Bone Animation Matrix
 			BoneAnimation boneAnim;
 
 			FbxAnimStack* pCurrAnimStack = pFbxScene->GetSrcObject<FbxAnimStack>(0);
-			
+
 			FbxString currAnimStackName = pCurrAnimStack->GetName();
 			outAnimationName = currAnimStackName.Buffer();
 			FbxAnimEvaluator* pSceneEvaluator = pFbxScene->GetAnimationEvaluator();
-			
+
 			FbxTakeInfo* takeInfo = pFbxScene->GetTakeInfo(currAnimStackName);
 			auto interval = takeInfo->mReferenceTimeSpan;
-			
+
 			FbxNode* pRootNode = pFbxScene->GetRootNode();
 
 			// TRqS transformation and Time per frame
@@ -224,20 +276,20 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 
 				// Transition, Scaling and Rotation Quaternion
 				FbxVector4 TS = temp.GetT();
-				key.Translation = { 
-					static_cast<float>(TS.mData[0]), 
-					static_cast<float>(TS.mData[1]),  
+				key.Translation = {
+					static_cast<float>(TS.mData[0]),
+					static_cast<float>(TS.mData[1]),
 					static_cast<float>(TS.mData[2]) };
 				TS = temp.GetS();
-				key.Scale = { 
-					static_cast<float>(TS.mData[0]),  
-					static_cast<float>(TS.mData[1]),  
+				key.Scale = {
+					static_cast<float>(TS.mData[0]),
+					static_cast<float>(TS.mData[1]),
 					static_cast<float>(TS.mData[2]) };
 				FbxQuaternion Q = temp.GetQ();
-				key.RotationQuat = { 
-					static_cast<float>(Q.mData[0]),  
-					static_cast<float>(Q.mData[1]),  
-					static_cast<float>(Q.mData[2]) , 
+				key.RotationQuat = {
+					static_cast<float>(Q.mData[0]),
+					static_cast<float>(Q.mData[1]),
+					static_cast<float>(Q.mData[2]) ,
 					static_cast<float>(Q.mData[3]) };
 
 				// Frame does not exist
@@ -291,7 +343,125 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 		}
 	}
 
-	mAnimations[outAnimationName] = animation;
+	mAnimations[ClipName] = animation;
+}
+void FbxLoader::GetOnlyAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, AnimationClip& inAnimation)
+{
+	FbxMesh* pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute();
+	FbxAMatrix geometryTransform = GetGeometryTransformation(pFbxChildNode);
+
+	// Animation Data
+	AnimationClip animation;
+
+	// Initialize BoneAnimations
+	animation.BoneAnimations.resize(mBoneName.size());
+
+	// Deformer - Cluster - Link
+	// Deformer
+	for (uint32_t deformerIndex = 0; deformerIndex < pMesh->GetDeformerCount(); ++deformerIndex)
+	{
+		FbxSkin* pCurrSkin = reinterpret_cast<FbxSkin*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eSkin));
+		if (!pCurrSkin) { continue; }
+
+		// Cluster
+		for (uint32_t clusterIndex = 0; clusterIndex < pCurrSkin->GetClusterCount(); ++clusterIndex)
+		{
+			FbxCluster* pCurrCluster = pCurrSkin->GetCluster(clusterIndex);
+
+			// To find the index that matches the name of the current joint
+			std::string currJointName = pCurrCluster->GetLink()->GetName();
+			BYTE currJointIndex; // current joint index
+			for (currJointIndex = 0; currJointIndex < mBoneName.size(); ++currJointIndex)
+			{
+				if (mBoneName[currJointIndex] == currJointName)
+					break;
+			}
+
+			// Set the Bone Animation Matrix
+			BoneAnimation boneAnim;
+
+			FbxAnimStack* pCurrAnimStack = pFbxScene->GetSrcObject<FbxAnimStack>(0);
+
+			FbxString currAnimStackName = pCurrAnimStack->GetName();
+			FbxAnimEvaluator* pSceneEvaluator = pFbxScene->GetAnimationEvaluator();
+
+			FbxTakeInfo* takeInfo = pFbxScene->GetTakeInfo(currAnimStackName);
+			auto interval = takeInfo->mReferenceTimeSpan;
+
+			FbxNode* pRootNode = pFbxScene->GetRootNode();
+
+			// TRqS transformation and Time per frame
+			FbxLongLong index;
+			for (index = 0; index < 100; ++index)
+			{
+				FbxTime currTime;
+				currTime.SetFrame(index, FbxTime::eCustom);
+
+				Keyframe key;
+				key.TimePos = static_cast<float>(index) / 8.0f;
+
+				FbxAMatrix currentTransformOffset = pSceneEvaluator->GetNodeGlobalTransform(pFbxChildNode, currTime) * geometryTransform;
+				FbxAMatrix temp = currentTransformOffset.Inverse() * pSceneEvaluator->GetNodeGlobalTransform(pCurrCluster->GetLink(), currTime);
+
+				// Transition, Scaling and Rotation Quaternion
+				FbxVector4 TS = temp.GetT();
+				key.Translation = {
+					static_cast<float>(TS.mData[0]),
+					static_cast<float>(TS.mData[1]),
+					static_cast<float>(TS.mData[2]) };
+				TS = temp.GetS();
+				key.Scale = {
+					static_cast<float>(TS.mData[0]),
+					static_cast<float>(TS.mData[1]),
+					static_cast<float>(TS.mData[2]) };
+				FbxQuaternion Q = temp.GetQ();
+				key.RotationQuat = {
+					static_cast<float>(Q.mData[0]),
+					static_cast<float>(Q.mData[1]),
+					static_cast<float>(Q.mData[2]) ,
+					static_cast<float>(Q.mData[3]) };
+
+				// Frame does not exist
+				if (index != 0 && boneAnim.Keyframes.back() == key)
+					break;
+
+				boneAnim.Keyframes.push_back(key);
+			}
+			animation.BoneAnimations[currJointIndex] = boneAnim;
+		}
+	}
+
+	BoneAnimation InitBoneAnim;
+
+	// Initialize InitBoneAnim
+	for (int i = 0; i < mBoneName.size(); ++i)
+	{
+		int KeyframeSize = animation.BoneAnimations[i].Keyframes.size();
+		if (KeyframeSize != 0)
+		{
+			for (int j = 0; j < KeyframeSize; ++j) // 60 frames
+			{
+				Keyframe key;
+
+				key.TimePos = static_cast<float>(j / 24.0f);
+				key.Translation = { 0.0f, 0.0f, 0.0f };
+				key.Scale = { 1.0f, 1.0f, 1.0f };
+				key.RotationQuat = { 0.0f, 0.0f, 0.0f, 0.0f };
+				InitBoneAnim.Keyframes.push_back(key);
+			}
+			break;
+		}
+	}
+
+	for (int i = 0; i < mBoneName.size(); ++i)
+	{
+		if (animation.BoneAnimations[i].Keyframes.size() != 0)
+			continue;
+
+		animation.BoneAnimations[i] = InitBoneAnim;
+	}
+
+	inAnimation = animation;
 }
 
 void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<SkinnedVertex> & outVertexVector, std::vector<uint16_t> & outIndexVector, SkinnedData& outSkinnedData)
@@ -354,12 +524,12 @@ void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<Skinne
 			}
 
 			FbxVector2 pUVs;
-			bool bUnMappedUV;	
+			bool bUnMappedUV;
 			if (!pMesh->GetPolygonVertexUV(i, j, lUVName, pUVs, bUnMappedUV))
 			{
 				MessageBox(0, L"UV not found", 0, 0);
 			}
-			
+
 			Vertex Temp;
 			// Position
 			Temp.Pos.x = CurrCtrlPoint->mPosition.x;
@@ -437,20 +607,6 @@ void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<Skinne
 	}
 }
 
-FbxAMatrix FbxLoader::GetGeometryTransformation(FbxNode* pNode)
-{
-	if (!pNode)
-	{
-		throw std::exception("Null for mesh geometry");
-	}
-
-	const FbxVector4 lT = pNode->GetGeometricTranslation(FbxNode::eSourcePivot);
-	const FbxVector4 lR = pNode->GetGeometricRotation(FbxNode::eSourcePivot);
-	const FbxVector4 lS = pNode->GetGeometricScaling(FbxNode::eSourcePivot);
-
-	return FbxAMatrix(lT, lR, lS);
-}
-
 void FbxLoader::GetMaterials(FbxNode* pNode, std::vector<Material>& outMaterial)
 {
 	uint32_t MaterialCount = pNode->GetMaterialCount();
@@ -462,7 +618,6 @@ void FbxLoader::GetMaterials(FbxNode* pNode, std::vector<Material>& outMaterial)
 		GetMaterialTexture(SurfaceMaterial, outMaterial[i]);
 	}
 }
-
 void FbxLoader::GetMaterialAttribute(FbxSurfaceMaterial* pMaterial, std::vector<Material>& outMaterial)
 {
 	FbxDouble3 double3;
@@ -504,7 +659,7 @@ void FbxLoader::GetMaterialAttribute(FbxSurfaceMaterial* pMaterial, std::vector<
 		currMaterial.Emissive.x = static_cast<float>(double3.mData[0]);
 		currMaterial.Emissive.y = static_cast<float>(double3.mData[1]);
 		currMaterial.Emissive.z = static_cast<float>(double3.mData[2]);
-		
+
 		/*
 		// Transparency Factor
 		double1 = reinterpret_cast<FbxSurfacePhong *>(inMaterial)->TransparencyFactor;
@@ -546,7 +701,6 @@ void FbxLoader::GetMaterialAttribute(FbxSurfaceMaterial* pMaterial, std::vector<
 		outMaterial.push_back(currMaterial);
 	}
 }
-
 void FbxLoader::GetMaterialTexture(FbxSurfaceMaterial * pMaterial, Material & Mat)
 {
 	unsigned int textureIndex = 0;
@@ -595,3 +749,16 @@ void FbxLoader::GetMaterialTexture(FbxSurfaceMaterial * pMaterial, Material & Ma
 	}
 }
 
+FbxAMatrix FbxLoader::GetGeometryTransformation(FbxNode* pNode)
+{
+	if (!pNode)
+	{
+		throw std::exception("Null for mesh geometry");
+	}
+
+	const FbxVector4 lT = pNode->GetGeometricTranslation(FbxNode::eSourcePivot);
+	const FbxVector4 lR = pNode->GetGeometricRotation(FbxNode::eSourcePivot);
+	const FbxVector4 lS = pNode->GetGeometricScaling(FbxNode::eSourcePivot);
+
+	return FbxAMatrix(lT, lR, lS);
+}

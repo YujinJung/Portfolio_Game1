@@ -34,9 +34,6 @@
     <ClCompile Include="Source\Source\Common\d3dUtil.cpp">
       <Filter>Common\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\Common\DDSTextureLoader.cpp">
-      <Filter>Common\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Source\Common\FrameResource.cpp">
       <Filter>Common\Source Files</Filter>
     </ClCompile>

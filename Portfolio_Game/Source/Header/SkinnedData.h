@@ -72,15 +72,14 @@ public:
 
 	float GetClipStartTime(const std::string& clipName)const;
 	float GetClipEndTime(const std::string& clipName)const;
+	std::string GetAnimationName(int num) const;
 
 	void Set(
 		std::vector<int>& boneHierarchy,
 		std::vector<DirectX::XMFLOAT4X4>& boneOffsets,
 		std::unordered_map<std::string, AnimationClip>& animations);
-	
+	void SetAnimation(AnimationClip inAnimation, std::string ClipName);
 	void SetAnimationName(const std::string& clipName);
-	std::string GetAnimationName(int num) const;
-
 	void SetSubmeshOffset(int num);
 
 	std::vector<int> GetSubmeshOffset() const;

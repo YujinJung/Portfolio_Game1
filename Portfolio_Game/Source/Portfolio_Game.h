@@ -98,6 +98,7 @@ private:
 
 	bool mIsWireframe = false;
 	bool mFbxWireframe = false;
+	bool mCameraDetach = false; // True - Camera Move with player
 
 	Light mMainLight;
 
