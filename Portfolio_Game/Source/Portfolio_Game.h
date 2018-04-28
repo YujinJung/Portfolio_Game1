@@ -1,9 +1,9 @@
 #pragma once
 
-#include "../Common/d3dApp.h"
-#include "../Common/MathHelper.h"
-#include "../Common/UploadBuffer.h"
-#include "../Common/GeometryGenerator.h"
+#include "d3dApp.h"
+#include "MathHelper.h"
+#include "UploadBuffer.h"
+#include "GeometryGenerator.h"
 #include "Camera.h"
 #include "FrameResource.h"
 #include "FBXLoader.h"

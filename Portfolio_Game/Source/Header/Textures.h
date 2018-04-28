@@ -10,6 +10,7 @@ public:
 	~Textures();
 
 	UINT GetSize() const;
+	int GetTextureIndex(std::string Name) const;
 
 	void SetTexture(
 		const std::string& Name,
@@ -24,6 +25,11 @@ private:
 	ID3D12Device * mDevice;
 	ID3D12GraphicsCommandList* mCommandList;
 	ID3D12DescriptorHeap* mCbvHeap;
+	 
+	// BuildConstantBufferViews
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor;
+	UINT mCbvSrvDescriptorSize;
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
 
 	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
 

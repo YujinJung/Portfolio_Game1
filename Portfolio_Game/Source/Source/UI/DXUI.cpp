@@ -57,11 +57,12 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 	int UIIndex = 0;
 	// TODO : Setting the Name
 
+	// place over the head
 	auto temp = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&temp->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI));
+	XMStoreFloat4x4(&temp->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 0.73f, 0.0f));
 	temp->TexTransform = MathHelper::Identity4x4();
-	temp->Mat = mMaterials.Get("tile0");
+	temp->Mat = mMaterials.Get("sample");
 	temp->Geo = mGeometries["shapeGeo"].get();
 	temp->ObjCBIndex = UIIndex++;
 	temp->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -73,9 +74,9 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 
 	auto mana = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&mana->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 2.0f, 0.0f));
+	XMStoreFloat4x4(&mana->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 0.75f, 0.0f));
 	mana->TexTransform = MathHelper::Identity4x4();
-	mana->Mat = mMaterials.Get("grass0");
+	mana->Mat = mMaterials.Get("ice0");
 	mana->Geo = mGeometries["shapeGeo"].get();
 	mana->ObjCBIndex = UIIndex++;
 	mana->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;

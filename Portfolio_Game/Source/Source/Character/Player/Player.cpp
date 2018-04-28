@@ -1,5 +1,5 @@
-#include "../Common/GameTimer.h"
 #include "Player.h"
+#include "GameTimer.h"
 
 using namespace DirectX;
 

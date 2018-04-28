@@ -1,4 +1,4 @@
-#include "../Common/UploadBuffer.h"
+#include "UploadBuffer.h"
 #include "Materials.h"
 
 Materials::Materials()

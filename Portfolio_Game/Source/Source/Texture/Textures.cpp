@@ -16,6 +16,17 @@ UINT Textures::GetSize() const
 	return (UINT)mTextures.size();
 }
 
+int Textures::GetTextureIndex(std::string Name) const
+{
+	int result = 0;
+	for (auto & e : mTextures)
+	{
+		if (e.second->Name == Name)
+			return result;
+		++result;
+	}
+}
+
 void Textures::SetTexture(
 	const std::string& Name,
 	const std::wstring& szFileName)

@@ -12,7 +12,7 @@
 #include "Character.h"
 #include "Textures.h"
 #include "Materials.h"
-#include "DirecX12-UIApp.h"
+#include "Portfolio_Game.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	PSTR cmdLine, int showCmd)
@@ -68,9 +68,11 @@ bool DirecX12UIApp::Initialize()
 	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
+
 	BuildDescriptorHeaps();
 	BuildTextureBufferViews();
 	BuildConstantBufferViews();
+
 	BuildPSOs();
 
 	// Execute the initialization commands.
@@ -363,24 +365,6 @@ void DirecX12UIApp::UpdateMaterialCB(const GameTimer & gt)
 {
 	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
 	mMaterials.UpdateMaterialCB(currMaterialCB);
-	/*for (auto& e : mMaterials)
-	{
-		Material* mat = e.second.get();
-		if (mat->NumFramesDirty > 0)
-		{
-			XMMATRIX matTransform = XMLoadFloat4x4(&mat->MatTransform);
-
-			MaterialConstants matConstants;
-			matConstants.DiffuseAlbedo = mat->DiffuseAlbedo;
-			matConstants.FresnelR0 = mat->FresnelR0;
-			matConstants.Roughness = mat->Roughness;
-			XMStoreFloat4x4(&matConstants.MatTransform, XMMatrixTranspose(matTransform));
-
-			currMaterialCB->CopyData(mat->MatCBIndex, matConstants);
-
-			mat->NumFramesDirty--;
-		}
-	}*/
 }
 
 void DirecX12UIApp::UpdateCharacterCBs(const GameTimer & gt)
@@ -567,18 +551,13 @@ void DirecX12UIApp::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
-	const D3D_SHADER_MACRO uiDefines[] =
-	{
-		"UI", "2",
-		NULL, NULL
-	};
-
 	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["skinnedVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "VS", "vs_5_1");
-	mShaders["uiVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", uiDefines, "VS", "vs_5_1");
+	mShaders["uiVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "VS", "vs_5_1");
 
 	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["skinnedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "PS", "ps_5_1");
+	mShaders["uiPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "PS", "ps_5_1");
 
 	mInputLayout =
 	{
@@ -637,6 +616,11 @@ void DirecX12UIApp::BuildPSOs()
 	{
 		reinterpret_cast<BYTE*>(mShaders["uiVS"]->GetBufferPointer()),
 		mShaders["uiVS"]->GetBufferSize()
+	};
+	uiOpaquePsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["uiPS"]->GetBufferPointer()),
+		mShaders["uiPS"]->GetBufferSize()
 	};
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&uiOpaquePsoDesc, IID_PPV_ARGS(&mPSOs["uiOpaque"])));
 
@@ -908,7 +892,7 @@ void DirecX12UIApp::BuildFbxGeometry()
 		mMaterials.SetMaterial(
 			MaterialName,
 			MatIndex++,
-			5,
+			mTextures.GetSize() - 1,
 			outMaterial[i].DiffuseAlbedo,
 			outMaterial[i].FresnelR0,
 			outMaterial[i].Roughness);
@@ -940,6 +924,14 @@ void DirecX12UIApp::LoadTextures()
 		"grassTex",
 		L"../Resource/Textures/grass.dds");
 
+	mTextures.SetTexture(
+		"iceTex",
+		L"../Resource/Textures/ice.dds");
+
+	mTextures.SetTexture(
+		"sampleTex",
+		L"../Resource/Textures/sample.jpg");
+
 	mTextures.End();
 }
 
@@ -950,7 +942,7 @@ void DirecX12UIApp::BuildMaterials()
 	mMaterials.SetMaterial(
 		"bricks0",
 		MatIndex++, 
-		0, 
+		mTextures.GetTextureIndex("bricksTex"), 
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
 		XMFLOAT3(0.02f, 0.02f, 0.02f), 
 		0.1f);
@@ -958,14 +950,15 @@ void DirecX12UIApp::BuildMaterials()
 	mMaterials.SetMaterial(
 		"bricks3",
 		MatIndex++, 
-		1, 
+		mTextures.GetTextureIndex("bricks3Tex"), 
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
 		XMFLOAT3(0.02f, 0.02f, 0.02f), 
 		0.1f);
 
 	mMaterials.SetMaterial(
-		"stone0", MatIndex++, 
-		2, 
+		"stone0", 
+		MatIndex++, 
+		mTextures.GetTextureIndex("stoneTex"), 
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
 		XMFLOAT3(0.05f, 0.05f, 0.05), 
 		0.3f);
@@ -973,23 +966,39 @@ void DirecX12UIApp::BuildMaterials()
 	mMaterials.SetMaterial(
 		"tile0", 
 		MatIndex++, 
-		3, 
+		mTextures.GetTextureIndex("tileTex"), 
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
 		XMFLOAT3(0.02f, 0.02f, 0.02f), 
 		0.2f);
 
 	mMaterials.SetMaterial(
-		"grass0", 
-		MatIndex++, 
-		4, 
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
+		"grass0",
+		MatIndex++,
+		mTextures.GetTextureIndex("grassTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
+		XMFLOAT3(0.05f, 0.02f, 0.02f),
+		0.1f);
+
+	mMaterials.SetMaterial(
+		"ice0",
+		MatIndex++,
+		mTextures.GetTextureIndex("iceTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
+		XMFLOAT3(0.05f, 0.02f, 0.02f),
+		0.1f);
+
+	mMaterials.SetMaterial(
+		"sample",
+		MatIndex++,
+		mTextures.GetTextureIndex("sampleTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.05f, 0.02f, 0.02f),
 		0.1f);
 
 	mMaterials.SetMaterial(
 		"shadow0", 
 		MatIndex++, 
-		4, 
+		mTextures.GetTextureIndex("grassTex"), 
 		XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f), 
 		XMFLOAT3(0.001f, 0.001f, 0.001f), 
 		0.0f);

@@ -1,7 +1,7 @@
 ﻿
 #include <string>
-#include "../Common/MathHelper.h"
-#include "../Common/GameTimer.h"
+#include "MathHelper.h"
+#include "GameTimer.h"
 #include <DirectXMath.h>
 #include "FrameResource.h"
 #include "Character.h"
