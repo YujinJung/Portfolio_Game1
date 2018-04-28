@@ -8,6 +8,7 @@ struct SkinnedModelInstance
 	SkinnedData* SkinnedInfo = nullptr;
 	std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
 	float TimePos = 0.0f;
+	bool ClipEnd = false;
 
 	// Called every frame and increments the time position, interpolates the 
 	// animations for each bone based on the current animation clip, and 
@@ -19,8 +20,16 @@ struct SkinnedModelInstance
 
 		// Loop animation
 		if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
-			TimePos = 0.0f;
-
+		{
+			if (ClipName == "Idle" || ClipName == "Walk")
+				TimePos = 0.0f;
+			ClipEnd = true;
+		}
+		else if (ClipName == "Idle" || ClipName == "Walk")
+			ClipEnd = true;
+		else
+			ClipEnd = false;
+		
 		// Compute the final transforms for this time position.
 		SkinnedInfo->GetFinalTransforms(ClipName, TimePos, FinalTransforms);
 	}

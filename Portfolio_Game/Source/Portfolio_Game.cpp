@@ -295,6 +295,10 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 			mPlayer.mCamera.Walk(-10.0f * dt);
 		}
 	}
+	else if(GetAsyncKeyState('1') & 0x8000)
+	{
+		mPlayer.SetClipName("Kick");
+	}
 	else
 	{
 		mPlayer.SetClipName("Idle");
@@ -871,6 +875,9 @@ void DirecX12UIApp::BuildShapeGeometry()
 	mGeometries[geo->Name] = std::move(geo);
 }
 
+
+
+
 void DirecX12UIApp::BuildFbxGeometry()
 {
 	FbxLoader fbx;
@@ -885,9 +892,14 @@ void DirecX12UIApp::BuildFbxGeometry()
 	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
 	AnimationClip animation;
-	FileName =  "../Resource/FBX/Character/Walk.FBX";
+	FileName = "../Resource/FBX/Character/Walk.FBX";
 	fbx.LoadFBX(animation, "Walk", FileName);
 	outSkinnedInfo.SetAnimation(animation, "Walk");
+
+	animation.BoneAnimations.clear();
+	FileName = "../Resource/FBX/Character/Kick.FBX";
+	fbx.LoadFBX(animation, "Kick", FileName);
+	outSkinnedInfo.SetAnimation(animation, "Kick");
 
 	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo);
 

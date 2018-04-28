@@ -42,7 +42,18 @@ const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type) const
 
 void Character::SetClipName(const std::string& inClipName)
 {
-	mClipName = inClipName;
+	// Lock the animation except walking and idle.
+	if (!mSkinnedModelInst->ClipEnd)
+		return;
+
+	if (mClipName == inClipName)
+		return;
+	else
+	{
+		mClipName = inClipName;
+		mSkinnedModelInst->TimePos = 0.0f;
+		mSkinnedModelInst->ClipEnd = false;
+	}
 }
 void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
 {
@@ -192,7 +203,7 @@ void Character::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Ligh
 	auto currSkinnedCB = mCurrFrameResource->SkinnedCB.get();
 
 	UpdateCharacterShadows(mMainLight);
-	// if(Animation) ...
+
 	mSkinnedModelInst->UpdateSkinnedAnimation(mClipName, gt.DeltaTime());
 
 	for (auto& e : mAllRitems)
