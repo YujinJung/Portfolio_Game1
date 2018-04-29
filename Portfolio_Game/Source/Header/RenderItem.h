@@ -3,33 +3,60 @@
 //#include "../Common/d3dUtil.h"
 #include "SkinnedData.h"
 
+enum eClipList
+{
+	Idle,
+	StartWalking,
+	Walking,
+	StopWalking,
+	Kick,
+	FlyingKick
+};
+
 struct SkinnedModelInstance
 {
+	
 	SkinnedData* SkinnedInfo = nullptr;
 	std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
 	float TimePos = 0.0f;
-	bool ClipEnd = false;
-
+	bool ClipEnd;
+	eClipList state;
+	
 	// Called every frame and increments the time position, interpolates the 
 	// animations for each bone based on the current animation clip, and 
 	// generates the final transforms which are ultimately set to the effect
 	// for processing in the vertex shader.
-	void UpdateSkinnedAnimation(std::string ClipName,float dt)
+	void UpdateSkinnedAnimation(std::string ClipName, float dt)
 	{
 		TimePos += dt;
 
 		// Loop animation
 		if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
 		{
-			if (ClipName == "Idle" || ClipName == "Walk")
+			if (ClipName == "Idle")
+			{
 				TimePos = 0.0f;
+			}
 			ClipEnd = true;
 		}
-		else if (ClipName == "Idle" || ClipName == "Walk")
+
+		ClipEnd = false;
+		if (ClipName == "Idle")
+		{
+			state = eClipList::Idle;
 			ClipEnd = true;
-		else
-			ClipEnd = false;
-		
+		}
+		else if (ClipName == "StartWalking")
+			state = eClipList::StartWalking;
+		else if (ClipName == "Walking")
+			state = eClipList::Walking;
+		else if (ClipName == "StopWalking")
+			state = eClipList::StopWalking;
+		else if (ClipName == "Kick")
+			state = eClipList::Kick;
+		else if (ClipName == "FlyingKick")
+			state = eClipList::FlyingKick;
+
 		// Compute the final transforms for this time position.
 		SkinnedInfo->GetFinalTransforms(ClipName, TimePos, FinalTransforms);
 	}

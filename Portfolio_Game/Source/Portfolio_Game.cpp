@@ -276,7 +276,12 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 		if (!mCameraDetach)
 		{
 			mPlayer.PlayerMove(PlayerMoveList::Walk, 5.0f * dt);
-			mPlayer.SetClipName("Walk");
+			mPlayer.SetClipName("Walking");
+			if (mPlayer.GetCurrentClip() == eClipList::Walking)
+			{
+				if (mPlayer.isClipEnd())
+					mPlayer.ResetClipTime();
+			}
 		}
 		else
 		{
@@ -288,7 +293,12 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 		if (!mCameraDetach)
 		{
 			mPlayer.PlayerMove(PlayerMoveList::Walk, -5.0f * dt);
-			mPlayer.SetClipName("Walk");
+			mPlayer.SetClipName("Walking");
+			if (mPlayer.GetCurrentClip() == eClipList::Walking)
+			{
+				if (mPlayer.isClipEnd())
+					mPlayer.ResetClipTime();
+			}
 		}
 		else
 		{
@@ -297,11 +307,16 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 	}
 	else if(GetAsyncKeyState('1') & 0x8000)
 	{
-		mPlayer.SetClipName("Kick");
+		mPlayer.SetClipName("StopWalking");
 	}
 	else
 	{
-		mPlayer.SetClipName("Idle");
+		if (mPlayer.GetCurrentClip() == eClipList::StopWalking && mPlayer.isClipEnd())
+			mPlayer.SetClipName("Idle");
+		else if (mPlayer.GetCurrentClip() == eClipList::Idle)
+			mPlayer.SetClipName("Idle");
+		else
+			mPlayer.SetClipName("StopWalking");
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
@@ -891,15 +906,18 @@ void DirecX12UIApp::BuildFbxGeometry()
 	std::string FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
-	AnimationClip animation;
 	FileName = "../Resource/FBX/Character/";
-	fbx.LoadFBX(animation, "Walk", FileName);
-	outSkinnedInfo.SetAnimation(animation, "Walk");
+	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
 
-	animation.BoneAnimations.clear();
 	FileName = "../Resource/FBX/Character/";
-	fbx.LoadFBX(animation, "Kick", FileName);
-	outSkinnedInfo.SetAnimation(animation, "Kick");
+	fbx.LoadFBX(outSkinnedInfo, "Kick", FileName);
+
+	FileName = "../Resource/FBX/Character/";
+	fbx.LoadFBX(outSkinnedInfo, "StartWalking", FileName);
+
+	FileName = "../Resource/FBX/Character/";
+	fbx.LoadFBX(outSkinnedInfo, "StopWalking", FileName);
+
 
 	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo);
 

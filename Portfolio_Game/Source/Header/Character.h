@@ -18,8 +18,11 @@ public:
 	UINT GetAllRitemsSize() const;
 	UINT GetBoneSize() const;
 	DirectX::XMFLOAT4X4 GetWorld() const;
+	eClipList GetCurrentClip() const;
+	bool isClipEnd() const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
 
+	void ResetClipTime();
 	void SetClipName(const std::string& inClipName);
 	void SetWorldTransform(DirectX::XMMATRIX inWorldTransform);
 

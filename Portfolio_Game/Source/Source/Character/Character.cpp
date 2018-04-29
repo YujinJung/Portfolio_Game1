@@ -35,25 +35,28 @@ DirectX::XMFLOAT4X4 Character::GetWorld() const
 {
 	return mWorldTransform;
 }
+eClipList Character::GetCurrentClip() const
+{
+	return mSkinnedModelInst->state;
+}
+bool Character::isClipEnd() const
+{
+	if (mSkinnedInfo.GetAnimation(mClipName).GetClipEndTime() - mSkinnedModelInst->TimePos < 0.01f)
+		return true;
+	return false;
+}
 const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type) const
 {
 	return mRitems[(int)Type];
 }
 
+void Character::ResetClipTime()
+{
+	mSkinnedModelInst->TimePos = 0.0f;
+}
 void Character::SetClipName(const std::string& inClipName)
 {
-	// Lock the animation except walking and idle.
-	if (!mSkinnedModelInst->ClipEnd)
-		return;
-
-	if (mClipName == inClipName)
-		return;
-	else
-	{
-		mClipName = inClipName;
-		mSkinnedModelInst->TimePos = 0.0f;
-		mSkinnedModelInst->ClipEnd = false;
-	}
+	mClipName = inClipName;
 }
 void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
 {

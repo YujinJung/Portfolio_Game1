@@ -78,6 +78,7 @@ public:
 	AnimationClip GetAnimation(std::string clipName) const;
 	std::vector<int> GetSubmeshOffset() const;
 	DirectX::XMFLOAT4X4 getBoneOffsets(int num) const;
+	std::vector<std::string> GetBoneName() const;
 
 	void Set(
 		std::vector<int>& boneHierarchy,
@@ -85,6 +86,7 @@ public:
 		std::unordered_map<std::string, AnimationClip>& animations);
 	void SetAnimation(AnimationClip inAnimation, std::string inClipName);
 	void SetAnimationName(const std::string& clipName);
+	void SetBoneName(std::string boneName);
 	void SetSubmeshOffset(int num);
 
 	// In a real project, you'd want to cache the result if there was a chance
@@ -95,6 +97,8 @@ public:
 
 
 private:
+	std::vector<std::string> mBoneName;
+
 	// Gives parentIndex of ith bone.
 	std::vector<int> mBoneHierarchy;
 

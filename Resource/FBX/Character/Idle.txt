@@ -58246,6 +58246,8 @@ Indices
 7139 7359 7358
 BoneHierarchy
 -1 0 1 2 3 4 5 3 7 8 9 10 11 12 13 10 15 16 17 10 19 20 21 10 23 24 25 10 27 28 29 3 31 32 33 34 35 36 37 34 39 40 41 34 43 44 45 34 47 48 49 34 51 52 53 0 55 56 57 58 0 60 61 62 63 
+BoneName
+Hips Spine Spine1 Spine2 Neck Head HeadTop_End LeftShoulder LeftArm LeftForeArm LeftHand LeftHandThumb1 LeftHandThumb2 LeftHandThumb3 LeftHandThumb4 LeftHandIndex1 LeftHandIndex2 LeftHandIndex3 LeftHandIndex4 LeftHandMiddle1 LeftHandMiddle2 LeftHandMiddle3 LeftHandMiddle4 LeftHandRing1 LeftHandRing2 LeftHandRing3 LeftHandRing4 LeftHandPinky1 LeftHandPinky2 LeftHandPinky3 LeftHandPinky4 RightShoulder RightArm RightForeArm RightHand RightHandIndex1 RightHandIndex2 RightHandIndex3 RightHandIndex4 RightHandThumb1 RightHandThumb2 RightHandThumb3 RightHandThumb4 RightHandMiddle1 RightHandMiddle2 RightHandMiddle3 RightHandMiddle4 RightHandRing1 RightHandRing2 RightHandRing3 RightHandRing4 RightHandPinky1 RightHandPinky2 RightHandPinky3 RightHandPinky4 LeftUpLeg LeftLeg LeftFoot LeftToeBase LeftToe_End RightUpLeg RightLeg RightFoot RightToeBase RightToe_End 
 BoneOffset 
 1 0 0 0 0 1 0 0 0 0 1 0 -0.0421012 -114.053 -0.311199 1 
 1 0 0 0 0 1 0 0 0 0 1 0 -0.0364317 -124.949 0.967451 1 

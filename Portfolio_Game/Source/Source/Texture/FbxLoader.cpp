@@ -61,11 +61,12 @@ HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vec
 			switch (AttributeType)
 			{
 			case FbxNodeAttribute::eSkeleton:
-				GetSkeletonHierarchy(pFbxChildNode, 0, -1);
+				GetSkeletonHierarchy(pFbxChildNode, outSkinnedData, 0, -1);
 				break;
 			}
 		}
-
+		
+		mBoneName =  outSkinnedData.GetBoneName();
 		// Bone offset, Control point, Vertex, Index Data
 		// And Animation Data
 		for (int i = 0; i < pFbxRootNode->GetChildCount(); i++)
@@ -106,10 +107,17 @@ HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vec
 
 	return S_OK;
 }
-HRESULT FbxLoader::LoadFBX(AnimationClip & animation, const std::string& clipName, std::string fileName)
+HRESULT FbxLoader::LoadFBX(SkinnedData& outSkinnedData, const std::string& clipName, std::string fileName)
 {
+	AnimationClip animation;
 	// if exported animation exist
-	if (LoadAnimation(animation, clipName, fileName)) return S_OK;
+	if (LoadAnimation(animation, clipName, fileName))
+	{
+		outSkinnedData.SetAnimation(animation, clipName);
+		return S_OK;
+	}
+
+	mBoneName = outSkinnedData.GetBoneName();
 
 	if (gFbxManager == nullptr)
 	{
@@ -153,13 +161,14 @@ HRESULT FbxLoader::LoadFBX(AnimationClip & animation, const std::string& clipNam
 			if (AttributeType == FbxNodeAttribute::eMesh)
 			{
 				// Get Animation Clip
-				GetOnlyAnimation(pFbxScene, pFbxChildNode, animation);
+				GetOnlyAnimation(pFbxScene, pFbxChildNode, animation, clipName);
 			}
 		}
 	}
 
 	ExportAnimation(animation, fileName, clipName);
 
+	outSkinnedData.SetAnimation(animation, clipName);
 	return S_OK;
 }
 bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint16_t>& outIndexVector, SkinnedData& outSkinnedData, const std::string& clipName, std::vector<Material>& outMaterial, std::string fileName)
@@ -222,6 +231,14 @@ bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector
 			int tempBoneHierarchy;
 			fileIn >> tempBoneHierarchy;
 			boneHierarchy.push_back(tempBoneHierarchy);
+		}
+		
+		fileIn >> ignore;
+		for (int i = 0; i < boneSize; ++i)
+		{
+			std::string tempBoneName;
+			fileIn >> tempBoneName;
+			outSkinnedData.SetBoneName(tempBoneName);
 		}
 		// Bone Offset
 		fileIn >> ignore;
@@ -336,14 +353,14 @@ bool FbxLoader::LoadAnimation(AnimationClip& animation, const std::string& clipN
 	return false;
 }
 
-void FbxLoader::GetSkeletonHierarchy(FbxNode * pNode, int curIndex, int parentIndex)
+void FbxLoader::GetSkeletonHierarchy(FbxNode * pNode, SkinnedData& outSkinnedData, int curIndex, int parentIndex)
 {
 	mBoneHierarchy.push_back(parentIndex);
-	mBoneName.push_back(pNode->GetName());
+	outSkinnedData.SetBoneName(pNode->GetName());
 
 	for (int i = 0; i < pNode->GetChildCount(); ++i)
 	{
-		GetSkeletonHierarchy(pNode->GetChild(i), mBoneHierarchy.size(), curIndex);
+		GetSkeletonHierarchy(pNode->GetChild(i), outSkinnedData, mBoneHierarchy.size(), curIndex);
 	}
 }
 void FbxLoader::GetControlPoints(fbxsdk::FbxNode * pFbxRootNode)
@@ -374,7 +391,6 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 
 	// Initialize BoneAnimations
 	animation.BoneAnimations.resize(mBoneName.size());
-
 
 	// Deformer - Cluster - Link
 	// Deformer
@@ -525,13 +541,10 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 
 	mAnimations[ClipName] = animation;
 }
-void FbxLoader::GetOnlyAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, AnimationClip& inAnimation)
+void FbxLoader::GetOnlyAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, AnimationClip& animation, const std::string clipName)
 {
 	FbxMesh* pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute();
 	FbxAMatrix geometryTransform = GetGeometryTransformation(pFbxChildNode);
-
-	// Animation Data
-	AnimationClip animation;
 
 	// Initialize BoneAnimations
 	animation.BoneAnimations.resize(mBoneName.size());
@@ -589,6 +602,7 @@ void FbxLoader::GetOnlyAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, A
 					static_cast<float>(TS.mData[0]),
 					static_cast<float>(TS.mData[1]),
 					static_cast<float>(TS.mData[2]) };
+				if (clipName == "StopWalking") { key.Translation.z -= 1.0f; }
 				TS = temp.GetS();
 				key.Scale = {
 					static_cast<float>(TS.mData[0]),
@@ -612,7 +626,6 @@ void FbxLoader::GetOnlyAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, A
 	}
 
 	BoneAnimation InitBoneAnim;
-
 	// Initialize InitBoneAnim
 	for (int i = 0; i < mBoneName.size(); ++i)
 	{
@@ -641,7 +654,6 @@ void FbxLoader::GetOnlyAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, A
 		animation.BoneAnimations[i] = InitBoneAnim;
 	}
 
-	inAnimation = animation;
 }
 
 void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<SkinnedVertex> & outVertexVector, std::vector<uint16_t> & outIndexVector, SkinnedData& outSkinnedData)
@@ -1017,6 +1029,13 @@ void FbxLoader::ExportFBX(std::vector<SkinnedVertex>& outVertexVector, std::vect
 
 		fileOut << "BoneHierarchy" << "\n";
 		for (auto& e : outSkinnedData.GetBoneHierarchy())
+		{
+			fileOut << e << " ";
+		}
+		fileOut << "\n";
+
+		fileOut << "BoneName" << "\n";
+		for (auto& e : outSkinnedData.GetBoneName())
 		{
 			fileOut << e << " ";
 		}

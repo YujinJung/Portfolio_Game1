@@ -70,7 +70,6 @@ void PlayerMovement::AddPitch(float dy)
 	XMStoreFloat3(&mPlayerUp, XMVector3TransformNormal(XMLoadFloat3(&mPlayerUp), R));
 	XMStoreFloat3(&mPlayerLook, XMVector3TransformNormal(XMLoadFloat3(&mPlayerLook), R));
 
-
 	mTransformDirty = true;
 }
 

@@ -66,6 +66,10 @@ UINT SkinnedData::BoneCount()const
 {
 	return (UINT)mBoneHierarchy.size();
 }
+std::vector<std::string> SkinnedData::GetBoneName() const
+{
+	return mBoneName;
+}
 std::vector<int> SkinnedData::GetBoneHierarchy() const
 {
 	return mBoneHierarchy;
@@ -157,6 +161,8 @@ void SkinnedData::SetAnimationName(const std::string & clipName)
 {
 	mAnimationName.push_back(clipName);
 }
+void SkinnedData::SetBoneName(std::string boneName)
+{ mBoneName.push_back(boneName); }
 void SkinnedData::SetSubmeshOffset(int num)
 {
 	mSubmeshOffset.push_back(num);
