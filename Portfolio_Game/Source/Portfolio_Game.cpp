@@ -888,16 +888,16 @@ void DirecX12UIApp::BuildFbxGeometry()
 	SkinnedData outSkinnedInfo;
 
 	//std::string FileName = "../Resource/FBX/Capoeira.FBX";
-	std::string FileName = "../Resource/FBX/Character/Idle.FBX";
+	std::string FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
 	AnimationClip animation;
-	FileName = "../Resource/FBX/Character/Walk.FBX";
+	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(animation, "Walk", FileName);
 	outSkinnedInfo.SetAnimation(animation, "Walk");
 
 	animation.BoneAnimations.clear();
-	FileName = "../Resource/FBX/Character/Kick.FBX";
+	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(animation, "Kick", FileName);
 	outSkinnedInfo.SetAnimation(animation, "Kick");
 

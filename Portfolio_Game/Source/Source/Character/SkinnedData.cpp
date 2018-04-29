@@ -66,6 +66,22 @@ UINT SkinnedData::BoneCount()const
 {
 	return (UINT)mBoneHierarchy.size();
 }
+std::vector<int> SkinnedData::GetBoneHierarchy() const
+{
+	return mBoneHierarchy;
+}
+std::vector<DirectX::XMFLOAT4X4> SkinnedData::GetBoneOffsets() const
+{
+	return mBoneOffsets;
+}
+AnimationClip SkinnedData::GetAnimation(std::string clipName) const
+{
+	return mAnimations.find(clipName)->second;
+}
+std::vector<int> SkinnedData::GetSubmeshOffset() const
+{
+	return mSubmeshOffset;
+}
 
 void BoneAnimation::Interpolate(float t, XMFLOAT4X4& M) const
 {
@@ -144,11 +160,6 @@ void SkinnedData::SetAnimationName(const std::string & clipName)
 void SkinnedData::SetSubmeshOffset(int num)
 {
 	mSubmeshOffset.push_back(num);
-}
-
-std::vector<int> SkinnedData::GetSubmeshOffset() const
-{
-	return mSubmeshOffset;
 }
 
 void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos, std::vector<XMFLOAT4X4>& finalTransforms)const
