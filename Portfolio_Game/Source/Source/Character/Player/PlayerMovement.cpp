@@ -1,3 +1,4 @@
+#include "RenderItem.h"
 #include "PlayerMovement.h"
 
 using namespace DirectX;
@@ -51,14 +52,11 @@ void PlayerMovement::AddYaw(float dx)
 	XMVECTOR PlayerUp = XMVector3TransformNormal(XMLoadFloat3(&mPlayerUp), R);
 	XMVECTOR PlayerLook = XMVector3TransformNormal(XMLoadFloat3(&mPlayerLook), R);
 
-
 	XMStoreFloat3(&mPlayerRight, PlayerRight);
 	XMStoreFloat3(&mPlayerUp, PlayerUp);
 	XMStoreFloat3(&mPlayerLook, PlayerLook);
 
 	XMStoreFloat4x4(&mRotation, XMLoadFloat4x4(&mRotation) * R);
-	//std::wstring text = L"Yaw: " + std::to_wstring(mPlayerLook.x) + std::to_wstring(mPlayerLook.z) + L"\n";
-	//::OutputDebugString(text.c_str());
 
 	mTransformDirty = true;
 }
@@ -93,7 +91,7 @@ void PlayerMovement::SideWalk(float inVelocity)
 	mTransformDirty = true;
 }
 
-bool PlayerMovement::UpdateTransformationMatrix(XMMATRIX & outMatrix)
+bool PlayerMovement::UpdateTransformationMatrix(WorldTransform& outTransform)
 {
 	if (mTransformDirty)
 	{
@@ -113,7 +111,8 @@ bool PlayerMovement::UpdateTransformationMatrix(XMMATRIX & outMatrix)
 
 		mTransformDirty = false;
 
-		outMatrix = XMLoadFloat4x4(&mRotation) * XMMatrixTranslation(mPlayerPosition.x, mPlayerPosition.y, mPlayerPosition.z);
+		outTransform.Position = mPlayerPosition;
+		outTransform.Rotation = mRotation;
 
 		return true;
 	}

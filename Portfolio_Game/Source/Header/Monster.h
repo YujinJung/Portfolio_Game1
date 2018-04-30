@@ -11,9 +11,11 @@ public:
 	void BuildRenderItem(Materials & mMaterials, std::string matrialPrefix, RenderLayer type);
 
 	void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, RenderLayer type, const GameTimer & gt);
-	void UpdateTransformationMatrix();
+	void UpdateMonsterPosition();
 
 private:
 	std::string mClipName;
+	DirectX::XMFLOAT3 mMonsterPosition;
+
 };
 

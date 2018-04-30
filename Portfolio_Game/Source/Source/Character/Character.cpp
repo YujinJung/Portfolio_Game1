@@ -13,7 +13,6 @@ using namespace DirectX::PackedVector;
 
 Character::Character()
 {
-	XMStoreFloat4x4(&mWorldTransform, XMMatrixIdentity());
 	numOfCharacter = 1;
 }
 
@@ -33,9 +32,16 @@ UINT Character::GetBoneSize() const
 {
 	return (UINT)mSkinnedInfo.BoneCount();
 }
-DirectX::XMFLOAT4X4 Character::GetWorld() const
+DirectX::XMFLOAT4X4 Character::GetWorldTransform4x4f(int i) const
 {
-	return mWorldTransform;
+	auto T = mWorldTransform[i];
+	XMMATRIX P = XMMatrixTranslation(T.Position.x, T.Position.y, T.Position.z);
+	XMMATRIX R = XMLoadFloat4x4(&T.Rotation);
+	XMMATRIX S = XMMatrixScaling(T.Scale.x, T.Scale.y, T.Scale.z);
+
+	XMFLOAT4X4 Ret;
+	XMStoreFloat4x4(&Ret, S * R * P);
+	return Ret;
 }
 eClipList Character::GetCurrentClip() const
 {
@@ -44,6 +50,10 @@ eClipList Character::GetCurrentClip() const
 float Character::GetCurrentClipTime() const
 {
 	return mSkinnedModelInst->TimePos;
+}
+WorldTransform Character::GetWorldTransform(const int& i) const
+{
+	return mWorldTransform[i];
 }
 bool Character::isClipEnd(const std::string& clipName) const
 {
@@ -60,11 +70,15 @@ void Character::SetClipTime(float time)
 {
 	mSkinnedModelInst->TimePos = time;
 }
-void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
+void Character::SetWorldTransform(const WorldTransform& inWorldTransform, const int& i)
 {
-	XMStoreFloat4x4(&mWorldTransform, inWorldTransform);
-	mTransformDirty = true;
+	mWorldTransform[i] = inWorldTransform;
 }
+//void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
+//{
+//	XMStoreFloat4x4(&mWorldTransform, inWorldTransform);
+//	mTransformDirty = true;
+//}
 
 void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData& inSkinInfo, std::string geoName)
 {
@@ -126,16 +140,19 @@ void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* 
 
 	mGeometry = std::move(geo);
 }
-
 void Character::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix, RenderLayer type)
 {
 	int chaIndex = 0;
 	int BoneCount = GetBoneSize();
 	auto boneName = mSkinnedInfo.GetBoneName();
 
-	int worldX = 0, worldZ = 0;
 	for (int characterIndex = 0; characterIndex < numOfCharacter; ++characterIndex)
 	{
+		WorldTransform wTransform;
+		wTransform.Position = { 0.0f, 0.0f, 0.0f };
+		wTransform.Scale = { 1.0f, 1.0f, 1.0f };
+		XMStoreFloat4x4(&wTransform.Rotation, XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f));
+
 		// Monster - Random Position
 		if (type == RenderLayer::Monster)
 		{
@@ -147,19 +164,17 @@ void Character::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix
 			int x{ dis(engine) };
 			int z{ dis(engine) };
 
-			worldX = x;
-			worldZ = z;
+			wTransform.Position = { static_cast<float>(x), 0.0f, static_cast<float>(z) };
 		}
 		
 		// Character Mesh
 		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)
 		{
 			std::string SubmeshName = boneName[submeshIndex];
-			std::string MaterialName = matrialPrefix;
-			// TODO : Setting the Name
+			std::string MaterialName = matrialPrefix; // TODO : Setting the Name
 
 			auto FbxRitem = std::make_unique<RenderItem>();
-			XMStoreFloat4x4(&FbxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(worldX, 0.0f, worldZ));
+			XMStoreFloat4x4(&FbxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));
 			FbxRitem->TexTransform = MathHelper::Identity4x4();
 			FbxRitem->Mat = mMaterials.Get(MaterialName);
 			FbxRitem->Geo = mGeometry.get();
@@ -168,42 +183,31 @@ void Character::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix
 			FbxRitem->StartIndexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
 			FbxRitem->BaseVertexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].BaseVertexLocation;
 			FbxRitem->IndexCount = FbxRitem->Geo->DrawArgs[SubmeshName].IndexCount;
+			FbxRitem->SkinnedModelInst = mSkinnedModelInst.get();
+			
+			auto shadowedObjectRitem = std::make_unique<RenderItem>();
+			*shadowedObjectRitem = *FbxRitem;
+			shadowedObjectRitem->Mat = mMaterials.Get("shadow0");
+			shadowedObjectRitem->NumFramesDirty = gNumFrameResources;
+			shadowedObjectRitem->SkinnedModelInst = mSkinnedModelInst.get();
 
 			if (type == RenderLayer::Character)
 			{
 				FbxRitem->PlayerCBIndex = chaIndex++;
+				shadowedObjectRitem->PlayerCBIndex = chaIndex++;
 			}
 			else if (type == RenderLayer::Monster)
 			{
+				shadowedObjectRitem->MonsterCBIndex = chaIndex++;
 				FbxRitem->MonsterCBIndex = chaIndex++;
 			}
-			FbxRitem->SkinnedModelInst = mSkinnedModelInst.get();
+
 			mRitems[(int)type].push_back(FbxRitem.get());
 			mAllRitems.push_back(std::move(FbxRitem));
+			mRitems[(int)RenderLayer::Shadow].push_back(shadowedObjectRitem.get());
+			mAllRitems.push_back(std::move(shadowedObjectRitem));
 		}
-	}
-
-	// Character Shadow
-	for (auto& e : mRitems[(int)type])
-	{
-		auto shadowedObjectRitem = std::make_unique<RenderItem>();
-		*shadowedObjectRitem = *e;
-		shadowedObjectRitem->Mat = mMaterials.Get("shadow0");
-		shadowedObjectRitem->NumFramesDirty = gNumFrameResources;
-
-
-		if (type == RenderLayer::Character)
-		{
-			shadowedObjectRitem->PlayerCBIndex= chaIndex++;
-		}
-		else if (type == RenderLayer::Monster)
-		{
-			shadowedObjectRitem->MonsterCBIndex = chaIndex++;
-		}
-		shadowedObjectRitem->SkinnedModelInst = mSkinnedModelInst.get();
-
-		mRitems[(int)RenderLayer::Shadow].push_back(shadowedObjectRitem.get());
-		mAllRitems.push_back(std::move(shadowedObjectRitem));
+		mWorldTransform.push_back(wTransform);
 	}
 }
 
@@ -214,6 +218,10 @@ void Character::UpdateCharacterCBs(std::unique_ptr<UploadBuffer<SkinnedConstants
 
 	mSkinnedModelInst->UpdateSkinnedAnimation(clipName, gt.DeltaTime());
 
+	// Character Offset : mAllsize  / numOfcharacter
+	// '
+	int characterOffset = mAllRitems.size() / numOfCharacter;
+	int i = 0;
 	for (auto& e : mAllRitems)
 	{
 		if (mTransformDirty) { e->NumFramesDirty = gNumFrameResources; }
@@ -227,7 +235,7 @@ void Character::UpdateCharacterCBs(std::unique_ptr<UploadBuffer<SkinnedConstants
 				&skinnedConstants.BoneTransforms[0]);
 
 			// TODO : player constroller
-			XMMATRIX world = XMLoadFloat4x4(&e->World) * XMLoadFloat4x4(&mWorldTransform);
+			XMMATRIX world = XMLoadFloat4x4(&e->World) * XMLoadFloat4x4(&GetWorldTransform4x4f(i / characterOffset));
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
 			XMStoreFloat4x4(&skinnedConstants.World, XMMatrixTranspose(world));
@@ -243,6 +251,7 @@ void Character::UpdateCharacterCBs(std::unique_ptr<UploadBuffer<SkinnedConstants
 			// TODO:
 			//e->NumFramesDirty--;
 		}
+		++i;
 	}
 }
 void Character::UpdateCharacterShadows(const Light& mMainLight, RenderLayer type)

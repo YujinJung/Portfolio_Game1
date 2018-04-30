@@ -96,15 +96,15 @@ void Player::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& 
 	XMVECTOR Trnaslation = 0.9 * XMVectorSubtract(mCamera.GetEyePosition(), mPlayerMovement.GetPlayerPosition());
 	// UI
 	auto currUICB = mCurrFrameResource->UICB.get();
-	mUI.UpdateUICBs(currUICB, XMLoadFloat4x4(&GetWorld()) * XMMatrixTranslationFromVector(Trnaslation), mTransformDirty);
+	mUI.UpdateUICBs(currUICB, XMLoadFloat4x4(&GetWorldTransform4x4f(0)) * XMMatrixTranslationFromVector(Trnaslation), mTransformDirty);
 }
 
 void Player::UpdateTransformationMatrix()
 {
-	XMMATRIX world;
+	WorldTransform world = GetWorldTransform(0);
 
 	if (mPlayerMovement.UpdateTransformationMatrix(world))
 	{
-		SetWorldTransform(world);
+		SetWorldTransform(world, 0);
 	}
 }

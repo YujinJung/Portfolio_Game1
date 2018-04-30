@@ -21,7 +21,7 @@ public:
 	void Walk(float velocity);
 	void SideWalk(float inVelocity);
 
-	bool UpdateTransformationMatrix(DirectX::XMMATRIX & outMatrix);
+	bool UpdateTransformationMatrix(WorldTransform & outTransform);
 
 private:
 	DirectX::XMFLOAT3 mPlayerPosition;

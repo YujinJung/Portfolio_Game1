@@ -51,8 +51,8 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 {
 	Character::UpdateCharacterCBs(mCurrFrameResource->MonsterCB, mMainLight, type, mClipName, gt);
 }
-
-void Monster::UpdateTransformationMatrix()
-{
-	
-}
+//
+//void Monster::UpdateMonsterPosition(XMFLOAT3 inPosition)
+//{
+//	
+//}

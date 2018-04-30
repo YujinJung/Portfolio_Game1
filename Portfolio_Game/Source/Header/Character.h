@@ -17,16 +17,17 @@ public:
 	UINT GetBoneSize() const;
 	UINT GetAllRitemsSize() const;
 	UINT GetCharacterMeshSize() const;
-	DirectX::XMFLOAT4X4 GetWorld() const;
+	DirectX::XMFLOAT4X4 GetWorldTransform4x4f(int i) const;
 
 	eClipList GetCurrentClip() const;
 	float GetCurrentClipTime() const;
+	WorldTransform GetWorldTransform(const int& i) const;
 
 	bool isClipEnd(const std::string& clipName) const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
 
 	void SetClipTime(float time);
-	void SetWorldTransform(DirectX::XMMATRIX inWorldTransform);
+	void SetWorldTransform(const WorldTransform& inWorldTransform, const int& i);
 
 	virtual void BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mChaCbvOffset) = 0;
 	void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData& inSkinInfo, std::string geoName);
@@ -45,10 +46,11 @@ private:
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
-	
-	DirectX::XMFLOAT4X4 mWorldTransform;
+
+	//DirectX::XMFLOAT4X4 mWorldTransform;
 
 private:
+	std::vector<WorldTransform> mWorldTransform;
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 };
