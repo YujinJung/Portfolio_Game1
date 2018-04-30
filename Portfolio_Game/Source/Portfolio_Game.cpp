@@ -300,7 +300,7 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 		if (!mCameraDetach)
 		{
 			mPlayer.PlayerMove(PlayerMoveList::Walk, -5.0f * dt);
-			mPlayer.SetClipName("Walking");
+			mPlayer.SetClipName("WalkingBackward");
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
 				if (mPlayer.isClipEnd())
@@ -315,11 +315,13 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 	else if(GetAsyncKeyState('1') & 0x8000)
 	{
 		mPlayer.SetClipTime(0.0f);
-		mPlayer.SetClipName("StopWalking");
+		mPlayer.SetClipName("FlyingKick");
 	}
 	else
 	{
-		if (mPlayer.GetCurrentClip() == eClipList::StopWalking && mPlayer.isClipEnd())
+		if (mPlayer.isClipEnd())
+			mPlayer.SetClipName("Idle");
+		/*if (mPlayer.GetCurrentClip() == eClipList::StopWalking && mPlayer.isClipEnd())
 			mPlayer.SetClipName("Idle");
 		else if (mPlayer.GetCurrentClip() == eClipList::Idle)
 			mPlayer.SetClipName("Idle");
@@ -330,7 +332,7 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 			if (walkRatio >= 1.0f) walkRatio -= 1.0f;
 			mPlayer.SetClipName("StopWalking");
 			mPlayer.SetClipTime(walkRatio);
-		}
+		}*/
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
@@ -955,10 +957,13 @@ void DirecX12UIApp::BuildFbxGeometry()
 	fbx.LoadFBX(outSkinnedInfo, "Kick", FileName);
 
 	FileName = "../Resource/FBX/Character/";
+	fbx.LoadFBX(outSkinnedInfo, "FlyingKick", FileName);
+
+	/*FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "StartWalking", FileName);
 
 	FileName = "../Resource/FBX/Character/";
-	fbx.LoadFBX(outSkinnedInfo, "StopWalking", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "StopWalking", FileName);*/
 	
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "WalkingBackward", FileName);

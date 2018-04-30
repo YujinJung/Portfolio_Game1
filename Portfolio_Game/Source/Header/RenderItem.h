@@ -47,7 +47,7 @@ struct SkinnedModelInstance
 		}
 		else if (ClipName == "StartWalking")
 			state = eClipList::StartWalking;
-		else if (ClipName == "Walking")
+		else if (ClipName == "Walking" || ClipName == "WalkingBackward")
 			state = eClipList::Walking;
 		else if (ClipName == "StopWalking")
 			state = eClipList::StopWalking;

@@ -1,9 +1,11 @@
+
 #include "Monster.h"
 
 using namespace DirectX;
 Monster::Monster()
 	: mClipName("Idle")
 {
+
 }
 Monster::~Monster()
 {
@@ -39,8 +41,18 @@ void Monster::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHe
 		}
 	}
 }
+void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix, RenderLayer type)
+{
+	numOfCharacter = 5;
+	Character::BuildRenderItem(mMaterials, matrialPrefix, type);
+}
 
 void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light & mMainLight, RenderLayer type, const GameTimer & gt)
 {
 	Character::UpdateCharacterCBs(mCurrFrameResource->MonsterCB, mMainLight, type, mClipName, gt);
+}
+
+void Monster::UpdateTransformationMatrix()
+{
+	
 }

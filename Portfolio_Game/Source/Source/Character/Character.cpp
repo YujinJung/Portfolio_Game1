@@ -1,8 +1,10 @@
 ﻿
 #include <string>
+#include <random>
+#include <chrono>
+#include <DirectXMath.h>
 #include "MathHelper.h"
 #include "GameTimer.h"
-#include <DirectXMath.h>
 #include "FrameResource.h"
 #include "Character.h"
 
@@ -12,6 +14,7 @@ using namespace DirectX::PackedVector;
 Character::Character()
 {
 	XMStoreFloat4x4(&mWorldTransform, XMMatrixIdentity());
+	numOfCharacter = 1;
 }
 
 Character::~Character()
@@ -130,36 +133,57 @@ void Character::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix
 	int BoneCount = GetBoneSize();
 	auto boneName = mSkinnedInfo.GetBoneName();
 
-	for (int i = 0; i < BoneCount - 1; ++i)
+	int worldX = 0, worldZ = 0;
+	for (int characterIndex = 0; characterIndex < numOfCharacter; ++characterIndex)
 	{
-		std::string SubmeshName = boneName[i];
-		std::string MaterialName = matrialPrefix;
-		// TODO : Setting the Name
-
-		auto FbxRitem = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&FbxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));
-		FbxRitem->TexTransform = MathHelper::Identity4x4();
-		FbxRitem->Mat = mMaterials.Get(MaterialName);
-		FbxRitem->Geo = mGeometry.get();
-		FbxRitem->NumFramesDirty = gNumFrameResources;
-		FbxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		FbxRitem->StartIndexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
-		FbxRitem->BaseVertexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].BaseVertexLocation;
-		FbxRitem->IndexCount = FbxRitem->Geo->DrawArgs[SubmeshName].IndexCount;
-
-		if (type == RenderLayer::Character)
+		// Monster - Random Position
+		if (type == RenderLayer::Monster)
 		{
-			FbxRitem->PlayerCBIndex = chaIndex++;
+			auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+			std::mt19937 engine{ (unsigned int)seed };
+			std::uniform_int_distribution <> dis{ 40, 80 };
+
+			//Generate a random integer
+			int x{ dis(engine) };
+			int z{ dis(engine) };
+
+			worldX = x;
+			worldZ = z;
 		}
-		else if (type == RenderLayer::Monster)
+		
+		// Character Mesh
+		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)
 		{
-			FbxRitem->MonsterCBIndex= chaIndex++;
+			std::string SubmeshName = boneName[submeshIndex];
+			std::string MaterialName = matrialPrefix;
+			// TODO : Setting the Name
+
+			auto FbxRitem = std::make_unique<RenderItem>();
+			XMStoreFloat4x4(&FbxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f) * XMMatrixTranslation(worldX, 0.0f, worldZ));
+			FbxRitem->TexTransform = MathHelper::Identity4x4();
+			FbxRitem->Mat = mMaterials.Get(MaterialName);
+			FbxRitem->Geo = mGeometry.get();
+			FbxRitem->NumFramesDirty = gNumFrameResources;
+			FbxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+			FbxRitem->StartIndexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
+			FbxRitem->BaseVertexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].BaseVertexLocation;
+			FbxRitem->IndexCount = FbxRitem->Geo->DrawArgs[SubmeshName].IndexCount;
+
+			if (type == RenderLayer::Character)
+			{
+				FbxRitem->PlayerCBIndex = chaIndex++;
+			}
+			else if (type == RenderLayer::Monster)
+			{
+				FbxRitem->MonsterCBIndex = chaIndex++;
+			}
+			FbxRitem->SkinnedModelInst = mSkinnedModelInst.get();
+			mRitems[(int)type].push_back(FbxRitem.get());
+			mAllRitems.push_back(std::move(FbxRitem));
 		}
-		FbxRitem->SkinnedModelInst = mSkinnedModelInst.get();
-		mRitems[(int)type].push_back(FbxRitem.get());
-		mAllRitems.push_back(std::move(FbxRitem));
 	}
 
+	// Character Shadow
 	for (auto& e : mRitems[(int)type])
 	{
 		auto shadowedObjectRitem = std::make_unique<RenderItem>();

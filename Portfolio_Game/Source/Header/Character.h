@@ -14,17 +14,18 @@ public:
 	Character();
 	~Character();
 
-	UINT GetCharacterMeshSize() const;
-	UINT GetAllRitemsSize() const;
 	UINT GetBoneSize() const;
+	UINT GetAllRitemsSize() const;
+	UINT GetCharacterMeshSize() const;
 	DirectX::XMFLOAT4X4 GetWorld() const;
+
 	eClipList GetCurrentClip() const;
 	float GetCurrentClipTime() const;
+
 	bool isClipEnd(const std::string& clipName) const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
 
 	void SetClipTime(float time);
-	void SetClipName(const std::string& inClipName);
 	void SetWorldTransform(DirectX::XMMATRIX inWorldTransform);
 
 	virtual void BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mChaCbvOffset) = 0;
@@ -34,7 +35,11 @@ public:
 	void UpdateCharacterCBs(std::unique_ptr<UploadBuffer<SkinnedConstants>> &currCharacter, const Light& mMainLight, RenderLayer type, const std::string& clipName, const GameTimer & gt);
 	void UpdateCharacterShadows(const Light& mMainLight, RenderLayer type);
 
+public:
 	bool mTransformDirty = false;
+	
+protected:
+	UINT numOfCharacter;
 	
 private:
 	SkinnedData mSkinnedInfo;

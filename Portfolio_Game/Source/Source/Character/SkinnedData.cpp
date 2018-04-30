@@ -177,26 +177,26 @@ void SkinnedData::clear()
 	mAnimations.clear();
 	mSubmeshOffset.clear();
 }
-
-void printMatrix(const std::wstring& Name, const float& i, const DirectX::XMMATRIX &M)
-{
-	std::wstring text = Name + std::to_wstring(i) + L"\n";
-	::OutputDebugString(text.c_str());
-
-	for (int j = 0; j < 4; ++j)
-	{
-		for (int k = 0; k < 4; ++k)
-		{
-			std::wstring text =
-				std::to_wstring(M.r[j].m128_f32[k]) + L" ";
-
-			::OutputDebugString(text.c_str());
-		}
-		std::wstring text = L"\n";
-		::OutputDebugString(text.c_str());
-
-	}
-}
+//
+//void printMatrix(const std::wstring& Name, const float& i, const DirectX::XMMATRIX &M)
+//{
+//	std::wstring text = Name + std::to_wstring(i) + L"\n";
+//	::OutputDebugString(text.c_str());
+//
+//	for (int j = 0; j < 4; ++j)
+//	{
+//		for (int k = 0; k < 4; ++k)
+//		{
+//			std::wstring text =
+//				std::to_wstring(M.r[j].m128_f32[k]) + L" ";
+//
+//			::OutputDebugString(text.c_str());
+//		}
+//		std::wstring text = L"\n";
+//		::OutputDebugString(text.c_str());
+//
+//	}
+//}
 
 void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos, std::vector<XMFLOAT4X4>& finalTransforms)const
 {
@@ -240,8 +240,8 @@ void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos,
 
 		//printMatrix(L"Offset", i, offset);
 		//printMatrix(L"toRoot", i, toRoot);
-		if(i == 15)
-		printMatrix(L"final", timePos, finalTransform);
+		//if(i == 15)
+		//printMatrix(L"final", timePos, finalTransform);
 
 		XMStoreFloat4x4(&finalTransforms[i], XMMatrixTranspose(finalTransform));
 	}
