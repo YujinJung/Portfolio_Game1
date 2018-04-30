@@ -15,7 +15,7 @@ FbxLoader::~FbxLoader()
 
 FbxManager * gFbxManager = nullptr;
 
-HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint16_t>& outIndexVector, SkinnedData& outSkinnedData, const std::string& clipName, std::vector<Material>& outMaterial, std::string fileName)
+HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint32_t>& outIndexVector, SkinnedData& outSkinnedData, const std::string& clipName, std::vector<Material>& outMaterial, std::string fileName)
 {
 	// if exported animation exist
 	if (LoadTXT(outVertexVector, outIndexVector, outSkinnedData, clipName, outMaterial, fileName)) return S_OK;
@@ -69,6 +69,7 @@ HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vec
 		mBoneName =  outSkinnedData.GetBoneName();
 		// Bone offset, Control point, Vertex, Index Data
 		// And Animation Data
+		int ii = pFbxRootNode->GetChildCount();
 		for (int i = 0; i < pFbxRootNode->GetChildCount(); i++)
 		{
 			FbxNode* pFbxChildNode = pFbxRootNode->GetChild(i);
@@ -76,10 +77,8 @@ HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vec
 			FbxNodeAttribute::EType AttributeType = pMesh->GetAttributeType();
 			if (!pMesh || !AttributeType) { continue; }
 
-			switch (AttributeType)
+			if (AttributeType == FbxNodeAttribute::eMesh)
 			{
-			case FbxNodeAttribute::eMesh:
-
 				GetControlPoints(pFbxChildNode);
 
 				// To access the bone index directly
@@ -98,8 +97,8 @@ HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vec
 
 				break;
 			}
-
 		}
+		
 		outSkinnedData.Set(mBoneHierarchy, mBoneOffsets, mAnimations);
 	}
 
@@ -171,7 +170,7 @@ HRESULT FbxLoader::LoadFBX(SkinnedData& outSkinnedData, const std::string& clipN
 	outSkinnedData.SetAnimation(animation, clipName);
 	return S_OK;
 }
-bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint16_t>& outIndexVector, SkinnedData& outSkinnedData, const std::string& clipName, std::vector<Material>& outMaterial, std::string fileName)
+bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint32_t>& outIndexVector, SkinnedData& outSkinnedData, const std::string& clipName, std::vector<Material>& outMaterial, std::string fileName)
 {
 	fileName = fileName + clipName + ".txt";
 	std::ifstream fileIn(fileName);
@@ -217,7 +216,7 @@ bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector
 		fileIn >> ignore;
 		for (int i = 0; i < indexSize; ++i)
 		{
-			uint16_t index;
+			uint32_t index;
 			fileIn >> index;
 			outIndexVector.push_back(index);
 		}
@@ -602,7 +601,7 @@ void FbxLoader::GetOnlyAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, A
 					static_cast<float>(TS.mData[0]),
 					static_cast<float>(TS.mData[1]),
 					static_cast<float>(TS.mData[2]) };
-				if (clipName == "StopWalking") { key.Translation.z -= 1.0f; }
+				if (clipName == "StopWalking") { key.Translation.z -= 56.0f; }
 				TS = temp.GetS();
 				key.Scale = {
 					static_cast<float>(TS.mData[0]),
@@ -621,6 +620,7 @@ void FbxLoader::GetOnlyAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, A
 
 				boneAnim.Keyframes.push_back(key);
 			}
+			
 			animation.BoneAnimations[currJointIndex] = boneAnim;
 		}
 	}
@@ -656,11 +656,11 @@ void FbxLoader::GetOnlyAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, A
 
 }
 
-void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<SkinnedVertex> & outVertexVector, std::vector<uint16_t> & outIndexVector, SkinnedData& outSkinnedData)
+void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<SkinnedVertex> & outVertexVector, std::vector<uint32_t> & outIndexVector, SkinnedData& outSkinnedData)
 {
 	// Vertex and Index
-	std::unordered_map<std::string, std::vector<uint16_t>> IndexVector;
-	std::unordered_map<Vertex, uint16_t> IndexMapping;
+	std::unordered_map<std::string, std::vector<uint32_t>> IndexVector;
+	std::unordered_map<Vertex, uint32_t> IndexMapping;
 	uint32_t VertexIndex = 0;
 
 	// Material
@@ -675,7 +675,7 @@ void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<Skinne
 	for (int i = 0; i < tCount; ++i)
 	{
 		// For indexing by bone
-		std::string CurrBoneName = mControlPoints[pMesh->GetPolygonVertex(i, 0)]->mBoneName;
+		std::string CurrBoneName = mControlPoints[pMesh->GetPolygonVertex(i, 1)]->mBoneName;
 
 		// Material
 		uint16_t MaterialIndex = MaterialIndices->GetAt(0);
@@ -747,7 +747,7 @@ void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<Skinne
 			else
 			{
 				// Index
-				uint16_t Index = VertexIndex++;
+				uint32_t Index = VertexIndex++;
 				IndexMapping[Temp] = Index;
 				IndexVector[CurrBoneName].push_back(Index);
 
@@ -984,7 +984,7 @@ void FbxLoader::ExportAnimation(const AnimationClip& animation, std::string file
 	}
 }
 
-void FbxLoader::ExportFBX(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint16_t>& outIndexVector, SkinnedData& outSkinnedData, const std::string& clipName, std::vector<Material>& outMaterial, std::string fileName)
+void FbxLoader::ExportFBX(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint32_t>& outIndexVector, SkinnedData& outSkinnedData, const std::string& clipName, std::vector<Material>& outMaterial, std::string fileName)
 {
 	fileName = fileName + clipName + ".txt";
 	std::ofstream fileOut(fileName);
@@ -1055,9 +1055,10 @@ void FbxLoader::ExportFBX(std::vector<SkinnedVertex>& outVertexVector, std::vect
 		}
 
 		fileOut << "SubmeshOffset " << "\n";
-		for (auto & e : outSkinnedData.GetSubmeshOffset())
+		auto & e = outSkinnedData.GetSubmeshOffset();
+		for(int i = 0; i < boneSize; ++i)
 		{
-			fileOut << e << " ";
+			fileOut << e[i] << " ";
 		}
 		fileOut << "\n";
 

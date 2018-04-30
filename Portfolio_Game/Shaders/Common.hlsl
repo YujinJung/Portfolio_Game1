@@ -65,14 +65,21 @@ cbuffer cbPass : register(b2)
 	Light gLights[MaxLights];
 };
 
-cbuffer cbSkinned : register(b3)
+cbuffer cbPlayer : register(b3)
 {
 	float4x4 gBoneTransforms[96];
 	float4x4 gChaWorld;
 	float4x4 gChaTexTransform;
 };
 
-cbuffer cbUI : register(b4)
+cbuffer cbMonster : register(b4)
+{
+	float4x4 gMonsterBoneTransforms[96];
+	float4x4 gMonsterWorld;
+	float4x4 gMonsterTexTransform;
+};
+
+cbuffer cbUI : register(b5)
 {
 	float4x4 gUIWorld;
 	float4x4 gUITexTransform;

@@ -9,6 +9,7 @@
 //***************************************************************************************
 
 #include "Player.h"
+#include "Monster.h"
 #include "Character.h"
 #include "Textures.h"
 #include "Materials.h"
@@ -167,25 +168,31 @@ void DirecX12UIApp::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Opaque]);
 
 	// UI
-	mCommandList->SetPipelineState(mPSOs["uiOpaque"].Get());
+	mCommandList->SetPipelineState(mPSOs["UI"].Get());
 	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::Rect));
 
 	// Character
 	if (!mFbxWireframe)
 	{
-		mCommandList->SetPipelineState(mPSOs["skinnedOpaque"].Get());
+		mCommandList->SetPipelineState(mPSOs["Player"].Get());
 	}
 	else
 	{
-		mCommandList->SetPipelineState(mPSOs["skinnedOpaque_wireframe"].Get());
-		
+		mCommandList->SetPipelineState(mPSOs["Player_wireframe"].Get());
 	}
 	DrawRenderItems(mCommandList.Get(), mPlayer.GetRenderItem(RenderLayer::Character));
 
+	// Monster
+	mCommandList->SetPipelineState(mPSOs["Monster"].Get());
+	DrawRenderItems(mCommandList.Get(), mMonster.GetRenderItem(RenderLayer::Monster));
+
 	// Shadow
 	mCommandList->OMSetStencilRef(0);
-	mCommandList->SetPipelineState(mPSOs["skinned_shadow"].Get());
+	mCommandList->SetPipelineState(mPSOs["Player_shadow"].Get());
 	DrawRenderItems(mCommandList.Get(), mPlayer.GetRenderItem(RenderLayer::Shadow));
+
+	mCommandList->SetPipelineState(mPSOs["Monster_shadow"].Get());
+	DrawRenderItems(mCommandList.Get(), mMonster.GetRenderItem(RenderLayer::Shadow));
 
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -280,7 +287,7 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
 				if (mPlayer.isClipEnd())
-					mPlayer.ResetClipTime();
+					mPlayer.SetClipTime(0.0f);
 			}
 		}
 		else
@@ -297,7 +304,7 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
 				if (mPlayer.isClipEnd())
-					mPlayer.ResetClipTime();
+					mPlayer.SetClipTime(0.0f);
 			}
 		}
 		else
@@ -307,6 +314,7 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 	}
 	else if(GetAsyncKeyState('1') & 0x8000)
 	{
+		mPlayer.SetClipTime(0.0f);
 		mPlayer.SetClipName("StopWalking");
 	}
 	else
@@ -315,8 +323,14 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 			mPlayer.SetClipName("Idle");
 		else if (mPlayer.GetCurrentClip() == eClipList::Idle)
 			mPlayer.SetClipName("Idle");
-		else
+		else if(mPlayer.GetCurrentClip() != eClipList::StopWalking)
+		{
+			float walkRatio = mPlayer.GetCurrentClipTime() / 1.625f;
+			walkRatio += 0.1f;
+			if (walkRatio >= 1.0f) walkRatio -= 1.0f;
 			mPlayer.SetClipName("StopWalking");
+			mPlayer.SetClipTime(walkRatio);
+		}
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
@@ -405,12 +419,13 @@ void DirecX12UIApp::UpdateMaterialCB(const GameTimer & gt)
 
 void DirecX12UIApp::UpdateCharacterCBs(const GameTimer & gt)
 {
-	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
+	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, RenderLayer::Character, gt);
+	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, RenderLayer::Monster, gt);
 }
 
 void DirecX12UIApp::UpdateObjectShadows(const GameTimer& gt)
 {
-	auto currSkinnedCB = mCurrFrameResource->SkinnedCB.get();
+	//auto currSkinnedCB = mCurrFrameResource->PlayerCB.get();
 	//mCharacter.UpdateCharacterShadows(mMainLight);
 }
 
@@ -421,21 +436,21 @@ void DirecX12UIApp::BuildDescriptorHeaps()
 	mObjCbvOffset = mTextures.GetSize();
 	UINT objCount = (UINT)mAllRitems.size();
 	UINT chaCount = mPlayer.GetAllRitemsSize();
+	UINT monsterCount = mMonster.GetAllRitemsSize();
 	UINT matCount = mMaterials.GetSize();
-	UINT skinCount = mPlayer.GetCharacterMeshSize();
 	UINT uiCount = mPlayer.mUI.GetSize();
 
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
 	// +matCount for the Materials for each frame resources.
-	UINT numDescriptors = mObjCbvOffset + (objCount + chaCount + matCount + skinCount + uiCount + 1) * gNumFrameResources;
+	UINT numDescriptors = mObjCbvOffset + (objCount + chaCount + monsterCount + matCount + uiCount + 1) * gNumFrameResources;
 
 	// Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
 	mChaCbvOffset = objCount * gNumFrameResources + mObjCbvOffset;
-	mMatCbvOffset = chaCount * gNumFrameResources + mChaCbvOffset;
+	mMonsterCbvOffset = chaCount * gNumFrameResources + mChaCbvOffset;
+	mMatCbvOffset = monsterCount * gNumFrameResources + mMonsterCbvOffset;
 	mPassCbvOffset = matCount * gNumFrameResources + mMatCbvOffset;
-	mSkinCbvOffset = 1 * gNumFrameResources + mPassCbvOffset;
-	mUICbvOffset = uiCount * gNumFrameResources + mSkinCbvOffset;
+	mUICbvOffset = 1 * gNumFrameResources + mPassCbvOffset;
 
 	// mPassCbvOffset + (passSize)
 	// passSize = 1 * gNumFrameResources
@@ -519,6 +534,12 @@ void DirecX12UIApp::BuildConstantBufferViews()
 		mFrameResources,
 		mChaCbvOffset);
 
+	mMonster.BuildConstantBufferViews(
+		md3dDevice.Get(),
+		mCbvHeap.Get(),
+		mFrameResources,
+		mMonsterCbvOffset);
+
 	// UI
 	mPlayer.mUI.BuildConstantBufferViews(
 		md3dDevice.Get(),
@@ -529,33 +550,32 @@ void DirecX12UIApp::BuildConstantBufferViews()
 
 void DirecX12UIApp::BuildRootSignature()
 {
-	CD3DX12_DESCRIPTOR_RANGE cbvTable[5];
+	const int tableNumber = 7;
+	CD3DX12_DESCRIPTOR_RANGE cbvTable[tableNumber];
 
-	cbvTable[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 0);
-	cbvTable[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 1);
-	cbvTable[2].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 2);
-	cbvTable[3].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 3);
-	cbvTable[4].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, 4);
+	for (int i = 0; i < tableNumber - 1; ++i)
+	{
+		cbvTable[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, i);
+	}
 
 	CD3DX12_DESCRIPTOR_RANGE texTable;
 	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	// Objects, Materials, Passes
-	CD3DX12_ROOT_PARAMETER slotRootParameter[6];
+	CD3DX12_ROOT_PARAMETER slotRootParameter[tableNumber];
 
 	// Create root CBVs.
 	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	slotRootParameter[1].InitAsDescriptorTable(1, &cbvTable[0]);
-	slotRootParameter[2].InitAsDescriptorTable(1, &cbvTable[1]);
-	slotRootParameter[3].InitAsDescriptorTable(1, &cbvTable[2]);
-	slotRootParameter[4].InitAsDescriptorTable(1, &cbvTable[3]);
-	slotRootParameter[5].InitAsDescriptorTable(1, &cbvTable[4]);
+	for (int i = 1; i < tableNumber; ++i)
+	{
+		slotRootParameter[i].InitAsDescriptorTable(1, &cbvTable[i - 1]);
+	}
 
 	auto staticSamplers = GetStaticSamplers();
 
 	// A root signature is an array of root parameters.
-	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(6, slotRootParameter,
+	CD3DX12_ROOT_SIGNATURE_DESC rootSigDesc(tableNumber, slotRootParameter,
 		(UINT)staticSamplers.size(), staticSamplers.data(),
 		D3D12_ROOT_SIGNATURE_FLAG_ALLOW_INPUT_ASSEMBLER_INPUT_LAYOUT);
 
@@ -579,6 +599,18 @@ void DirecX12UIApp::BuildRootSignature()
 
 }
 
+void DirecX12UIApp::BuildFrameResources()
+{
+	for (int i = 0; i < gNumFrameResources; ++i)
+	{
+		mFrameResources.push_back(std::make_unique<FrameResource>(
+			md3dDevice.Get(),
+			1, (UINT)mAllRitems.size(),
+			mMaterials.GetSize(),
+			mPlayer.GetAllRitemsSize(), mMonster.GetAllRitemsSize(), mPlayer.mUI.GetSize()));
+	}
+}
+
 void DirecX12UIApp::BuildShadersAndInputLayout()
 {
 	const D3D_SHADER_MACRO skinnedDefines[] =
@@ -589,10 +621,12 @@ void DirecX12UIApp::BuildShadersAndInputLayout()
 
 	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["skinnedVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "VS", "vs_5_1");
+	mShaders["monsterVS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["uiVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "VS", "vs_5_1");
 
 	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["skinnedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "PS", "ps_5_1");
+	mShaders["monsterPS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["uiPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "PS", "ps_5_1");
 
 	mInputLayout =
@@ -645,43 +679,57 @@ void DirecX12UIApp::BuildPSOs()
 	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
 
-	//
 	// PSO for ui
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC uiOpaquePsoDesc = opaquePsoDesc;
-	uiOpaquePsoDesc.VS =
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC UIPsoDesc = opaquePsoDesc;
+	UIPsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(mShaders["uiVS"]->GetBufferPointer()),
 		mShaders["uiVS"]->GetBufferSize()
 	};
-	uiOpaquePsoDesc.PS =
+	UIPsoDesc.PS =
 	{
 		reinterpret_cast<BYTE*>(mShaders["uiPS"]->GetBufferPointer()),
 		mShaders["uiPS"]->GetBufferSize()
 	};
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&uiOpaquePsoDesc, IID_PPV_ARGS(&mPSOs["uiOpaque"])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&UIPsoDesc, IID_PPV_ARGS(&mPSOs["UI"])));
 
-	//
-	// PSO for skinned
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedOpaquePsoDesc = opaquePsoDesc;
-	skinnedOpaquePsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
-	skinnedOpaquePsoDesc.VS =
+	// PSO for Player 
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC PlayerPsoDesc = opaquePsoDesc;
+	PlayerPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+	PlayerPsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(mShaders["skinnedVS"]->GetBufferPointer()),
 		mShaders["skinnedVS"]->GetBufferSize()
 	};
-	skinnedOpaquePsoDesc.PS =
+	PlayerPsoDesc.PS =
 	{
 		reinterpret_cast<BYTE*>(mShaders["skinnedPS"]->GetBufferPointer()),
 		mShaders["skinnedPS"]->GetBufferSize()
 	};
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&skinnedOpaquePsoDesc, IID_PPV_ARGS(&mPSOs["skinnedOpaque"])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerPsoDesc, IID_PPV_ARGS(&mPSOs["Player"])));
+
+	// PSO for Monster
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC MonsterPsoDesc = PlayerPsoDesc;
+	MonsterPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+	MonsterPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["monsterVS"]->GetBufferPointer()),
+		mShaders["monsterVS"]->GetBufferSize()
+	};
+	MonsterPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["monsterPS"]->GetBufferPointer()),
+		mShaders["monsterPS"]->GetBufferSize()
+	};
+	
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&MonsterPsoDesc, IID_PPV_ARGS(&mPSOs["Monster"])));
 
 	//
 	// PSO for skinned wireframe objects.
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedOpaqueWireframePsoDesc = skinnedOpaquePsoDesc;
-	skinnedOpaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC PlayerWireframePsoDesc = PlayerPsoDesc;
+	PlayerWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
 	
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&skinnedOpaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["skinnedOpaque_wireframe"])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerWireframePsoDesc, IID_PPV_ARGS(&mPSOs["Player_wireframe"])));
 
 
 	//
@@ -730,33 +778,30 @@ void DirecX12UIApp::BuildPSOs()
 
 
 	// Skinned Shadow
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC skinnedShadowPsoDesc = shadowPsoDesc;
-	skinnedShadowPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
-	skinnedShadowPsoDesc.VS =
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC PlayerShadowPsoDesc = shadowPsoDesc;
+	PlayerShadowPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+	PlayerShadowPsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(mShaders["skinnedVS"]->GetBufferPointer()),
 		mShaders["skinnedVS"]->GetBufferSize()
 	};
-	skinnedShadowPsoDesc.PS =
+	PlayerShadowPsoDesc.PS =
 	{
 		reinterpret_cast<BYTE*>(mShaders["skinnedPS"]->GetBufferPointer()),
 		mShaders["skinnedPS"]->GetBufferSize()
 	};
-	skinnedShadowPsoDesc.DepthStencilState = shadowDSS;
-	skinnedShadowPsoDesc.BlendState.RenderTarget[0] = shadowBlendDesc;
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&skinnedShadowPsoDesc, IID_PPV_ARGS(&mPSOs["skinned_shadow"])));
-}
+	PlayerShadowPsoDesc.DepthStencilState = shadowDSS;
+	PlayerShadowPsoDesc.BlendState.RenderTarget[0] = shadowBlendDesc;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerShadowPsoDesc, IID_PPV_ARGS(&mPSOs["Player_shadow"])));
 
-void DirecX12UIApp::BuildFrameResources()
-{
-	for (int i = 0; i < gNumFrameResources; ++i)
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC MonsterShadowPsoDesc = PlayerShadowPsoDesc;
+	MonsterShadowPsoDesc.VS =
 	{
-		mFrameResources.push_back(std::make_unique<FrameResource>(
-			md3dDevice.Get(),
-			1, (UINT)mAllRitems.size(),
-			mMaterials.GetSize(), 
-			mPlayer.GetAllRitemsSize(), mPlayer.mUI.GetSize()));
-	}
+		reinterpret_cast<BYTE*>(mShaders["monsterVS"]->GetBufferPointer()),
+		mShaders["monsterVS"]->GetBufferSize()
+	};
+	
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&MonsterShadowPsoDesc, IID_PPV_ARGS(&mPSOs["Monster_shadow"])));
 }
 
 
@@ -853,14 +898,14 @@ void DirecX12UIApp::BuildShapeGeometry()
 		vertices[k].TexC = cylinder.Vertices[i].TexC;
 	}
 
-	std::vector<std::uint16_t> indices;
+	std::vector<std::uint32_t> indices;
 	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
 	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
 	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
 	geo->Name = "shapeGeo";
@@ -879,7 +924,7 @@ void DirecX12UIApp::BuildShapeGeometry()
 
 	geo->VertexByteStride = sizeof(Vertex);
 	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
 	geo->DrawArgs["box"] = boxSubmesh;
@@ -890,15 +935,12 @@ void DirecX12UIApp::BuildShapeGeometry()
 	mGeometries[geo->Name] = std::move(geo);
 }
 
-
-
-
 void DirecX12UIApp::BuildFbxGeometry()
 {
 	FbxLoader fbx;
 
 	std::vector<SkinnedVertex> outVertices;
-	std::vector<std::uint16_t> outIndices;
+	std::vector<std::uint32_t> outIndices;
 	std::vector<Material> outMaterial;
 	SkinnedData outSkinnedInfo;
 
@@ -917,9 +959,11 @@ void DirecX12UIApp::BuildFbxGeometry()
 
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "StopWalking", FileName);
+	
+	FileName = "../Resource/FBX/Character/";
+	fbx.LoadFBX(outSkinnedInfo, "WalkingBackward", FileName);
 
-
-	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo);
+	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo, "playerGeo");
 
 	// Begin
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
@@ -927,11 +971,12 @@ void DirecX12UIApp::BuildFbxGeometry()
 	int MatIndex = mMaterials.GetSize();
 	for (int i = 0; i < outMaterial.size(); ++i)
 	{
+		std::string TextureName;
 		// Load Texture 
 		if (!outMaterial[i].Name.empty())
 		{
-			std::string TextureName = "texture_";
-			TextureName.push_back(i + 48);
+			TextureName = "texture_";
+			TextureName.push_back(mTextures.GetSize() +48);
 			std::wstring TextureFileName;
 			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
 
@@ -942,15 +987,59 @@ void DirecX12UIApp::BuildFbxGeometry()
 
 		// Load Material
 		std::string MaterialName = "material_";
-		MaterialName.push_back(i + 48);
+		MaterialName.push_back(MatIndex + 48);
 
 		mMaterials.SetMaterial(
 			MaterialName,
 			MatIndex++,
-			mTextures.GetSize() - 1,
+			mTextures.GetTextureIndex(TextureName),
 			outMaterial[i].DiffuseAlbedo,
 			outMaterial[i].FresnelR0,
 			outMaterial[i].Roughness);
+	}
+	mTextures.End();
+
+	outVertices.clear();
+	outIndices.clear();
+	outMaterial.clear();
+	outSkinnedInfo.clear();
+
+	FileName = "../Resource/FBX/Monster/";
+	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
+
+	mMonster.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo, "MonsterGeo");
+
+	// Begin
+	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+	// Load Texture and Material
+	MatIndex = mMaterials.GetSize();
+	for (int i = 0; i < outMaterial.size(); ++i)
+	{
+		// Load Texture 
+		if (!outMaterial[i].Name.empty())
+		{
+			std::string TextureName;
+			TextureName = "monsterTex_";
+			TextureName.push_back(mTextures.GetSize() + 48);
+			std::wstring TextureFileName;
+			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
+
+			mTextures.SetTexture(
+				TextureName,
+				TextureFileName);
+
+			// Load Material
+			std::string MaterialName = "monsterMat_";
+			MaterialName.push_back(MatIndex + 48);
+
+			mMaterials.SetMaterial(
+				MaterialName,
+				MatIndex++,
+				mTextures.GetTextureIndex(TextureName),
+				outMaterial[i].DiffuseAlbedo,
+				outMaterial[i].FresnelR0,
+				outMaterial[i].Roughness);
+		}
 	}
 	mTextures.End();
 }
@@ -1064,7 +1153,7 @@ void DirecX12UIApp::BuildRenderItems()
 	UINT objCBIndex = 0;
 
 	auto gridRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(2.0f, 1.0f, 10.0f));
+	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(10.0f, 2.0f, 10.0f));
 	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(8.0f, 80.0f, 1.0f));
 	gridRitem->ObjCBIndex = objCBIndex++;
 	gridRitem->Mat = mMaterials.Get("grass0");
@@ -1076,9 +1165,11 @@ void DirecX12UIApp::BuildRenderItems()
 	mRitems[(int)RenderLayer::Opaque].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
 
-	mPlayer.BuildRenderItem(mMaterials);
+	mPlayer.BuildRenderItem(mMaterials, "material_0", RenderLayer::Character);
 
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
+
+	mMonster.BuildRenderItem(mMaterials, "monsterMat_1", RenderLayer::Monster);
 }
 
 
@@ -1107,9 +1198,13 @@ void DirecX12UIApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const st
 		auto matCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		matCbvHandle.Offset(matCbvIndex, mCbvSrvDescriptorSize);
 
-		UINT skinnedIndex = mChaCbvOffset + mCurrFrameResourceIndex * mPlayer.GetAllRitemsSize() + ri->SkinnedCBIndex;
+		UINT skinnedIndex = mChaCbvOffset + mCurrFrameResourceIndex * mPlayer.GetAllRitemsSize() + ri->PlayerCBIndex;
 		auto skinCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		skinCbvHandle.Offset(skinnedIndex, mCbvSrvDescriptorSize);
+
+		UINT monsterIndex = mMonsterCbvOffset + mCurrFrameResourceIndex * mMonster.GetAllRitemsSize() + ri->MonsterCBIndex;
+		auto monsterCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+		monsterCbvHandle.Offset(monsterIndex, mCbvSrvDescriptorSize);
 
 		UINT uiIndex = mUICbvOffset + mCurrFrameResourceIndex * mPlayer.mUI.GetSize() + ri->ObjCBIndex;
 		auto uiCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
@@ -1118,10 +1213,14 @@ void DirecX12UIApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const st
 		cmdList->SetGraphicsRootDescriptorTable(0, tex);
 		cmdList->SetGraphicsRootDescriptorTable(1, cbvHandle);
 		cmdList->SetGraphicsRootDescriptorTable(2, matCbvHandle);
-		cmdList->SetGraphicsRootDescriptorTable(5, uiCbvHandle);
-		if (ri->SkinnedModelInst != nullptr)
+		cmdList->SetGraphicsRootDescriptorTable(6, uiCbvHandle);
+		if (ri->PlayerCBIndex >= 0)
 		{
 			cmdList->SetGraphicsRootDescriptorTable(4, skinCbvHandle);
+		}
+		else if (ri->MonsterCBIndex >= 0)
+		{
+			cmdList->SetGraphicsRootDescriptorTable(5, monsterCbvHandle);
 		}
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);

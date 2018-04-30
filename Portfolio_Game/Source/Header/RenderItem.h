@@ -1,6 +1,5 @@
 #pragma once
 
-//#include "../Common/d3dUtil.h"
 #include "SkinnedData.h"
 
 enum eClipList
@@ -82,8 +81,9 @@ struct RenderItem
 	int NumFramesDirty = gNumFrameResources;
 
 	// Index into GPU constant buffer corresponding to the ObjectCB for this render item.
-	UINT ObjCBIndex = -1;
-	UINT SkinnedCBIndex = -1;
+	int ObjCBIndex = -1;
+	int PlayerCBIndex = -1;
+	int MonsterCBIndex = -1;
 
 	Material* Mat = nullptr;
 	MeshGeometry* Geo = nullptr;
@@ -105,6 +105,7 @@ enum class RenderLayer : int
 	Reflected,
 	Transparent,
 	Character,
+	Monster,
 	Shadow,
 	UI,
 	Count

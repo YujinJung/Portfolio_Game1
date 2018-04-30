@@ -19,19 +19,20 @@ public:
 	UINT GetBoneSize() const;
 	DirectX::XMFLOAT4X4 GetWorld() const;
 	eClipList GetCurrentClip() const;
-	bool isClipEnd() const;
+	float GetCurrentClipTime() const;
+	bool isClipEnd(const std::string& clipName) const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
 
-	void ResetClipTime();
+	void SetClipTime(float time);
 	void SetClipName(const std::string& inClipName);
 	void SetWorldTransform(DirectX::XMMATRIX inWorldTransform);
 
-	void BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mChaCbvOffset);
-	virtual void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint16_t>& inIndices, const SkinnedData& inSkinInfo);
-	void BuildRenderItem(Materials& mMaterials);
+	virtual void BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mChaCbvOffset) = 0;
+	void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData& inSkinInfo, std::string geoName);
+	void BuildRenderItem(Materials& mMaterials, std::string matrialPrefix, RenderLayer type);
 	
-	virtual void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt);
-	void UpdateCharacterShadows(const Light& mMainLight);
+	void UpdateCharacterCBs(std::unique_ptr<UploadBuffer<SkinnedConstants>> &currCharacter, const Light& mMainLight, RenderLayer type, const std::string& clipName, const GameTimer & gt);
+	void UpdateCharacterShadows(const Light& mMainLight, RenderLayer type);
 
 	bool mTransformDirty = false;
 	
@@ -39,7 +40,6 @@ private:
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
-	std::string mClipName;
 	
 	DirectX::XMFLOAT4X4 mWorldTransform;
 

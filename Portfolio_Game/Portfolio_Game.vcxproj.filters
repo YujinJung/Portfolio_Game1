@@ -61,6 +61,9 @@
     <ClCompile Include="Source\Portfolio_Game.cpp">
       <Filter>Main</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Source\Character\Moster\Monster.cpp">
+      <Filter>Character\AI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Header\Common\GameTimer.h">
@@ -83,6 +86,60 @@
     </ClInclude>
     <ClInclude Include="Source\Portfolio_Game.h">
       <Filter>Main</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Monster.h">
+      <Filter>Character\AI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Camera.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Character.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\DDSTextureLoader.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\DXUI.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\FbxLoader.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\FrameResource.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\GeometryGenerator.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Materials.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Player.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\PlayerCamera.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\PlayerController.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\PlayerMovement.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\RenderItem.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\SkinnedData.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\TextureLoader.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Textures.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\VertexHash.h">
+      <Filter>Common\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -118,6 +175,9 @@
     </Filter>
     <Filter Include="Character\Player">
       <UniqueIdentifier>{cafad2ae-01a3-4745-a649-f875a324c584}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Character\AI">
+      <UniqueIdentifier>{2664b201-90be-4b3a-b3aa-ec9774b05f01}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>

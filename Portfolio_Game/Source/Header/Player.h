@@ -21,17 +21,24 @@ public:
 	Player();
 	~Player();
 
+	void SetClipName(const std::string & inClipName);
+
+	void BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mChaCbvOffset);
+
+	bool isClipEnd();
+
 	DXUI mUI;
 	PlayerCamera mCamera;
 
 	void PlayerMove(PlayerMoveList move, float velocity);
-	virtual void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt) override;
+	void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, RenderLayer type, const GameTimer & gt);
 	void UpdateTransformationMatrix();
 	
 private:
 	PlayerMovement mPlayerMovement;
 	PlayerController mPlayerController;
-
+	
+	std::string mClipName;
 };
 
 /*

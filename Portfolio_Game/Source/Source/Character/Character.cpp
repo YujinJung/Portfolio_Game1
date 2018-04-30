@@ -12,7 +12,6 @@ using namespace DirectX::PackedVector;
 Character::Character()
 {
 	XMStoreFloat4x4(&mWorldTransform, XMMatrixIdentity());
-	mClipName = "Idle";
 }
 
 Character::~Character()
@@ -39,9 +38,13 @@ eClipList Character::GetCurrentClip() const
 {
 	return mSkinnedModelInst->state;
 }
-bool Character::isClipEnd() const
+float Character::GetCurrentClipTime() const
 {
-	if (mSkinnedInfo.GetAnimation(mClipName).GetClipEndTime() - mSkinnedModelInst->TimePos < 0.01f)
+	return mSkinnedModelInst->TimePos;
+}
+bool Character::isClipEnd(const std::string& clipName) const
+{
+	if (mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedModelInst->TimePos < 0.001f)
 		return true;
 	return false;
 }
@@ -50,13 +53,9 @@ const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type) const
 	return mRitems[(int)Type];
 }
 
-void Character::ResetClipTime()
+void Character::SetClipTime(float time)
 {
-	mSkinnedModelInst->TimePos = 0.0f;
-}
-void Character::SetClipName(const std::string& inClipName)
-{
-	mClipName = inClipName;
+	mSkinnedModelInst->TimePos = time;
 }
 void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
 {
@@ -64,39 +63,7 @@ void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
 	mTransformDirty = true;
 }
 
-
-void Character::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mChaCbvOffset)
-{
-	UINT characterCount = GetAllRitemsSize();
-	UINT chaCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(SkinnedConstants));
-	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	{
-		auto characterCB = mFrameResources[frameIndex]->SkinnedCB->Resource();
-
-		for (UINT i = 0; i < characterCount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = characterCB->GetGPUVirtualAddress();
-
-			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * chaCBByteSize;
-
-			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mChaCbvOffset + frameIndex * characterCount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = chaCBByteSize;
-
-			device->CreateConstantBufferView(&cbvDesc, handle);
-		}
-	}
-}
-
-void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint16_t>& inIndices, const SkinnedData& inSkinInfo)
+void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData& inSkinInfo, std::string geoName)
 {
 	mSkinnedInfo = inSkinInfo;
 
@@ -116,10 +83,10 @@ void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* 
 	iCount = inIndices.size();
 
 	const UINT vbByteSize = (UINT)inVertices.size() * sizeof(SkinnedVertex);
-	const UINT ibByteSize = (UINT)inIndices.size() * sizeof(std::uint16_t);
+	const UINT ibByteSize = (UINT)inIndices.size() * sizeof(std::uint32_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "FbxGeo";
+	geo->Name = geoName;
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
 	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), inVertices.data(), vbByteSize);
@@ -132,13 +99,15 @@ void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* 
 
 	geo->VertexByteStride = sizeof(SkinnedVertex);
 	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
+	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
 	auto vSubmeshOffset = mSkinnedInfo.GetSubmeshOffset();
+	auto boneName = mSkinnedInfo.GetBoneName();
+
+	UINT SubmeshOffsetIndex = 0;
 	for (int i = 0; i < vSubmeshOffset.size(); ++i)
 	{
-		static UINT SubmeshOffsetIndex = 0;
 		UINT CurrSubmeshOffsetIndex = vSubmeshOffset[i];
 
 		SubmeshGeometry FbxSubmesh;
@@ -146,8 +115,7 @@ void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* 
 		FbxSubmesh.StartIndexLocation = SubmeshOffsetIndex;
 		FbxSubmesh.BaseVertexLocation = 0;
 
-		std::string SubmeshName = "submesh_";
-		SubmeshName.push_back(i + 48);
+		std::string SubmeshName = boneName[i];
 		geo->DrawArgs[SubmeshName] = FbxSubmesh;
 
 		SubmeshOffsetIndex += CurrSubmeshOffsetIndex;
@@ -156,16 +124,16 @@ void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* 
 	mGeometry = std::move(geo);
 }
 
-void Character::BuildRenderItem(Materials& mMaterials)
+void Character::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix, RenderLayer type)
 {
 	int chaIndex = 0;
 	int BoneCount = GetBoneSize();
+	auto boneName = mSkinnedInfo.GetBoneName();
 
 	for (int i = 0; i < BoneCount - 1; ++i)
 	{
-		std::string SubmeshName = "submesh_";
-		SubmeshName.push_back(i + 48); // ASCII
-		std::string MaterialName = "material_0";
+		std::string SubmeshName = boneName[i];
+		std::string MaterialName = matrialPrefix;
 		// TODO : Setting the Name
 
 		auto FbxRitem = std::make_unique<RenderItem>();
@@ -173,26 +141,41 @@ void Character::BuildRenderItem(Materials& mMaterials)
 		FbxRitem->TexTransform = MathHelper::Identity4x4();
 		FbxRitem->Mat = mMaterials.Get(MaterialName);
 		FbxRitem->Geo = mGeometry.get();
+		FbxRitem->NumFramesDirty = gNumFrameResources;
 		FbxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		FbxRitem->StartIndexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
 		FbxRitem->BaseVertexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].BaseVertexLocation;
 		FbxRitem->IndexCount = FbxRitem->Geo->DrawArgs[SubmeshName].IndexCount;
 
-		FbxRitem->SkinnedCBIndex = chaIndex++;
+		if (type == RenderLayer::Character)
+		{
+			FbxRitem->PlayerCBIndex = chaIndex++;
+		}
+		else if (type == RenderLayer::Monster)
+		{
+			FbxRitem->MonsterCBIndex= chaIndex++;
+		}
 		FbxRitem->SkinnedModelInst = mSkinnedModelInst.get();
-
-		mRitems[(int)RenderLayer::Character].push_back(FbxRitem.get());
+		mRitems[(int)type].push_back(FbxRitem.get());
 		mAllRitems.push_back(std::move(FbxRitem));
 	}
 
-	for (auto& e : mRitems[(int)RenderLayer::Character])
+	for (auto& e : mRitems[(int)type])
 	{
 		auto shadowedObjectRitem = std::make_unique<RenderItem>();
 		*shadowedObjectRitem = *e;
 		shadowedObjectRitem->Mat = mMaterials.Get("shadow0");
 		shadowedObjectRitem->NumFramesDirty = gNumFrameResources;
 
-		shadowedObjectRitem->SkinnedCBIndex = chaIndex++;
+
+		if (type == RenderLayer::Character)
+		{
+			shadowedObjectRitem->PlayerCBIndex= chaIndex++;
+		}
+		else if (type == RenderLayer::Monster)
+		{
+			shadowedObjectRitem->MonsterCBIndex = chaIndex++;
+		}
 		shadowedObjectRitem->SkinnedModelInst = mSkinnedModelInst.get();
 
 		mRitems[(int)RenderLayer::Shadow].push_back(shadowedObjectRitem.get());
@@ -200,14 +183,12 @@ void Character::BuildRenderItem(Materials& mMaterials)
 	}
 }
 
-
-void Character::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt)
+void Character::UpdateCharacterCBs(std::unique_ptr<UploadBuffer<SkinnedConstants>> &currCharacter, const Light& mMainLight, RenderLayer type, const std::string& clipName, const GameTimer & gt)
 {
-	auto currSkinnedCB = mCurrFrameResource->SkinnedCB.get();
+	auto currCharacterCB = currCharacter.get();
+	UpdateCharacterShadows(mMainLight, type);
 
-	UpdateCharacterShadows(mMainLight);
-
-	mSkinnedModelInst->UpdateSkinnedAnimation(mClipName, gt.DeltaTime());
+	mSkinnedModelInst->UpdateSkinnedAnimation(clipName, gt.DeltaTime());
 
 	for (auto& e : mAllRitems)
 	{
@@ -228,22 +209,25 @@ void Character::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Ligh
 			XMStoreFloat4x4(&skinnedConstants.World, XMMatrixTranspose(world));
 			XMStoreFloat4x4(&skinnedConstants.TexTransform, XMMatrixTranspose(texTransform));
 
-			currSkinnedCB->CopyData(e->SkinnedCBIndex, skinnedConstants);
+			if(type == RenderLayer::Character)
+				currCharacterCB->CopyData(e->PlayerCBIndex, skinnedConstants);
+			else if(type == RenderLayer::Monster)
+				currCharacterCB->CopyData(e->MonsterCBIndex, skinnedConstants);
 
 			// Next FrameResource need to be updated too.
 
 			// TODO:
-			e->NumFramesDirty--;
+			//e->NumFramesDirty--;
 		}
 	}
 }
-void Character::UpdateCharacterShadows(const Light& mMainLight)
+void Character::UpdateCharacterShadows(const Light& mMainLight, RenderLayer type)
 {
 	int i = 0;
 	for (auto& e : mRitems[(int)RenderLayer::Shadow])
 	{
 		// Load the object world
-		auto& o = mRitems[(int)RenderLayer::Character][i];
+		auto& o = mRitems[(int)type][i];
 		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World);
 
 		XMVECTOR shadowPlane = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);

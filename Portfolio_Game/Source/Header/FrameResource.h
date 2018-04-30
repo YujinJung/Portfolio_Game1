@@ -82,7 +82,7 @@ struct FrameResource
 {
 public:
     
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT skinnedObjectCount, UINT UICount);
+    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterCount, UINT UICount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -94,7 +94,8 @@ public:
     // We cannot update a cbuffer until the GPU is done processing the commands
     // that reference it.  So each frame needs their own cbuffers.
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
-	std::unique_ptr<UploadBuffer<SkinnedConstants>> SkinnedCB = nullptr;
+	std::unique_ptr<UploadBuffer<SkinnedConstants>> PlayerCB = nullptr;
+	std::unique_ptr<UploadBuffer<SkinnedConstants>> MonsterCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialConstants>>  MaterialCB = nullptr;
     std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
     std::unique_ptr<UploadBuffer<UIConstants>> UICB = nullptr;

@@ -17,9 +17,10 @@ using namespace DirectX::PackedVector;
 
 const int gNumFrameResources = 3;
 
-class Player;
 class Materials;
 class Textures;
+class Player;
+class Monster;
 
 class DirecX12UIApp : public D3DApp
 {
@@ -90,9 +91,9 @@ private:
 
 	UINT mObjCbvOffset = 0;
 	UINT mChaCbvOffset = 0;
+	UINT mMonsterCbvOffset = 0;
 	UINT mPassCbvOffset = 0;
 	UINT mMatCbvOffset = 0;
-	UINT mSkinCbvOffset = 0;
 	UINT mUICbvOffset = 0;
 	UINT mCbvSrvDescriptorSize = 0;
 
@@ -102,9 +103,11 @@ private:
 
 	Light mMainLight;
 
+	Player mPlayer;
+	Monster mMonster;
+
 	Textures mTextures;
 	Materials mMaterials;
-	Player mPlayer;
 
 	POINT mLastMousePos;
 };

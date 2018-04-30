@@ -62,7 +62,7 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 	// atan(theta) : Theta is associated with PlayerCamera
 	XMStoreFloat4x4(&temp->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 0.87f, 0.0f));
 	temp->TexTransform = MathHelper::Identity4x4();
-	temp->Mat = mMaterials.Get("sample");
+	temp->Mat = mMaterials.Get("ice0");
 	temp->Geo = mGeometries["shapeGeo"].get();
 	temp->ObjCBIndex = UIIndex++;
 	temp->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -76,7 +76,7 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 	// atan(theta) : Theta is associated with PlayerCamera
 	XMStoreFloat4x4(&mana->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 0.89f, 0.0f));
 	mana->TexTransform = MathHelper::Identity4x4();
-	mana->Mat = mMaterials.Get("ice0");
+	mana->Mat = mMaterials.Get("bricks3");
 	mana->Geo = mGeometries["shapeGeo"].get();
 	mana->ObjCBIndex = UIIndex++;
 	mana->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
