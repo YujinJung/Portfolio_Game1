@@ -74,9 +74,10 @@ cbuffer cbPlayer : register(b3)
 
 cbuffer cbMonster : register(b4)
 {
-	float4x4 gMonsterBoneTransforms[96];
-	float4x4 gMonsterWorld;
-	float4x4 gMonsterTexTransform;
+	float4x4 gMonsterBoneTransforms[10][96];
+	float4x4 gMonsterWorld[10];
+	float4x4 gMonsterTexTransform[10];
+	int monsterIndex;
 };
 
 cbuffer cbUI : register(b5)

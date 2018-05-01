@@ -283,7 +283,7 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 		if (!mCameraDetach)
 		{
 			mPlayer.PlayerMove(PlayerMoveList::Walk, 5.0f * dt);
-			mPlayer.SetClipName("Walking");
+			mPlayer.SetClipName("playerWalking");
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
 				if (mPlayer.isClipEnd())
@@ -421,9 +421,9 @@ void DirecX12UIApp::UpdateMaterialCB(const GameTimer & gt)
 
 void DirecX12UIApp::UpdateCharacterCBs(const GameTimer & gt)
 {
-	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, RenderLayer::Character, gt);
+	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 	mMonster.UpdateMonsterPosition(mPlayer.GetWorldTransform().Position, gt);
-	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, RenderLayer::Monster, gt);
+	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 }
 
 void DirecX12UIApp::UpdateObjectShadows(const GameTimer& gt)
@@ -611,7 +611,7 @@ void DirecX12UIApp::BuildFrameResources()
 			md3dDevice.Get(),
 			1, (UINT)mAllRitems.size(),
 			mMaterials.GetSize(),
-			mPlayer.GetAllRitemsSize(), mMonster.GetAllRitemsSize(), mPlayer.mUI.GetSize()));
+			mPlayer.GetAllRitemsSize(),mMonster.GetNumOfCharacter(),  mMonster.GetAllRitemsSize(), mPlayer.mUI.GetSize()));
 	}
 }
 
@@ -953,7 +953,7 @@ void DirecX12UIApp::BuildFbxGeometry()
 	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
 	FileName = "../Resource/FBX/Character/";
-	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "playerWalking", FileName);
 
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "Kick", FileName);
@@ -1175,11 +1175,11 @@ void DirecX12UIApp::BuildRenderItems()
 	mRitems[(int)RenderLayer::Opaque].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
 
-	mPlayer.BuildRenderItem(mMaterials, "material_0", RenderLayer::Character);
+	mPlayer.BuildRenderItem(mMaterials, "material_0");
 
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
 
-	mMonster.BuildRenderItem(mMaterials, "monsterMat_1", RenderLayer::Monster);
+	mMonster.BuildRenderItem(mMaterials, "monsterMat_1");
 }
 
 

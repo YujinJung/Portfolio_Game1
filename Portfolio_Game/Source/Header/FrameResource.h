@@ -38,6 +38,23 @@ struct SkinnedConstants
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
 };
 
+struct MonsterContants
+{
+	DirectX::XMFLOAT4X4 BoneTransforms[10][96];
+	DirectX::XMFLOAT4X4 World[10];
+	DirectX::XMFLOAT4X4 TexTransform[10];
+	int monsterIndex;
+
+	MonsterContants()
+	{
+		for (int i = 0; i < 10; ++i)
+		{
+			World[i] = MathHelper::Identity4x4();
+			TexTransform[i] = MathHelper::Identity4x4();
+		}
+	}
+};
+
 struct UIConstants
 {
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
@@ -82,7 +99,7 @@ struct FrameResource
 {
 public:
     
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterBoneCount, UINT UICount);
+    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterCount, UINT MonsterBoneCount, UINT UICount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -95,7 +112,7 @@ public:
     // that reference it.  So each frame needs their own cbuffers.
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 	std::unique_ptr<UploadBuffer<SkinnedConstants>> PlayerCB = nullptr;
-	std::unique_ptr<UploadBuffer<SkinnedConstants>> MonsterCB = nullptr;
+	std::unique_ptr<UploadBuffer<MonsterContants>> MonsterCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialConstants>>  MaterialCB = nullptr;
     std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
     std::unique_ptr<UploadBuffer<UIConstants>> UICB = nullptr;
