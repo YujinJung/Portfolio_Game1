@@ -1,4 +1,7 @@
 #pragma once
+
+#include "DXUI.h"
+#include "PlayerMovement.h"
 #include "Character.h"
 
 class Monster : public Character
@@ -6,6 +9,8 @@ class Monster : public Character
 public:
 	Monster();
 	~Monster();
+
+	DXUI mUI;
 
 public:
 	UINT GetBoneSize() const;
@@ -17,8 +22,11 @@ public:
 
 public:
 	bool isClipEnd(std::string clipName, int i);
-	virtual UINT GetHealth() const override;
-	virtual void Damage(int damage, int cIndex) override;
+	bool isClipMid(std::string clipName, int i);
+	virtual int GetHealth() const override;
+	virtual void Damage(int damage, DirectX::XMFLOAT3 Position, DirectX::XMFLOAT3 Look, int cIndex) override;
+
+	void SetClipName(const std::string & inClipName, int cIndex);
 
 public:
 	virtual void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList * cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData & inSkinInfo, std::string geoName) override;
@@ -30,6 +38,8 @@ public:
 	void UpdateCharacterShadows(const Light & mMainLight);
 
 private:
+	PlayerMovement mMonsterMovement;
+	
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
 	std::vector<std::unique_ptr<SkinnedModelInstance>> mSkinnedModelInst;
@@ -40,10 +50,11 @@ private:
 
 	std::vector<std::string> mClipName;
 	DirectX::XMFLOAT3 mMonsterPosition;
+	DirectX::XMFLOAT3 mMonsterLeft;
 
 private:
-	UINT mHealth;
-	UINT mDamage = 10;
+	int mHealth;
+	UINT mDamage;
 	UINT numOfCharacter;
 };
 

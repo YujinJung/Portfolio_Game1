@@ -17,17 +17,22 @@ Player::~Player()
 
 }
 
-UINT Player::GetHealth() const
+int Player::GetHealth() const
 {
 	return mHealth;
 }
-void Player::Damage(int damage, int cIndex)
+void Player::Damage(int damage, XMFLOAT3 Position, XMFLOAT3 Look, int cIndex) // For 16 / 16 
 {
+	/*XMVECTOR mP = XMLoadFloat3(&Position);
+	XMVECTOR P = XMLoadFloat3(&mWorldTransform.Position);
+*/
+	if (mHealth >= 0)
+		mSkinnedModelInst->TimePos = 0.0f;
+
+	SetClipName("HitReaction");
 	mHealth -= damage;
-	mClipName = "HitReaction";
-	
+
 	mUI.SetDamageScale(-mPlayerMovement.GetPlayerRight(), static_cast<float>(mHealth) / static_cast<float>(fullHealth));
-	mSkinnedModelInst->TimePos = 0.0f;
 }
 UINT Player::GetAllRitemsSize() const
 {
@@ -234,6 +239,9 @@ void Player::UpdatePlayerPosition(const Character& Monster, PlayerMoveList move,
 	case PlayerMoveList::AddPitch :
 		mPlayerMovement.AddPitch(velocity);
 		break;
+	case PlayerMoveList::Death :
+		
+		break;
 	}
 
 	mCamera.UpdatePosition(
@@ -244,7 +252,6 @@ void Player::UpdatePlayerPosition(const Character& Monster, PlayerMoveList move,
 
 	mTransformDirty = true;
 }
-
 void Player::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt)
 {
 	if (mHealth <= 0 && mClipName != "Death")

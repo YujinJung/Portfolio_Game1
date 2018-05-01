@@ -12,7 +12,8 @@ enum PlayerMoveList
 	Walk,
 	SideWalk,
 	AddYaw,
-	AddPitch
+	AddPitch,
+	Death
 };
 
 class Player : public Character
@@ -37,8 +38,8 @@ public:
 
 public:
 	bool isClipEnd();
-	virtual UINT GetHealth() const override;
-	virtual void Damage(int damage, int cIndex = 0) override;
+	virtual int GetHealth() const override;
+	virtual void Damage(int damage, DirectX::XMFLOAT3 Position, DirectX::XMFLOAT3 Look, int cIndex = 0) override;
 
 public:
 	virtual void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList * cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData & inSkinInfo, std::string geoName) override;
@@ -52,7 +53,6 @@ public:
 	
 private:
 	PlayerMovement mPlayerMovement;
-	PlayerController mPlayerController;
 	
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
@@ -62,8 +62,9 @@ private:
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 
 private:
-	UINT mHealth;
+	int mHealth;
 	UINT fullHealth;
+	bool DeathCamFinished = false;
 
 	std::string mClipName;
 	WorldTransform mWorldTransform;

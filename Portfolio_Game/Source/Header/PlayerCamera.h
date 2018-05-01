@@ -8,5 +8,6 @@ public:
 	~PlayerCamera();
 
 	void UpdatePosition(DirectX::FXMVECTOR inPlayerPosition, DirectX::FXMVECTOR inPlayerLook, DirectX::FXMVECTOR inPlayerUp, DirectX::GXMVECTOR inPlayerRight);
+
 };
 

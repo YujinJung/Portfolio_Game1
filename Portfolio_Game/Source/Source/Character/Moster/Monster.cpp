@@ -7,7 +7,8 @@
 using namespace DirectX;
 Monster::Monster()
 	: mHealth(100),
-	numOfCharacter(5)
+	numOfCharacter(3),
+	mDamage(10)
 {
 	for (int i = 0; i < numOfCharacter; ++i)
 		mClipName.push_back("Idle");
@@ -15,7 +16,6 @@ Monster::Monster()
 Monster::~Monster()
 {
 }
-
 
 UINT Monster::GetAllRitemsSize() const
 {
@@ -55,17 +55,36 @@ bool Monster::isClipEnd(std::string clipName, int i)
 		return true;
 	return false;
 }
-UINT Monster::GetHealth() const
+bool Monster::isClipMid(std::string clipName, int i)
+{
+	float delta = mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedInfo.GetAnimation(clipName).GetClipStartTime();
+	delta *= 0.9f;
+	if (mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedModelInst[i]->TimePos < delta)
+		return true;
+	return false;
+}
+int Monster::GetHealth() const
 {
 	return mHealth;
 }
-void Monster::Damage(int cIndex, int damage)
+void Monster::Damage(int damage, XMFLOAT3 Position, XMFLOAT3 Look, int cIndex)
 {
 	// Damage
+	if (mHealth >= 0)
+		mSkinnedModelInst[cIndex]->TimePos = 0.0f;
+
+	SetClipName("HitReaction", cIndex);
 	mHealth -= damage;
-	
-	mClipName[cIndex] = "HitReaction";
-	mSkinnedModelInst[cIndex]->TimePos = 0.0f;
+
+	//mUI.SetDamageScale(-mPlayerMovement.GetPlayerRight(), static_cast<float>(mHealth) / static_cast<float>(fullHealth));
+}
+
+void Monster::SetClipName(const std::string& inClipName, int cIndex)
+{
+	if (mClipName[cIndex] != "Death")
+	{
+		mClipName[cIndex] = inClipName;
+	}
 }
 
 void Monster::BuildGeometry(
@@ -290,11 +309,12 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 	XMVECTOR E = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 	static std::vector<float> HitTime(numOfCharacter);
 
-	for (UINT i = 0; i < numOfCharacter; ++i)
+	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
-		WorldTransform& wTransform = GetWorldTransform(i);
+		WorldTransform& wTransform = GetWorldTransform(cIndex);
 		XMVECTOR mPosition = XMLoadFloat3(&wTransform.Position);
 		XMMATRIX mRotation = XMLoadFloat4x4(&wTransform.Rotation);
+		XMVECTOR mLook = XMLoadFloat3(&wTransform.Look);
 
 		float distance = MathHelper::getDistance(pPosition, mPosition);
 
@@ -305,7 +325,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 			for (UINT j = 0; j < numOfCharacter; ++j)
 			{
 				// Me
-				if (i == j) continue;
+				if (cIndex == j) continue;
 
 				// Other Monster nth
 				XMVECTOR MnthPos = XMLoadFloat3(&GetWorldTransform(j).Position);
@@ -316,11 +336,10 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 				}
 			}
 
-			XMVECTOR mLook = XMLoadFloat3(&wTransform.Look);
 			XMVECTOR D = XMVector3Normalize(XMVectorSubtract(pPosition, mPosition));
 			mPosition = XMVectorAdd(mPosition, 0.1f * mLook);
 			XMStoreFloat3(&wTransform.Position, mPosition);
-			mClipName[i] = "Walking";
+			SetClipName("Walking", cIndex);
 
 			float theta = XMVector3AngleBetweenNormals(mLook, D).m128_f32[0];
 			if (theta < XM_PI / 12.0f) continue;
@@ -334,26 +353,26 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		}
 		else if (distance < 10.0f)
 		{
-			// Hit per 4 seconds
-			if (gt.TotalTime() - HitTime[i] > 4.0f && Player.GetHealth() > 0)
+			if (gt.TotalTime() - HitTime[cIndex] > 4.0f && Player.GetHealth() > 0) // Hit per 4 seconds
 			{
-				HitTime[i] = gt.TotalTime();
-				mSkinnedModelInst[i]->TimePos = 0.0f;
+				HitTime[cIndex] = gt.TotalTime();
+				SetClipName("MAttack1", cIndex);
+				mSkinnedModelInst[cIndex]->TimePos = 0.0f;
 
-				// TODO: Player Reaction Motion
-				mClipName[i] = "MAttack1";
-				Player.Damage(mDamage);
+				Player.Damage(mDamage, wTransform.Position, wTransform.Look);
 				continue;
 			}
 			else if(Player.GetHealth() <= 0)
 			{
-				mClipName[i] = "Idle";
+				SetClipName("Idle", cIndex);
 			}
 		}
 		else
 		{
-			mClipName[i] = "Idle";
+			SetClipName("Idle", cIndex);
 		}
+
+
 	}
 }
 

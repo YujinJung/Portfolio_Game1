@@ -253,7 +253,6 @@ void PortfolioGameApp::OnMouseMove(WPARAM btnState, int x, int y)
 
 		// Rotate Camera only
 		mPlayer.mCamera.AddYaw(dx);
-		//mPlayer.PlayerMove(PlayerMoveList::AddYaw, dx);
 	}
 	else if ((btnState & MK_RBUTTON) != 0)
 	{
@@ -261,7 +260,8 @@ void PortfolioGameApp::OnMouseMove(WPARAM btnState, int x, int y)
 
 		// Rotate Camera with Player
 		mPlayer.mCamera.AddYaw(dx);
-		mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::AddYaw, dx);
+		if(!mCameraDetach)
+			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::AddYaw, dx);
 	}
 
 	mLastMousePos.x = x;
@@ -282,8 +282,6 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 		mCameraDetach = true;
 	else if (GetAsyncKeyState('0') & 0x8000)
 		mCameraDetach = false;
-	else if (mPlayer.GetHealth() <= 0)
-		mCameraDetach = true;
 	else
 	{
 		mIsWireframe = false;
@@ -421,9 +419,28 @@ void PortfolioGameApp::UpdateMaterialCB(const GameTimer & gt)
 
 void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 {
-	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
+	static bool DeathCamFinished = false;
+	XMVECTOR PlayerPos= XMLoadFloat3(&mPlayer.GetWorldTransform().Position);
+	
+	if (mPlayer.GetHealth() <= 0 && !DeathCamFinished)
+	{
+		mCameraDetach = true;
+
+		XMVECTOR CameraPos= mPlayer.mCamera.GetEyePosition();
+
+		if (MathHelper::getDistance(PlayerPos, CameraPos) < 50.0f)
+		{
+			mPlayer.mCamera.Walk(-0.5f);
+			mPlayer.mCamera.UpdateViewMatrix();
+		}
+		else
+		{
+			DeathCamFinished = true;
+		}
+	}
 	mMonster.UpdateMonsterPosition(mPlayer, gt);
 	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
+	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 }
 
 void PortfolioGameApp::UpdateObjectShadows(const GameTimer& gt)

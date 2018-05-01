@@ -15,8 +15,8 @@ public:
 	~Character();
 
 public:
-	virtual UINT GetHealth() const = 0;
-	virtual void Damage(int damage, int cIndex = 0) = 0; // cIndex is Characters Index
+	virtual int GetHealth() const = 0;
+	virtual void Damage(int damage, DirectX::XMFLOAT3 Position, DirectX::XMFLOAT3 Look, int cIndex = 0) = 0; // cIndex is Characters Index
 
 public:
 	virtual WorldTransform& GetWorldTransform(int i = 0) = 0;
@@ -26,6 +26,7 @@ public:
 	virtual void BuildRenderItem(Materials& mMaterials, std::string matrialPrefix) = 0;
 	
 	virtual void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt) = 0;
+
 public:
 	bool mTransformDirty = false;
 	
