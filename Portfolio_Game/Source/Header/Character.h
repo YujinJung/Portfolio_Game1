@@ -1,8 +1,8 @@
 #pragma once
 
 #include "Materials.h"
-#include "../Common/UploadBuffer.h"
 #include "RenderItem.h"
+#include "../Common/UploadBuffer.h"
 
 struct SkinnedConstants;
 struct FrameResource;
@@ -23,6 +23,4 @@ public:
 	
 protected:
 	UINT numOfCharacter;
-	
 };
-

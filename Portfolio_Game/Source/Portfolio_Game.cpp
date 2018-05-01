@@ -8,11 +8,10 @@
 // Hold down '1' key to view scene in wireframe mode.
 //***************************************************************************************
 
-#include "Player.h"
-#include "Monster.h"
-#include "Character.h"
 #include "Textures.h"
 #include "Materials.h"
+#include "Player.h"
+#include "Monster.h"
 #include "Portfolio_Game.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -25,7 +24,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 
 	try
 	{
-		DirecX12UIApp theApp(hInstance);
+		PortfolioGameApp theApp(hInstance);
 		if (!theApp.Initialize())
 			return 0;
 
@@ -38,19 +37,19 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 	}
 }
 
-DirecX12UIApp::DirecX12UIApp(HINSTANCE hInstance)
+PortfolioGameApp::PortfolioGameApp(HINSTANCE hInstance)
 	: D3DApp(hInstance)
 {
 }
 
-DirecX12UIApp::~DirecX12UIApp()
+PortfolioGameApp::~PortfolioGameApp()
 {
 	if (md3dDevice != nullptr)
 		FlushCommandQueue();
 }
 
 ///
-bool DirecX12UIApp::Initialize()
+bool PortfolioGameApp::Initialize()
 {
 	if (!D3DApp::Initialize())
 		return false;
@@ -87,7 +86,7 @@ bool DirecX12UIApp::Initialize()
 	return true;
 }
 
-void DirecX12UIApp::OnResize()
+void PortfolioGameApp::OnResize()
 {
 	D3DApp::OnResize();
 
@@ -96,7 +95,7 @@ void DirecX12UIApp::OnResize()
 	mPlayer.mCamera.SetProj(0.25f*MathHelper::Pi, AspectRatio(), 1.0f, 1000.0f);
 }
 
-void DirecX12UIApp::Update(const GameTimer& gt)
+void PortfolioGameApp::Update(const GameTimer& gt)
 {
 	OnKeyboardInput(gt);
 
@@ -121,7 +120,7 @@ void DirecX12UIApp::Update(const GameTimer& gt)
 	UpdateMaterialCB(gt);
 }
 
-void DirecX12UIApp::Draw(const GameTimer& gt)
+void PortfolioGameApp::Draw(const GameTimer& gt)
 {
 	auto cmdListAlloc = mCurrFrameResource->CmdListAlloc;
 
@@ -219,7 +218,7 @@ void DirecX12UIApp::Draw(const GameTimer& gt)
 }
 
 
-void DirecX12UIApp::OnMouseDown(WPARAM btnState, int x, int y)
+void PortfolioGameApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
 	mLastMousePos.x = x;
 	mLastMousePos.y = y;
@@ -227,12 +226,12 @@ void DirecX12UIApp::OnMouseDown(WPARAM btnState, int x, int y)
 	SetCapture(mhMainWnd);
 }
 
-void DirecX12UIApp::OnMouseUp(WPARAM btnState, int x, int y)
+void PortfolioGameApp::OnMouseUp(WPARAM btnState, int x, int y)
 {
 	ReleaseCapture();
 }
 
-void DirecX12UIApp::OnMouseMove(WPARAM btnState, int x, int y)
+void PortfolioGameApp::OnMouseMove(WPARAM btnState, int x, int y)
 {
 	float dx = XMConvertToRadians(0.25f*static_cast<float>(x - mLastMousePos.x));
 	float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
@@ -260,7 +259,7 @@ void DirecX12UIApp::OnMouseMove(WPARAM btnState, int x, int y)
 	mPlayer.UpdateTransformationMatrix();
 }
 
-void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
+void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
 
@@ -353,7 +352,7 @@ void DirecX12UIApp::OnKeyboardInput(const GameTimer& gt)
 	mPlayer.UpdateTransformationMatrix();
 }
 
-void DirecX12UIApp::UpdateObjectCBs(const GameTimer& gt)
+void PortfolioGameApp::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
 
@@ -378,7 +377,7 @@ void DirecX12UIApp::UpdateObjectCBs(const GameTimer& gt)
 	}
 }
 
-void DirecX12UIApp::UpdateMainPassCB(const GameTimer& gt)
+void PortfolioGameApp::UpdateMainPassCB(const GameTimer& gt)
 {
 	XMMATRIX view = mPlayer.mCamera.GetView();
 	XMMATRIX proj = mPlayer.mCamera.GetProj();
@@ -413,20 +412,20 @@ void DirecX12UIApp::UpdateMainPassCB(const GameTimer& gt)
 	currPassCB->CopyData(0, mMainPassCB);
 }
 
-void DirecX12UIApp::UpdateMaterialCB(const GameTimer & gt)
+void PortfolioGameApp::UpdateMaterialCB(const GameTimer & gt)
 {
 	auto currMaterialCB = mCurrFrameResource->MaterialCB.get();
 	mMaterials.UpdateMaterialCB(currMaterialCB);
 }
 
-void DirecX12UIApp::UpdateCharacterCBs(const GameTimer & gt)
+void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 {
 	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 	mMonster.UpdateMonsterPosition(mPlayer.GetWorldTransform().Position, gt);
 	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 }
 
-void DirecX12UIApp::UpdateObjectShadows(const GameTimer& gt)
+void PortfolioGameApp::UpdateObjectShadows(const GameTimer& gt)
 {
 	//auto currSkinnedCB = mCurrFrameResource->PlayerCB.get();
 	//mCharacter.UpdateCharacterShadows(mMainLight);
@@ -435,7 +434,7 @@ void DirecX12UIApp::UpdateObjectShadows(const GameTimer& gt)
 
 
 ///
-void DirecX12UIApp::BuildDescriptorHeaps()
+void PortfolioGameApp::BuildDescriptorHeaps()
 {
 	mObjCbvOffset = mTextures.GetSize();
 	UINT objCount = (UINT)mAllRitems.size();
@@ -467,14 +466,14 @@ void DirecX12UIApp::BuildDescriptorHeaps()
 		IID_PPV_ARGS(&mCbvHeap)));
 }
 
-void DirecX12UIApp::BuildTextureBufferViews()
+void PortfolioGameApp::BuildTextureBufferViews()
 {
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
 	mTextures.BuildConstantBufferViews();
 	mTextures.End();
 }
 
-void DirecX12UIApp::BuildConstantBufferViews()
+void PortfolioGameApp::BuildConstantBufferViews()
 {
 	// Object 
 	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
@@ -552,7 +551,7 @@ void DirecX12UIApp::BuildConstantBufferViews()
 		mUICbvOffset);
 }
 
-void DirecX12UIApp::BuildRootSignature()
+void PortfolioGameApp::BuildRootSignature()
 {
 	const int tableNumber = 7;
 	CD3DX12_DESCRIPTOR_RANGE cbvTable[tableNumber];
@@ -603,7 +602,7 @@ void DirecX12UIApp::BuildRootSignature()
 
 }
 
-void DirecX12UIApp::BuildFrameResources()
+void PortfolioGameApp::BuildFrameResources()
 {
 	for (int i = 0; i < gNumFrameResources; ++i)
 	{
@@ -615,7 +614,7 @@ void DirecX12UIApp::BuildFrameResources()
 	}
 }
 
-void DirecX12UIApp::BuildShadersAndInputLayout()
+void PortfolioGameApp::BuildShadersAndInputLayout()
 {
 	const D3D_SHADER_MACRO skinnedDefines[] =
 	{
@@ -650,7 +649,7 @@ void DirecX12UIApp::BuildShadersAndInputLayout()
 	};
 }
 
-void DirecX12UIApp::BuildPSOs()
+void PortfolioGameApp::BuildPSOs()
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaquePsoDesc;
 
@@ -810,7 +809,7 @@ void DirecX12UIApp::BuildPSOs()
 
 
 ///
-void DirecX12UIApp::BuildShapeGeometry()
+void PortfolioGameApp::BuildShapeGeometry()
 {
 	mMainLight.Direction = { 0.57735f, -0.57735f, 0.57735f };
 	mMainLight.Strength = { 0.6f, 0.6f, 0.6f };
@@ -939,7 +938,7 @@ void DirecX12UIApp::BuildShapeGeometry()
 	mGeometries[geo->Name] = std::move(geo);
 }
 
-void DirecX12UIApp::BuildFbxGeometry()
+void PortfolioGameApp::BuildFbxGeometry()
 {
 	FbxLoader fbx;
 
@@ -1017,6 +1016,9 @@ void DirecX12UIApp::BuildFbxGeometry()
 	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
 
+	FileName = "../Resource/FBX/Monster/";
+	fbx.LoadFBX(outSkinnedInfo, "MAttack1", FileName);
+
 	mMonster.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo, "MonsterGeo");
 
 	// Begin
@@ -1054,7 +1056,7 @@ void DirecX12UIApp::BuildFbxGeometry()
 	mTextures.End();
 }
 
-void DirecX12UIApp::LoadTextures()
+void PortfolioGameApp::LoadTextures()
 {
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
 
@@ -1089,7 +1091,7 @@ void DirecX12UIApp::LoadTextures()
 	mTextures.End();
 }
 
-void DirecX12UIApp::BuildMaterials()
+void PortfolioGameApp::BuildMaterials()
 {
 	int MatIndex = mMaterials.GetSize();
 
@@ -1158,7 +1160,7 @@ void DirecX12UIApp::BuildMaterials()
 		0.0f);
 }
 
-void DirecX12UIApp::BuildRenderItems()
+void PortfolioGameApp::BuildRenderItems()
 {
 	UINT objCBIndex = 0;
 
@@ -1184,7 +1186,7 @@ void DirecX12UIApp::BuildRenderItems()
 
 
 ///
-void DirecX12UIApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
+void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
 {
 	// For each render item...
 	for (size_t i = 0; i < ritems.size(); ++i)
@@ -1237,7 +1239,7 @@ void DirecX12UIApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const st
 	}
 }
 
-std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> DirecX12UIApp::GetStaticSamplers()
+std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> PortfolioGameApp::GetStaticSamplers()
 {
 	const CD3DX12_STATIC_SAMPLER_DESC pointWrap(
 		0, // shaderRegister

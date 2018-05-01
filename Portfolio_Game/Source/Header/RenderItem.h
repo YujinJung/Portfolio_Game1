@@ -1,5 +1,7 @@
 #pragma once
 
+//#include "Player.h"
+//#include "Monster.h"
 #include "SkinnedData.h"
 
 enum eClipList
@@ -12,9 +14,14 @@ enum eClipList
 	FlyingKick
 };
 
+//struct CharacterList
+//{
+//	static Player mPlayer;
+//	static Monster mMonster;
+//};
+
 struct SkinnedModelInstance
 {
-	
 	SkinnedData* SkinnedInfo = nullptr;
 	std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
 	float TimePos = 0.0f;
@@ -38,6 +45,8 @@ struct SkinnedModelInstance
 			}
 			ClipEnd = true;
 		}
+		//else if (ClipName == "")
+
 
 		ClipEnd = false;
 		if (ClipName == "Idle")

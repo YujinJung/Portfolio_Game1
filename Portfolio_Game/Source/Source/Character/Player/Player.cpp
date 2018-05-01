@@ -243,7 +243,7 @@ void Player::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& 
 	int characterOffset = mAllRitems.size() / numOfCharacter;
 	int i = 0;
 	
-		mSkinnedModelInst->UpdateSkinnedAnimation(mClipName, gt.DeltaTime());
+	mSkinnedModelInst->UpdateSkinnedAnimation(mClipName, gt.DeltaTime());
 	for (auto& e : mAllRitems)
 	{
 		if (mTransformDirty) { e->NumFramesDirty = gNumFrameResources; }

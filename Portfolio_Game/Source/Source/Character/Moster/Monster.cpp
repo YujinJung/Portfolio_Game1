@@ -1,7 +1,7 @@
 
-#include "GameTimer.h"
 #include <random>
 #include <chrono>
+#include "GameTimer.h"
 #include "Monster.h"
 
 using namespace DirectX;
@@ -220,10 +220,16 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 		// Character Offset : mAllsize  / numOfcharacter
 		int characterOffset = mAllRitems.size() / numOfCharacter;
 		int j = 0;
-		for (int k = 0; k < numOfCharacter; ++k)
+		static float time = 0.0f;
+		if (gt.TotalTime() - time > 0.01f)
 		{
-			mSkinnedModelInst[k]->UpdateSkinnedAnimation(mClipName[k], gt.DeltaTime());
+			for (int k = 0; k < numOfCharacter; ++k)
+			{
+				mSkinnedModelInst[k]->UpdateSkinnedAnimation(mClipName[k], gt.DeltaTime());
+			}
+			time = gt.TotalTime();
 		}
+
 		for (auto& e : mAllRitems)
 		{
 			int CharacterIndex = j / characterOffset;
@@ -232,11 +238,6 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 			if (e->NumFramesDirty > 0)
 			{
 				MonsterContants monsterConstants;
-
-				/*for (int k = 0; k < GetBoneSize(); ++k)
-				{
-					monsterConstants.BoneTransforms[j][k] = mSkinnedModelInst[j]->FinalTransforms[k];
-				}*/
 
 				std::copy(
 					std::begin(mSkinnedModelInst[CharacterIndex]->FinalTransforms),
@@ -254,7 +255,6 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 				currCharacterCB->CopyData(e->MonsterCBIndex, monsterConstants);
 
 				// Next FrameResource need to be updated too.
-
 				// TODO:
 				//e->NumFramesDirty--;
 			}
@@ -263,7 +263,7 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 	}
 	
 }
-void Monster::UpdateMonsterPosition(XMFLOAT3 inPlayerPosition, const GameTimer & gt)
+void Monster::UpdateMonsterPosition( XMFLOAT3 inPlayerPosition, const GameTimer & gt)
 {
 	// p.. - player
 	// m.. - monster
@@ -299,7 +299,7 @@ void Monster::UpdateMonsterPosition(XMFLOAT3 inPlayerPosition, const GameTimer &
 
 			XMVECTOR mLook = XMLoadFloat3(&wTransform.Look);
 			XMVECTOR D = XMVector3Normalize(XMVectorSubtract(pPosition, mPosition));
-			mPosition = XMVectorAdd(mPosition, 0.3f * mLook);
+			mPosition = XMVectorAdd(mPosition, 0.1f * mLook);
 			XMStoreFloat3(&wTransform.Position, mPosition);
 			mClipName[i] = "Walking";
 
@@ -308,11 +308,16 @@ void Monster::UpdateMonsterPosition(XMFLOAT3 inPlayerPosition, const GameTimer &
 
 			/*std::wstring text = L"dot: " + std::to_wstring(gt.TotalTime()) + L"\n";
 			::OutputDebugString(text.c_str());*/
-
-			XMMATRIX R = XMMatrixRotationY(theta * 0.05f);
+			XMMATRIX R = XMMatrixRotationY(theta * 0.03f);
 
 			XMStoreFloat3(&wTransform.Look, XMVector3TransformNormal(mLook, R));
 			XMStoreFloat4x4(&wTransform.Rotation, mRotation * R);
+		}
+		else if (distance < 10.0f)
+		{
+			mClipName[i] = "MAttack1";
+			// if player health exist
+				mSkinnedModelInst[i]->TimePos = 0.0f;
 		}
 		else
 		{

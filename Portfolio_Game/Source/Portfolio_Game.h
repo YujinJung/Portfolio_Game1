@@ -2,14 +2,16 @@
 
 #include "d3dApp.h"
 #include "MathHelper.h"
-#include "UploadBuffer.h"
-#include "GeometryGenerator.h"
+
 #include "Camera.h"
-#include "FrameResource.h"
-#include "FBXLoader.h"
-#include "SkinnedData.h"
-#include "TextureLoader.h"
 #include "RenderItem.h"
+#include "SkinnedData.h"
+#include "UploadBuffer.h"
+#include "FrameResource.h"
+
+#include "FBXLoader.h"
+#include "TextureLoader.h"
+#include "GeometryGenerator.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -22,13 +24,13 @@ class Textures;
 class Player;
 class Monster;
 
-class DirecX12UIApp : public D3DApp
+class PortfolioGameApp : public D3DApp
 {
 public:
-	DirecX12UIApp(HINSTANCE hInstance);
-	DirecX12UIApp(const DirecX12UIApp& rhs) = delete;
-	DirecX12UIApp& operator=(const DirecX12UIApp& rhs) = delete;
-	~DirecX12UIApp();
+	PortfolioGameApp(HINSTANCE hInstance);
+	PortfolioGameApp(const PortfolioGameApp& rhs) = delete;
+	PortfolioGameApp& operator=(const PortfolioGameApp& rhs) = delete;
+	~PortfolioGameApp();
 
 	virtual bool Initialize()override;
 
