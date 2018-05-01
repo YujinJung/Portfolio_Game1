@@ -28,6 +28,5 @@ public:
 	virtual void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt) = 0;
 public:
 	bool mTransformDirty = false;
-	UINT health;
 	
 };

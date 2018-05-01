@@ -156,13 +156,13 @@ void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
 		// Monster - Random Position
 		auto seed = std::chrono::system_clock::now().time_since_epoch().count();
 		std::mt19937 engine{ (unsigned int)seed };
-		std::uniform_int_distribution <> dis{ 40, 80 };
+		std::uniform_int_distribution <> dis{ 1, 160 };
 
 		//Generate a random integer
 		int x{ dis(engine) };
 		int z{ dis(engine) };
 
-		wTransform.Position = { static_cast<float>(x), 0.0f, static_cast<float>(z) };
+		wTransform.Position = { static_cast<float>(x) - 80.0f, 0.0f, static_cast<float>(z) - 80.0f};
 
 		// Character Mesh
 		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)

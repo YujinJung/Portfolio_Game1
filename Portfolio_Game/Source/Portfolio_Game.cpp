@@ -962,6 +962,9 @@ void PortfolioGameApp::BuildFbxGeometry()
 
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
+
+	FileName = "../Resource/FBX/Character/";
+	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
 	/*FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "StartWalking", FileName);
 

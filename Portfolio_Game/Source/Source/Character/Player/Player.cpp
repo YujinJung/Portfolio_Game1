@@ -247,6 +247,12 @@ void Player::UpdatePlayerPosition(const Character& Monster, PlayerMoveList move,
 
 void Player::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt)
 {
+	if (mHealth <= 0 && mClipName != "Death")
+	{
+		SetClipName("Death");
+		mSkinnedModelInst->TimePos = 0.0f;
+	}
+
 	auto currCharacterCB = mCurrFrameResource->PlayerCB.get();
 	UpdateCharacterShadows(mMainLight);
 
