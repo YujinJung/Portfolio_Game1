@@ -32,7 +32,7 @@ struct SkinnedModelInstance
 		// Loop animation
 		if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
 		{
-			if (ClipName == "Idle")
+			if (ClipName == "Idle" || ClipName == "Walking")
 			{
 				TimePos = 0.0f;
 			}
@@ -68,6 +68,7 @@ struct WorldTransform
 	DirectX::XMFLOAT3 Position;
 	DirectX::XMFLOAT3 Scale;
 	DirectX::XMFLOAT4X4 Rotation;
+	DirectX::XMFLOAT3 Look;
 };
 
 struct RenderItem

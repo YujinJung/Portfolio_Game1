@@ -101,7 +101,7 @@ void Player::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& 
 
 void Player::UpdateTransformationMatrix()
 {
-	WorldTransform world = GetWorldTransform(0);
+	WorldTransform world = GetWorldTransform();
 
 	if (mPlayerMovement.UpdateTransformationMatrix(world))
 	{

@@ -20,17 +20,34 @@ Character::~Character()
 {
 }
 
-UINT Character::GetCharacterMeshSize() const
+UINT Character::GetBoneSize() const
 {
-	return (UINT)mRitems[(int)RenderLayer::Character].size();
+	return (UINT)mSkinnedInfo.BoneCount();
 }
 UINT Character::GetAllRitemsSize() const
 {
 	return (UINT)mAllRitems.size();
 }
-UINT Character::GetBoneSize() const
+UINT Character::GetCharacterMeshSize() const
 {
-	return (UINT)mSkinnedInfo.BoneCount();
+	return (UINT)mRitems[(int)RenderLayer::Character].size();
+}
+UINT Character::GetNumOfCharacter() const
+{
+	return numOfCharacter;
+}
+
+eClipList Character::GetCurrentClip() const
+{
+	return mSkinnedModelInst->state;
+}
+float Character::GetCurrentClipTime() const
+{
+	return mSkinnedModelInst->TimePos;
+}
+WorldTransform& Character::GetWorldTransform(int i) 
+{
+	return mWorldTransform[i];
 }
 DirectX::XMFLOAT4X4 Character::GetWorldTransform4x4f(int i) const
 {
@@ -43,27 +60,16 @@ DirectX::XMFLOAT4X4 Character::GetWorldTransform4x4f(int i) const
 	XMStoreFloat4x4(&Ret, S * R * P);
 	return Ret;
 }
-eClipList Character::GetCurrentClip() const
+const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type) const
 {
-	return mSkinnedModelInst->state;
+	return mRitems[(int)Type];
 }
-float Character::GetCurrentClipTime() const
-{
-	return mSkinnedModelInst->TimePos;
-}
-WorldTransform Character::GetWorldTransform(const int& i) const
-{
-	return mWorldTransform[i];
-}
+
 bool Character::isClipEnd(const std::string& clipName) const
 {
 	if (mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedModelInst->TimePos < 0.001f)
 		return true;
 	return false;
-}
-const std::vector<RenderItem*> Character::GetRenderItem(RenderLayer Type) const
-{
-	return mRitems[(int)Type];
 }
 
 void Character::SetClipTime(float time)
@@ -73,12 +79,8 @@ void Character::SetClipTime(float time)
 void Character::SetWorldTransform(const WorldTransform& inWorldTransform, const int& i)
 {
 	mWorldTransform[i] = inWorldTransform;
+	mTransformDirty = true;
 }
-//void Character::SetWorldTransform(DirectX::XMMATRIX inWorldTransform)
-//{
-//	XMStoreFloat4x4(&mWorldTransform, inWorldTransform);
-//	mTransformDirty = true;
-//}
 
 void Character::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData& inSkinInfo, std::string geoName)
 {
@@ -151,6 +153,7 @@ void Character::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix
 		WorldTransform wTransform;
 		wTransform.Position = { 0.0f, 0.0f, 0.0f };
 		wTransform.Scale = { 1.0f, 1.0f, 1.0f };
+		wTransform.Look = { 0.0f, 0.0f, 1.0f };
 		XMStoreFloat4x4(&wTransform.Rotation, XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f));
 
 		// Monster - Random Position
@@ -215,11 +218,9 @@ void Character::UpdateCharacterCBs(std::unique_ptr<UploadBuffer<SkinnedConstants
 {
 	auto currCharacterCB = currCharacter.get();
 	UpdateCharacterShadows(mMainLight, type);
-
 	mSkinnedModelInst->UpdateSkinnedAnimation(clipName, gt.DeltaTime());
 
 	// Character Offset : mAllsize  / numOfcharacter
-	// '
 	int characterOffset = mAllRitems.size() / numOfCharacter;
 	int i = 0;
 	for (auto& e : mAllRitems)
@@ -234,7 +235,6 @@ void Character::UpdateCharacterCBs(std::unique_ptr<UploadBuffer<SkinnedConstants
 				std::end(mSkinnedModelInst->FinalTransforms),
 				&skinnedConstants.BoneTransforms[0]);
 
-			// TODO : player constroller
 			XMMATRIX world = XMLoadFloat4x4(&e->World) * XMLoadFloat4x4(&GetWorldTransform4x4f(i / characterOffset));
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 

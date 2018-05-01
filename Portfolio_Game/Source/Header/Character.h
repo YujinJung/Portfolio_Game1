@@ -17,11 +17,12 @@ public:
 	UINT GetBoneSize() const;
 	UINT GetAllRitemsSize() const;
 	UINT GetCharacterMeshSize() const;
-	DirectX::XMFLOAT4X4 GetWorldTransform4x4f(int i) const;
+	UINT GetNumOfCharacter() const;
 
 	eClipList GetCurrentClip() const;
 	float GetCurrentClipTime() const;
-	WorldTransform GetWorldTransform(const int& i) const;
+	WorldTransform& GetWorldTransform(int i = 0) ;
+	DirectX::XMFLOAT4X4 GetWorldTransform4x4f(int i = 0) const;
 
 	bool isClipEnd(const std::string& clipName) const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
@@ -46,8 +47,6 @@ private:
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
-
-	//DirectX::XMFLOAT4X4 mWorldTransform;
 
 private:
 	std::vector<WorldTransform> mWorldTransform;

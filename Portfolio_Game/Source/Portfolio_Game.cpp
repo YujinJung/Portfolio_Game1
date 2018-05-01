@@ -422,6 +422,7 @@ void DirecX12UIApp::UpdateMaterialCB(const GameTimer & gt)
 void DirecX12UIApp::UpdateCharacterCBs(const GameTimer & gt)
 {
 	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, RenderLayer::Character, gt);
+	mMonster.UpdateMonsterPosition(mPlayer.GetWorldTransform().Position, gt);
 	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, RenderLayer::Monster, gt);
 }
 
@@ -429,6 +430,7 @@ void DirecX12UIApp::UpdateObjectShadows(const GameTimer& gt)
 {
 	//auto currSkinnedCB = mCurrFrameResource->PlayerCB.get();
 	//mCharacter.UpdateCharacterShadows(mMainLight);
+	
 }
 
 
@@ -1011,6 +1013,9 @@ void DirecX12UIApp::BuildFbxGeometry()
 
 	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
+
+	FileName = "../Resource/FBX/Monster/";
+	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
 
 	mMonster.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo, "MonsterGeo");
 
