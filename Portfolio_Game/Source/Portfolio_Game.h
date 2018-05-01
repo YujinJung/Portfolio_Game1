@@ -1,17 +1,6 @@
 #pragma once
 
 #include "d3dApp.h"
-#include "MathHelper.h"
-
-#include "Camera.h"
-#include "RenderItem.h"
-#include "SkinnedData.h"
-#include "UploadBuffer.h"
-#include "FrameResource.h"
-
-#include "FBXLoader.h"
-#include "TextureLoader.h"
-#include "GeometryGenerator.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -104,12 +93,11 @@ private:
 	bool mCameraDetach = false; // True - Camera Move with player
 
 	Light mMainLight;
-
-	Player mPlayer;
-	Monster mMonster;
-
 	Textures mTextures;
 	Materials mMaterials;
 
 	POINT mLastMousePos;
+
+	Player mPlayer;
+	Monster mMonster;
 };

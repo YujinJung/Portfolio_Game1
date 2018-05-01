@@ -8,10 +8,21 @@
 // Hold down '1' key to view scene in wireframe mode.
 //***************************************************************************************
 
-#include "Textures.h"
-#include "Materials.h"
+#include "MathHelper.h"
+#include "UploadBuffer.h"
+#include "RenderItem.h"
+#include "SkinnedData.h"
+#include "FrameResource.h"
+#include "GeometryGenerator.h"
+
+#include "Camera.h"
 #include "Player.h"
 #include "Monster.h"
+#include "Textures.h"
+#include "Materials.h"
+#include "FBXLoader.h"
+#include "TextureLoader.h"
+
 #include "Portfolio_Game.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
@@ -250,7 +261,7 @@ void PortfolioGameApp::OnMouseMove(WPARAM btnState, int x, int y)
 
 		// Rotate Camera with Player
 		mPlayer.mCamera.AddYaw(dx);
-		mPlayer.PlayerMove(PlayerMoveList::AddYaw, dx);
+		mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::AddYaw, dx);
 	}
 
 	mLastMousePos.x = x;
@@ -271,6 +282,8 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 		mCameraDetach = true;
 	else if (GetAsyncKeyState('0') & 0x8000)
 		mCameraDetach = false;
+	else if (mPlayer.GetHealth() <= 0)
+		mCameraDetach = true;
 	else
 	{
 		mIsWireframe = false;
@@ -281,7 +294,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	{
 		if (!mCameraDetach)
 		{
-			mPlayer.PlayerMove(PlayerMoveList::Walk, 5.0f * dt);
+			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::Walk, 5.0f * dt);
 			mPlayer.SetClipName("playerWalking");
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
@@ -298,7 +311,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	{
 		if (!mCameraDetach)
 		{
-			mPlayer.PlayerMove(PlayerMoveList::Walk, -5.0f * dt);
+			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::Walk, -5.0f * dt);
 			mPlayer.SetClipName("WalkingBackward");
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
@@ -320,31 +333,19 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	{
 		if (mPlayer.isClipEnd())
 			mPlayer.SetClipName("Idle");
-		/*if (mPlayer.GetCurrentClip() == eClipList::StopWalking && mPlayer.isClipEnd())
-			mPlayer.SetClipName("Idle");
-		else if (mPlayer.GetCurrentClip() == eClipList::Idle)
-			mPlayer.SetClipName("Idle");
-		else if(mPlayer.GetCurrentClip() != eClipList::StopWalking)
-		{
-			float walkRatio = mPlayer.GetCurrentClipTime() / 1.625f;
-			walkRatio += 0.1f;
-			if (walkRatio >= 1.0f) walkRatio -= 1.0f;
-			mPlayer.SetClipName("StopWalking");
-			mPlayer.SetClipTime(walkRatio);
-		}*/
 	}
 
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
 		if (!mCameraDetach)
-			mPlayer.PlayerMove(PlayerMoveList::AddYaw, -1.0f * dt);
+			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::AddYaw, -1.0f * dt);
 		else
 			mPlayer.mCamera.WalkSideway(-10.0f * dt);
 	}
 	else if (GetAsyncKeyState('D') & 0x8000)
 	{
 		if (!mCameraDetach)
-			mPlayer.PlayerMove(PlayerMoveList::AddYaw, 1.0f * dt);
+			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::AddYaw, 1.0f * dt);
 		else
 			mPlayer.mCamera.WalkSideway(10.0f * dt);
 	}
@@ -421,7 +422,7 @@ void PortfolioGameApp::UpdateMaterialCB(const GameTimer & gt)
 void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 {
 	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
-	mMonster.UpdateMonsterPosition(mPlayer.GetWorldTransform().Position, gt);
+	mMonster.UpdateMonsterPosition(mPlayer, gt);
 	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 }
 
@@ -429,7 +430,6 @@ void PortfolioGameApp::UpdateObjectShadows(const GameTimer& gt)
 {
 	//auto currSkinnedCB = mCurrFrameResource->PlayerCB.get();
 	//mCharacter.UpdateCharacterShadows(mMainLight);
-	
 }
 
 
@@ -960,6 +960,8 @@ void PortfolioGameApp::BuildFbxGeometry()
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "FlyingKick", FileName);
 
+	FileName = "../Resource/FBX/Character/";
+	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
 	/*FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "StartWalking", FileName);
 

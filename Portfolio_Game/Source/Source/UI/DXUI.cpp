@@ -4,6 +4,9 @@
 using namespace DirectX;
 DXUI::DXUI()
 {
+	mWorldTransform.Scale = { 1.0f, 1.0f, 1.0f };
+	mWorldTransform.Position = { 0.0f, 0.0f, 0.0f };
+	UIoffset = { 0.0f, 0.0f, 0.0f };
 }
 
 
@@ -15,10 +18,19 @@ UINT DXUI::GetSize() const
 {
 	return (UINT)mAllRitems.size();
 }
-
 const std::vector<RenderItem*> DXUI::GetRenderItem(eUIList Type)
 {
 	return mRitems[(int)Type];
+}
+
+void DXUI::SetPosition(FXMVECTOR inPosition)
+{
+	XMStoreFloat3(&mWorldTransform.Position, inPosition);
+}
+void DXUI::SetDamageScale(DirectX::FXMVECTOR inEyeLeft, float inScale)
+{
+	XMStoreFloat3(&UIoffset, (1.0f - inScale) * inEyeLeft * 0.1f);
+	mWorldTransform.Scale.x = inScale;
 }
 
 void DXUI::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mUICbvOffset)
@@ -89,7 +101,6 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 
 void DXUI::UpdateUICBs(UploadBuffer<UIConstants>* currUICB, XMMATRIX playerWorld, bool mTransformDirty)
 {
-
 	for (auto& e : mAllRitems)
 	{
 		// if Transform then Reset the Dirty flag
@@ -98,11 +109,14 @@ void DXUI::UpdateUICBs(UploadBuffer<UIConstants>* currUICB, XMMATRIX playerWorld
 		// This needs to be tracked per frame resource.
 		if (e->NumFramesDirty > 0)
 		{
-			XMMATRIX world = XMLoadFloat4x4(&e->World) * playerWorld;
+			XMMATRIX T = XMMatrixTranslation(mWorldTransform.Position.x + UIoffset.x, mWorldTransform.Position.y + UIoffset.y, mWorldTransform.Position.z + UIoffset.z);
+			XMMATRIX world = XMLoadFloat4x4(&e->World) * playerWorld * T;
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
 			UIConstants uiConstants;
-			XMStoreFloat4x4(&uiConstants.World, XMMatrixTranspose(world));
+			XMMATRIX S = XMMatrixScaling(mWorldTransform.Scale.x, mWorldTransform.Scale.y, mWorldTransform.Scale.z);
+
+			XMStoreFloat4x4(&uiConstants.World, XMMatrixTranspose(world) * S);
 			XMStoreFloat4x4(&uiConstants.TexTransform, XMMatrixTranspose(texTransform));
 
 			currUICB->CopyData(e->ObjCBIndex, uiConstants);

@@ -6,8 +6,9 @@
 
 using namespace DirectX;
 Monster::Monster()
+	: mHealth(100),
+	numOfCharacter(5)
 {
-	numOfCharacter = 5;
 	for (int i = 0; i < numOfCharacter; ++i)
 		mClipName.push_back("Idle");
 }
@@ -46,6 +47,25 @@ DirectX::XMFLOAT4X4 Monster::GetWorldTransform4x4f(int i) const
 const std::vector<RenderItem*> Monster::GetRenderItem(RenderLayer Type) const
 {
 	return mRitems[(int)Type];
+}
+
+bool Monster::isClipEnd(std::string clipName, int i)
+{
+	if (mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedModelInst[i]->TimePos < 0.001f)
+		return true;
+	return false;
+}
+UINT Monster::GetHealth() const
+{
+	return mHealth;
+}
+void Monster::Damage(int cIndex, int damage)
+{
+	// Damage
+	mHealth -= damage;
+	
+	mClipName[cIndex] = "HitReaction";
+	mSkinnedModelInst[cIndex]->TimePos = 0.0f;
 }
 
 void Monster::BuildGeometry(
@@ -119,7 +139,6 @@ void Monster::BuildGeometry(
 
 	mGeometry = std::move(geo);
 }
-
 void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
 {
 	int chaIndex = 0;
@@ -261,15 +280,15 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 			++j;
 		}
 	}
-	
+
 }
-void Monster::UpdateMonsterPosition( XMFLOAT3 inPlayerPosition, const GameTimer & gt)
+void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 {
 	// p.. - player
 	// m.. - monster
-	XMVECTOR pPosition = XMLoadFloat3(&inPlayerPosition);
+	XMVECTOR pPosition = XMLoadFloat3(&Player.GetWorldTransform().Position);
 	XMVECTOR E = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
-	static std::vector<float> rotationTime(numOfCharacter);
+	static std::vector<float> HitTime(numOfCharacter);
 
 	for (UINT i = 0; i < numOfCharacter; ++i)
 	{
@@ -280,7 +299,7 @@ void Monster::UpdateMonsterPosition( XMFLOAT3 inPlayerPosition, const GameTimer 
 		float distance = MathHelper::getDistance(pPosition, mPosition);
 
 		// Move Monster
-		if (distance < 50.0f && distance > 10.0f) 
+		if (distance < 50.0f && distance > 10.0f)
 		{
 			// Monster Collision Check
 			for (UINT j = 0; j < numOfCharacter; ++j)
@@ -315,9 +334,21 @@ void Monster::UpdateMonsterPosition( XMFLOAT3 inPlayerPosition, const GameTimer 
 		}
 		else if (distance < 10.0f)
 		{
-			mClipName[i] = "MAttack1";
-			// if player health exist
+			// Hit per 4 seconds
+			if (gt.TotalTime() - HitTime[i] > 4.0f && Player.GetHealth() > 0)
+			{
+				HitTime[i] = gt.TotalTime();
 				mSkinnedModelInst[i]->TimePos = 0.0f;
+
+				// TODO: Player Reaction Motion
+				mClipName[i] = "MAttack1";
+				Player.Damage(mDamage);
+				continue;
+			}
+			else if(Player.GetHealth() <= 0)
+			{
+				mClipName[i] = "Idle";
+			}
 		}
 		else
 		{
