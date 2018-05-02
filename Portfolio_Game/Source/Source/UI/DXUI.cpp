@@ -88,7 +88,7 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 	// atan(theta) : Theta is associated with PlayerCamera
 	XMStoreFloat4x4(&mana->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 0.89f, 0.0f));
 	mana->TexTransform = MathHelper::Identity4x4();
-	mana->Mat = mMaterials.Get("bricks3");
+	mana->Mat = mMaterials.Get("red");
 	mana->Geo = mGeometries["shapeGeo"].get();
 	mana->ObjCBIndex = UIIndex++;
 	mana->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;

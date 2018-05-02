@@ -8,6 +8,8 @@
 // Hold down '1' key to view scene in wireframe mode.
 //***************************************************************************************
 
+#include <random>
+#include <chrono>
 #include "MathHelper.h"
 #include "UploadBuffer.h"
 #include "RenderItem.h"
@@ -1140,8 +1142,8 @@ void PortfolioGameApp::LoadTextures()
 		L"../Resource/Textures/ice.dds");
 
 	mTextures.SetTexture(
-		"sampleTex",
-		L"../Resource/Textures/sample.jpg");
+		"redTex",
+		L"../Resource/Textures/red.jpg");
 
 	mTextures.End();
 }
@@ -1199,9 +1201,9 @@ void PortfolioGameApp::BuildMaterials()
 		0.1f);
 
 	mMaterials.SetMaterial(
-		"sample",
+		"red",
 		MatIndex++,
-		mTextures.GetTextureIndex("sampleTex"),
+		mTextures.GetTextureIndex("redTex"),
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.05f, 0.02f, 0.02f),
 		0.1f);
@@ -1220,7 +1222,7 @@ void PortfolioGameApp::BuildRenderItems()
 	UINT objCBIndex = 0;
 
 	auto gridRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(10.0f, 2.0f, 10.0f));
+	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(20.0f, 2.0f, 20.0f));
 	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(8.0f, 80.0f, 1.0f));
 	gridRitem->ObjCBIndex = objCBIndex++;
 	gridRitem->Mat = mMaterials.Get("grass0");
@@ -1231,6 +1233,38 @@ void PortfolioGameApp::BuildRenderItems()
 	gridRitem->BaseVertexLocation = gridRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
 	mRitems[(int)RenderLayer::Opaque].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
+
+	
+	for (int i = 0; i < 2; ++i)
+	{
+		auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+		std::mt19937 engine{ (unsigned int)seed };
+		std::uniform_int_distribution <> dis{ 50, 160 };
+		int y{ dis(engine) };
+
+		std::uniform_int_distribution <> dis1{ 20, 40 };
+		int x{ dis1(engine) };
+		int z{ dis1(engine) };
+		XMMATRIX S = XMMatrixScaling((float)x, (float)y, (float)z);
+
+		std::uniform_int_distribution <> dis2{ 0, 160 };
+		int xp { dis2(engine) };
+		int zp{ dis2(engine) };
+		XMMATRIX T = XMMatrixTranslation((float)xp - 80.0f, 0.0f, (float)zp - 80.0f);
+
+		auto boxRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&boxRitem->World, S * T);
+		XMStoreFloat4x4(&boxRitem->TexTransform, XMMatrixScaling(8.0f, 80.0f, 1.0f));
+		boxRitem->ObjCBIndex = objCBIndex++;
+		boxRitem->Mat = mMaterials.Get("grass0");
+		boxRitem->Geo = mGeometries["shapeGeo"].get();
+		boxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		boxRitem->IndexCount = boxRitem->Geo->DrawArgs["box"].IndexCount;
+		boxRitem->StartIndexLocation = boxRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		boxRitem->BaseVertexLocation = boxRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		mRitems[(int)RenderLayer::Opaque].push_back(boxRitem.get());
+		mAllRitems.push_back(std::move(boxRitem));
+	}
 
 	mPlayer.BuildRenderItem(mMaterials, "material_0");
 

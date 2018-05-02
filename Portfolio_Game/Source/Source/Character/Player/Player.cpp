@@ -39,7 +39,7 @@ void Player::Attack(Character & inMonster)
 		SetClipName("FlyingKick");
 	SetClipTime(0.0f);
 
-	inMonster.Damage(100, mWorldTransform.Position, mWorldTransform.Look);
+	inMonster.Damage(30, mWorldTransform.Position, mWorldTransform.Look);
 }
 UINT Player::GetAllRitemsSize() const
 {
