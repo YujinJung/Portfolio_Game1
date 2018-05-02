@@ -23,6 +23,17 @@ VertexOut VS(VertexIn vin)
 {
 	VertexOut vout = (VertexOut)0.0f;
 
+#ifdef MONSTER
+	// Transform to world space.
+	float4 posW = mul(float4(vin.PosL, 1.0f), gMonsterUIWorld);
+	vout.PosW = posW.xyz;
+
+	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
+	vout.NormalW = mul(vin.NormalL, (float3x3)gMonsterUIWorld);
+
+	// Output vertex attributes for interpolation across triangle.
+	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gMonsterUITexTransform);
+#else
 	// Transform to world space.
 	float4 posW = mul(float4(vin.PosL, 1.0f), gUIWorld);
 	vout.PosW = posW.xyz;
@@ -32,6 +43,7 @@ VertexOut VS(VertexIn vin)
 
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gUITexTransform);
+#endif
 
 	vout.TexC = mul(texC, gMatTransform).xy;
 	// Transform to homogeneous clip space.

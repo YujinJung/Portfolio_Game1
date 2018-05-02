@@ -64,6 +64,9 @@
     <ClCompile Include="Source\Source\Character\Moster\Monster.cpp">
       <Filter>Character\AI</Filter>
     </ClCompile>
+    <ClCompile Include="Source\Source\UI\MonsterUI.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Header\Common\GameTimer.h">

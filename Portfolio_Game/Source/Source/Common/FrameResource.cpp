@@ -1,6 +1,6 @@
 #include "FrameResource.h"
 
-FrameResource::FrameResource(ID3D12Device * device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterCount,UINT MonsterBoneCount, UINT UICount)
+FrameResource::FrameResource(ID3D12Device * device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterCount,UINT MonsterBoneCount, UINT UICount, UINT MonsterUICount)
 {
 	ThrowIfFailed(device->CreateCommandAllocator(
 		D3D12_COMMAND_LIST_TYPE_DIRECT,
@@ -12,6 +12,7 @@ FrameResource::FrameResource(ID3D12Device * device, UINT passCount, UINT objectC
 	PlayerCB = std::make_unique<UploadBuffer<SkinnedConstants>>(device, PlayerCount, true);
 	MonsterCB = std::make_unique<UploadBuffer<MonsterContants>>(device, MonsterBoneCount * MonsterCount, true);
 	UICB = std::make_unique<UploadBuffer<UIConstants>>(device, UICount, true);
+	MonsterUICB = std::make_unique<UploadBuffer<UIConstants>>(device, MonsterUICount, true);
 }
 
 FrameResource::~FrameResource()

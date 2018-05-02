@@ -6,15 +6,34 @@
 
 using namespace DirectX;
 Monster::Monster()
-	: mHealth(100),
-	numOfCharacter(3),
+	:	numOfCharacter(3),
 	mDamage(10)
 {
 	for (int i = 0; i < numOfCharacter; ++i)
-		mClipName.push_back("Idle");
+	{
+		MonsterInfo M;
+		M.mClipName = "Idle";
+		M.mHealth = 100;
+		M.mWorldTransform.Position = { 0.0f, 0.0f, 0.0f };
+		M.mWorldTransform.Look= { 0.0f, 0.0f, 1.0f };
+		M.mWorldTransform.Scale= { 1.0f, 1.0f, 1.0f };
+		XMStoreFloat4x4(&M.mWorldTransform.Rotation, XMMatrixIdentity());
+
+		mMonsterInfo.push_back(M);
+	}
 }
 Monster::~Monster()
 {
+}
+
+UINT Monster::GetUISize() const
+{
+	UINT ret = 0;
+	for (int i = 0; i < numOfCharacter; ++i)
+	{
+		ret = ret + monsterUI.GetSize();
+	}
+	return ret;
 }
 
 UINT Monster::GetAllRitemsSize() const
@@ -31,11 +50,11 @@ UINT Monster::GetNumOfCharacter() const
 }
 WorldTransform& Monster::GetWorldTransform(int i)
 {
-	return mWorldTransform[i];
+	return mMonsterInfo[i].mWorldTransform;
 }
 DirectX::XMFLOAT4X4 Monster::GetWorldTransform4x4f(int i) const
 {
-	auto T = mWorldTransform[i];
+	auto T = mMonsterInfo[i].mWorldTransform;
 	XMMATRIX P = XMMatrixTranslation(T.Position.x, T.Position.y, T.Position.z);
 	XMMATRIX R = XMLoadFloat4x4(&T.Rotation);
 	XMMATRIX S = XMMatrixScaling(T.Scale.x, T.Scale.y, T.Scale.z);
@@ -63,28 +82,40 @@ bool Monster::isClipMid(std::string clipName, int i)
 		return true;
 	return false;
 }
-int Monster::GetHealth() const
+int Monster::GetHealth(int i) const
 {
-	return mHealth;
+	return mMonsterInfo[i].mHealth;
 }
-void Monster::Damage(int damage, XMFLOAT3 Position, XMFLOAT3 Look, int cIndex)
+void Monster::Damage(int damage, XMFLOAT3 Position, XMFLOAT3 Look)
 {
+	XMVECTOR PlayerPosi = XMLoadFloat3(&Position);
+	XMVECTOR PlayerLook = XMLoadFloat3(&Look);
+	XMVECTOR HitTargetv = XMVectorAdd(PlayerPosi, PlayerLook);
+
 	// Damage
-	if (mHealth >= 0)
-		mSkinnedModelInst[cIndex]->TimePos = 0.0f;
+	for (int cIndex = 0; cIndex < numOfCharacter; ++cIndex)
+	{
+		XMVECTOR MonsterPos = XMLoadFloat3(&mMonsterInfo[cIndex].mWorldTransform.Position);
 
-	SetClipName("HitReaction", cIndex);
-	mHealth -= damage;
+		if (MathHelper::getDistance(HitTargetv, MonsterPos) < 15.0f)
+		{
+			if (mMonsterInfo[cIndex].mHealth >= 0)
+				mSkinnedModelInst[cIndex]->TimePos = 0.0f;
 
-	//mUI.SetDamageScale(-mPlayerMovement.GetPlayerRight(), static_cast<float>(mHealth) / static_cast<float>(fullHealth));
+			SetClipName("HitReaction", cIndex);
+			mMonsterInfo[cIndex].mHealth -= damage;
+		}
+	}
 }
 
 void Monster::SetClipName(const std::string& inClipName, int cIndex)
 {
-	if (mClipName[cIndex] != "Death")
+	if (mMonsterInfo[cIndex].mClipName != "Death")
 	{
-		mClipName[cIndex] = inClipName;
-	}
+		mMonsterInfo[cIndex].mClipName = inClipName;
+		if(inClipName == "Death")
+			mSkinnedModelInst[cIndex]->TimePos = 0.0f;
+	} 
 }
 
 void Monster::BuildGeometry(
@@ -164,7 +195,7 @@ void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
 	int BoneCount = GetBoneSize();
 	auto boneName = mSkinnedInfo.GetBoneName();
 
-	for (int characterIndex = 0; characterIndex < numOfCharacter; ++characterIndex)
+	for (int cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
 		WorldTransform wTransform;
 		wTransform.Position = { 0.0f, 0.0f, 0.0f };
@@ -199,14 +230,14 @@ void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
 			MonsterRitem->StartIndexLocation = MonsterRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
 			MonsterRitem->BaseVertexLocation = MonsterRitem->Geo->DrawArgs[SubmeshName].BaseVertexLocation;
 			MonsterRitem->IndexCount = MonsterRitem->Geo->DrawArgs[SubmeshName].IndexCount;
-			MonsterRitem->SkinnedModelInst = mSkinnedModelInst[characterIndex].get();
+			MonsterRitem->SkinnedModelInst = mSkinnedModelInst[cIndex].get();
 			MonsterRitem->MonsterCBIndex = chaIndex++;
 
 			auto shadowedObjectRitem = std::make_unique<RenderItem>();
 			*shadowedObjectRitem = *MonsterRitem;
 			shadowedObjectRitem->Mat = mMaterials.Get("shadow0");
 			shadowedObjectRitem->NumFramesDirty = gNumFrameResources;
-			shadowedObjectRitem->SkinnedModelInst = mSkinnedModelInst[characterIndex].get();
+			shadowedObjectRitem->SkinnedModelInst = mSkinnedModelInst[cIndex].get();
 			shadowedObjectRitem->MonsterCBIndex = chaIndex++;
 
 			mRitems[(int)RenderLayer::Monster].push_back(MonsterRitem.get());
@@ -214,8 +245,42 @@ void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
 			mRitems[(int)RenderLayer::Shadow].push_back(shadowedObjectRitem.get());
 			mAllRitems.push_back(std::move(shadowedObjectRitem));
 		}
-		mWorldTransform.push_back(wTransform);
+		mMonsterInfo[cIndex].mWorldTransform = wTransform;
 	}
+}
+void Monster::BuildUIConstantBuffer(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mMonsterUICbvOffset)
+{
+	UINT UICount = GetUISize();
+	UINT UICBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(UIConstants));
+	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
+	{
+		auto UICB = mFrameResources[frameIndex]->MonsterUICB->Resource();
+
+		for (UINT i = 0; i < UICount; ++i)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = UICB->GetGPUVirtualAddress();
+
+			// Offset to the ith object constant buffer in the buffer.
+			cbAddress += i * UICBByteSize;
+
+			// Offset to the object cbv in the descriptor heap.
+			int heapIndex = mMonsterUICbvOffset + frameIndex * UICount + i;
+			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
+
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+			cbvDesc.BufferLocation = cbAddress;
+			cbvDesc.SizeInBytes = UICBByteSize;
+
+			device->CreateConstantBufferView(&cbvDesc, handle);
+		}
+	}
+}
+void Monster::BuildUIRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries, Materials & mMaterials)
+{
+	monsterUI.BuildRenderItem(mGeometries, mMaterials);
 }
 void Monster::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mMonsterCbvOffset)
 {
@@ -263,7 +328,7 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 		{
 			for (int k = 0; k < numOfCharacter; ++k)
 			{
-				mSkinnedModelInst[k]->UpdateSkinnedAnimation(mClipName[k], gt.DeltaTime());
+				mSkinnedModelInst[k]->UpdateSkinnedAnimation(mMonsterInfo[k].mClipName, gt.DeltaTime());
 			}
 			time = gt.TotalTime();
 		}
@@ -298,7 +363,17 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 			}
 			++j;
 		}
+		
 	}
+
+	// UI
+	auto currUICB = mCurrFrameResource->MonsterUICB.get();
+	//monsterUI.UpdateUICBs(currUICB, XMLoadFloat4x4(&GetWorldTransform4x4f(0)), mTransformDirty);
+	//monsterUI.UpdateUICBs(currUICB, XMMatrixIdentity(), mTransformDirty);
+	/*for (int i = 0; i < numOfCharacter; ++i)
+	{
+		
+	}*/
 
 }
 void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
@@ -311,6 +386,14 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 
 	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
+		// Monster Die
+		if (GetHealth(cIndex) <= 0)
+		{
+			SetClipName("Death", cIndex);
+		}
+		if (mMonsterInfo[cIndex].mClipName == "Death")
+			continue;
+		
 		WorldTransform& wTransform = GetWorldTransform(cIndex);
 		XMVECTOR mPosition = XMLoadFloat3(&wTransform.Position);
 		XMMATRIX mRotation = XMLoadFloat4x4(&wTransform.Rotation);
@@ -353,7 +436,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		}
 		else if (distance < 10.0f)
 		{
-			if (gt.TotalTime() - HitTime[cIndex] > 4.0f && Player.GetHealth() > 0) // Hit per 4 seconds
+			if (gt.TotalTime() - HitTime[cIndex] > 5.0f && Player.GetHealth() > 0) // Hit per 5 seconds
 			{
 				HitTime[cIndex] = gt.TotalTime();
 				SetClipName("MAttack1", cIndex);
@@ -367,11 +450,16 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 				SetClipName("Idle", cIndex);
 			}
 		}
+		else if (distance < 3.0f)
+		{
+			// Move Back
+			mPosition = XMVectorSubtract(mPosition, mLook);
+			XMStoreFloat3(&wTransform.Position, mPosition);
+		}
 		else
 		{
 			SetClipName("Idle", cIndex);
 		}
-
 
 	}
 }

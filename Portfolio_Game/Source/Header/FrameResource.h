@@ -99,7 +99,7 @@ struct FrameResource
 {
 public:
     
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterCount, UINT MonsterBoneCount, UINT UICount);
+    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterCount, UINT MonsterBoneCount, UINT UICount, UINT MonsterUICount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
@@ -116,6 +116,7 @@ public:
 	std::unique_ptr<UploadBuffer<MaterialConstants>>  MaterialCB = nullptr;
     std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
     std::unique_ptr<UploadBuffer<UIConstants>> UICB = nullptr;
+    std::unique_ptr<UploadBuffer<UIConstants>> MonsterUICB = nullptr;
 
     // Fence value to mark commands up to this fence point.  This lets us
     // check if these frame resources are still in use by the GPU.

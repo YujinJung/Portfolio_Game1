@@ -85,3 +85,9 @@ cbuffer cbUI : register(b5)
 	float4x4 gUIWorld;
 	float4x4 gUITexTransform;
 };
+
+cbuffer cbMonsterUI : register(b6)
+{
+	float4x4 gMonsterUIWorld;
+	float4x4 gMonsterUITexTransform;
+};

@@ -92,6 +92,7 @@ struct RenderItem
 	int ObjCBIndex = -1;
 	int PlayerCBIndex = -1;
 	int MonsterCBIndex = -1;
+	int UICBIndex = -1;
 
 	int NumFramesDirty = gNumFrameResources;
 

@@ -11,7 +11,7 @@ public:
 	DXUI();
 	~DXUI();
 
-	UINT GetSize() const;
+	virtual UINT GetSize() const;
 	const std::vector<RenderItem*> GetRenderItem(eUIList Type);
 
 	void SetPosition(DirectX::FXMVECTOR inPosition);

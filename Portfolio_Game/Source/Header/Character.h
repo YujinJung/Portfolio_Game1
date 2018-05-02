@@ -15,8 +15,8 @@ public:
 	~Character();
 
 public:
-	virtual int GetHealth() const = 0;
-	virtual void Damage(int damage, DirectX::XMFLOAT3 Position, DirectX::XMFLOAT3 Look, int cIndex = 0) = 0; // cIndex is Characters Index
+	virtual int GetHealth(int i  = 0) const = 0;
+	virtual void Damage(int damage, DirectX::XMFLOAT3 Position, DirectX::XMFLOAT3 Look) = 0; 
 
 public:
 	virtual WorldTransform& GetWorldTransform(int i = 0) = 0;

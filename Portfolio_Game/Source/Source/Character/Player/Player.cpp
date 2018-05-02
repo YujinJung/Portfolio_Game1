@@ -17,11 +17,11 @@ Player::~Player()
 
 }
 
-int Player::GetHealth() const
+int Player::GetHealth(int i) const
 {
 	return mHealth;
 }
-void Player::Damage(int damage, XMFLOAT3 Position, XMFLOAT3 Look, int cIndex) // For 16 / 16 
+void Player::Damage(int damage, XMFLOAT3 Position, XMFLOAT3 Look)
 {
 	/*XMVECTOR mP = XMLoadFloat3(&Position);
 	XMVECTOR P = XMLoadFloat3(&mWorldTransform.Position);
@@ -33,6 +33,13 @@ void Player::Damage(int damage, XMFLOAT3 Position, XMFLOAT3 Look, int cIndex) //
 	mHealth -= damage;
 
 	mUI.SetDamageScale(-mPlayerMovement.GetPlayerRight(), static_cast<float>(mHealth) / static_cast<float>(fullHealth));
+}
+void Player::Attack(Character & inMonster)
+{
+		SetClipName("FlyingKick");
+	SetClipTime(0.0f);
+
+	inMonster.Damage(100, mWorldTransform.Position, mWorldTransform.Look);
 }
 UINT Player::GetAllRitemsSize() const
 {

@@ -86,6 +86,7 @@ private:
 	UINT mPassCbvOffset = 0;
 	UINT mMatCbvOffset = 0;
 	UINT mUICbvOffset = 0;
+	UINT mMonsterUICbvOffset = 0;
 	UINT mCbvSrvDescriptorSize = 0;
 
 	bool mIsWireframe = false;
