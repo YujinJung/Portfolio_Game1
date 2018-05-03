@@ -22,18 +22,21 @@ int Player::GetHealth(int i) const
 {
 	return mPlayerInfo.mHealth;
 }
-bool Player::Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look)
+void Player::Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look)
 {
-	/*XMVECTOR mP = XMLoadFloat3(&Position);
-	XMVECTOR P = XMLoadFloat3(&mWorldTransform.Position);
-*/
+	XMVECTOR mP = Position;
+	XMVECTOR P = mPlayerInfo.mMovement.GetPlayerPosition();
+
+	if (MathHelper::getDistance(mP, P) > 10.0f)
+		return;
+
 	if (mPlayerInfo.mHealth >= 0)
 	{
 		mSkinnedModelInst->TimePos = 0.0f;
 	}
 	else 
 	{
-		return false;
+		return;
 	}
 
 	SetClipName("HitReaction");

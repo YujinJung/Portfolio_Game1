@@ -16,7 +16,7 @@ public:
 
 public:
 	virtual int GetHealth(int i  = 0) const = 0;
-	virtual bool Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) = 0;
+	virtual void Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) = 0;
 
 public:
 	virtual WorldTransform GetWorldTransform(int i = 0) = 0;

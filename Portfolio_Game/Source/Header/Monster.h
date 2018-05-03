@@ -26,7 +26,7 @@ public:
 	bool isClipEnd(std::string clipName, int i);
 	bool isClipMid(std::string clipName, int i);
 	virtual int GetHealth(int i = 0) const override;
-	virtual bool Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
+	virtual void Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
 
 	void SetClipName(const std::string & inClipName, int cIndex);
 

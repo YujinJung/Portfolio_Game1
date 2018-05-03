@@ -6,7 +6,7 @@
 
 using namespace DirectX;
 Monster::Monster()
-	:	numOfCharacter(5),
+	:	numOfCharacter(1),
 	mDamage(5),
 	MonsterAreaSize(20)
 {
@@ -95,16 +95,16 @@ int Monster::GetHealth(int i) const
 {
 	return mMonsterInfo[i].mHealth;
 }
-bool Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
+void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 {
-	XMVECTOR HitTargetv = XMVectorAdd(Position, Look * 3.0f);
+	XMVECTOR HitTargetv = XMVectorAdd(Position, Look * 5.0f);
 
 	// Damage
 	for (int cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
 		XMVECTOR MonsterPos = mMonsterInfo[cIndex].mMovement.GetPlayerPosition();
 
-		if (MathHelper::getDistance(HitTargetv, MonsterPos) < 3.0f)
+		if (MathHelper::getDistance(HitTargetv, MonsterPos) < 5.0f)
 		{
 			if (mMonsterInfo[cIndex].mHealth >= 0)
 				mSkinnedModelInst[cIndex]->TimePos = 0.0f;
@@ -113,7 +113,7 @@ bool Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 			mMonsterInfo[cIndex].mHealth -= damage;
 		}
 	}
-	return true;
+	return;
 }
 
 void Monster::SetClipName(const std::string& inClipName, int cIndex)
@@ -413,7 +413,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		float curClipTime = mSkinnedModelInst[cIndex]->TimePos;
 		if (curDeltaTime < 5.0f) // Attack
 		{
-			if (mSkinnedInfo.GetClipEndTime("MAttack1") - 2.f < curClipTime && HitTime[cIndex].second)
+			if (mSkinnedInfo.GetClipEndTime("MAttack1") - 2.0f < curClipTime && HitTime[cIndex].second)
 			{
 				Player.Damage(mDamage, mPosition, mLook);
 
