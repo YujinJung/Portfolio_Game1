@@ -94,11 +94,11 @@ private:
 	bool mCameraDetach = false; // True - Camera Move with player
 
 	Light mMainLight;
-	Textures mTextures;
-	Materials mMaterials;
 
 	POINT mLastMousePos;
 
 	Player mPlayer;
 	Monster mMonster;
+	Textures mTextures;
+	Materials mMaterials;
 };

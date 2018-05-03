@@ -3,6 +3,7 @@
 
 # FBX
 *.fbm/
+FBX_SDK/
 
 ### C++ ###
 # Prerequisites

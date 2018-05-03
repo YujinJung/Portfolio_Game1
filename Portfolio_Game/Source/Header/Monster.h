@@ -1,15 +1,9 @@
 #pragma once
 
 #include "MonsterUI.h"
-#include "PlayerMovement.h"
 #include "Character.h"
 
-struct MonsterInfo
-{
-	WorldTransform mWorldTransform;
-	std::string mClipName;
-	int mHealth;
-};
+class MonsterUI;
 class Monster : public Character
 {
 public:
@@ -23,15 +17,16 @@ public:
 	UINT GetBoneSize() const;
 	UINT GetAllRitemsSize() const;
 	UINT GetNumOfCharacter() const;
-	virtual WorldTransform & GetWorldTransform(int i);
-	DirectX::XMFLOAT4X4 GetWorldTransform4x4f(int i) const;
+	virtual WorldTransform GetWorldTransform(int i);
+	DirectX::XMMATRIX GetWorldTransformMatrix(int i) const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
+	virtual CharacterInfo& GetCharacterInfo(int cIndex = 0);
 
 public:
 	bool isClipEnd(std::string clipName, int i);
 	bool isClipMid(std::string clipName, int i);
 	virtual int GetHealth(int i = 0) const override;
-	virtual void Damage(int damage, DirectX::XMFLOAT3 Position, DirectX::XMFLOAT3 Look) override;
+	virtual bool Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
 
 	void SetClipName(const std::string & inClipName, int cIndex);
 
@@ -47,8 +42,6 @@ public:
 	void UpdateCharacterShadows(const Light & mMainLight);
 
 private:
-	PlayerMovement mMonsterMovement;
-	
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
 	std::vector<std::unique_ptr<SkinnedModelInstance>> mSkinnedModelInst;
@@ -56,13 +49,11 @@ private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 
-	/*DirectX::XMFLOAT3 mMonsterPosition;
-	DirectX::XMFLOAT3 mMonsterLeft;*/
-
 private:
-	std::vector<MonsterInfo> mMonsterInfo;
+	std::vector<CharacterInfo> mMonsterInfo;
 	
 	UINT mDamage;
 	UINT numOfCharacter;
+	int MonsterAreaSize;
 };
 

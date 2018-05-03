@@ -154,7 +154,7 @@
     <ClCompile Include="Source\Source\Character\Moster\Monster.cpp" />
     <ClCompile Include="Source\Source\Character\Player\Player.cpp" />
     <ClCompile Include="Source\Source\Character\Player\PlayerController.cpp" />
-    <ClCompile Include="Source\Source\Character\Player\PlayerMovement.cpp" />
+    <ClCompile Include="Source\Source\Character\Player\CharacterMovement.cpp" />
     <ClCompile Include="Source\Source\Character\SkinnedData.cpp" />
     <ClCompile Include="Source\Source\Common\d3dApp.cpp" />
     <ClCompile Include="Source\Source\Common\d3dUtil.cpp" />

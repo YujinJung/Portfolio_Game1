@@ -424,7 +424,7 @@ void PortfolioGameApp::UpdateMaterialCB(const GameTimer & gt)
 void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 {
 	static bool DeathCamFinished = false;
-	XMVECTOR PlayerPos= XMLoadFloat3(&mPlayer.GetWorldTransform().Position);
+	XMVECTOR PlayerPos = mPlayer.GetCharacterInfo().mMovement.GetPlayerPosition();
 	
 	if (mPlayer.GetHealth() <= 0 && !DeathCamFinished)
 	{
@@ -442,6 +442,7 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 			DeathCamFinished = true;
 		}
 	}
+
 	mMonster.UpdateMonsterPosition(mPlayer, gt);
 	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);

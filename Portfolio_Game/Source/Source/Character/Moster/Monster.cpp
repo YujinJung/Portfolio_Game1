@@ -7,17 +7,23 @@
 using namespace DirectX;
 Monster::Monster()
 	:	numOfCharacter(5),
-	mDamage(10)
+	mDamage(10),
+	MonsterAreaSize(20)
 {
 	for (int i = 0; i < numOfCharacter; ++i)
 	{
-		MonsterInfo M;
+		CharacterInfo M;
 		M.mClipName = "Idle";
 		M.mHealth = 100;
-		M.mWorldTransform.Position = { 0.0f, 0.0f, 0.0f };
-		M.mWorldTransform.Look= { 0.0f, 0.0f, 1.0f };
-		M.mWorldTransform.Scale= { 1.0f, 1.0f, 1.0f };
-		XMStoreFloat4x4(&M.mWorldTransform.Rotation, XMMatrixIdentity());
+
+		// World and View
+		XMVECTOR V = XMVectorZero();
+		M.mMovement.SetPlayerPosition(V);
+		V.m128_f32[2] = 1.0f;
+		M.mMovement.SetPlayerLook(V);
+		V = XMVectorReplicate(1.0f);
+		M.mMovement.SetPlayerScale(V);
+		M.mMovement.SetPlayerRotation(XMMatrixIdentity());
 
 		mMonsterInfo.push_back(M);
 	}
@@ -48,25 +54,28 @@ UINT Monster::GetNumOfCharacter() const
 {
 	return numOfCharacter;
 }
-WorldTransform& Monster::GetWorldTransform(int i)
+WorldTransform Monster::GetWorldTransform(int i)
 {
-	return mMonsterInfo[i].mWorldTransform;
+	return mMonsterInfo[i].mMovement.GetWorldTransformInfo();
 }
-DirectX::XMFLOAT4X4 Monster::GetWorldTransform4x4f(int i) const
+DirectX::XMMATRIX Monster::GetWorldTransformMatrix(int i) const
 {
-	auto T = mMonsterInfo[i].mWorldTransform;
+	auto T = mMonsterInfo[i].mMovement.GetWorldTransformInfo();
 	XMMATRIX P = XMMatrixTranslation(T.Position.x, T.Position.y, T.Position.z);
 	XMMATRIX R = XMLoadFloat4x4(&T.Rotation);
 	XMMATRIX S = XMMatrixScaling(T.Scale.x, T.Scale.y, T.Scale.z);
 
-	XMFLOAT4X4 Ret;
-	XMStoreFloat4x4(&Ret, S * R * P);
-	return Ret;
+	return S * R * P;
 }
 const std::vector<RenderItem*> Monster::GetRenderItem(RenderLayer Type) const
 {
 	return mRitems[(int)Type];
 }
+CharacterInfo & Monster::GetCharacterInfo(int cIndex)
+{
+	return mMonsterInfo[cIndex];
+}
+
 
 bool Monster::isClipEnd(std::string clipName, int i)
 {
@@ -86,18 +95,16 @@ int Monster::GetHealth(int i) const
 {
 	return mMonsterInfo[i].mHealth;
 }
-void Monster::Damage(int damage, XMFLOAT3 Position, XMFLOAT3 Look)
+bool Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 {
-	XMVECTOR PlayerPosi = XMLoadFloat3(&Position);
-	XMVECTOR PlayerLook = XMLoadFloat3(&Look);
-	XMVECTOR HitTargetv = XMVectorAdd(PlayerPosi, PlayerLook);
+	XMVECTOR HitTargetv = XMVectorAdd(Position, Look * 3.0f);
 
 	// Damage
 	for (int cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
-		XMVECTOR MonsterPos = XMLoadFloat3(&mMonsterInfo[cIndex].mWorldTransform.Position);
+		XMVECTOR MonsterPos = mMonsterInfo[cIndex].mMovement.GetPlayerPosition();
 
-		if (MathHelper::getDistance(HitTargetv, MonsterPos) < 15.0f)
+		if (MathHelper::getDistance(HitTargetv, MonsterPos) < 3.0f)
 		{
 			if (mMonsterInfo[cIndex].mHealth >= 0)
 				mSkinnedModelInst[cIndex]->TimePos = 0.0f;
@@ -106,6 +113,7 @@ void Monster::Damage(int damage, XMFLOAT3 Position, XMFLOAT3 Look)
 			mMonsterInfo[cIndex].mHealth -= damage;
 		}
 	}
+	return true;
 }
 
 void Monster::SetClipName(const std::string& inClipName, int cIndex)
@@ -197,22 +205,19 @@ void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
 
 	for (int cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
-		WorldTransform wTransform;
-		wTransform.Position = { 0.0f, 0.0f, 0.0f };
-		wTransform.Scale = { 1.0f, 1.0f, 1.0f };
-		wTransform.Look = { 0.0f, 0.0f, 1.0f };
-		XMStoreFloat4x4(&wTransform.Rotation, XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f));
+		CharacterInfo cInfo;
 
 		// Monster - Random Position
 		auto seed = std::chrono::system_clock::now().time_since_epoch().count();
 		std::mt19937 engine{ (unsigned int)seed };
-		std::uniform_int_distribution <> dis{ 1, 160 };
+		std::uniform_int_distribution <> dis{ 1, MonsterAreaSize * 2 };
 
 		//Generate a random integer
 		int x{ dis(engine) };
 		int z{ dis(engine) };
 
-		wTransform.Position = { static_cast<float>(x) - 80.0f, 0.0f, static_cast<float>(z) - 80.0f};
+		XMVECTOR V = XMVectorSet(static_cast<float>(x - MonsterAreaSize), 0.0f, static_cast<float>(z - MonsterAreaSize), 0.0f);
+		cInfo.mMovement.SetPlayerPosition(V);
 
 		// Character Mesh
 		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)
@@ -245,7 +250,8 @@ void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
 			mRitems[(int)RenderLayer::Shadow].push_back(shadowedObjectRitem.get());
 			mAllRitems.push_back(std::move(shadowedObjectRitem));
 		}
-		mMonsterInfo[cIndex].mWorldTransform = wTransform;
+
+		mMonsterInfo[cIndex] = cInfo;
 	}
 }
 void Monster::BuildUIConstantBuffer(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mMonsterUICbvOffset)
@@ -348,7 +354,8 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 					&monsterConstants.BoneTransforms[CharacterIndex][0]);
 
 				// TODO : player constroller
-				XMMATRIX world = XMLoadFloat4x4(&e->World) * XMLoadFloat4x4(&GetWorldTransform4x4f(CharacterIndex));
+				XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix(CharacterIndex);
+
 				XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 				monsterConstants.monsterIndex = CharacterIndex;
 
@@ -368,7 +375,7 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 
 	// UI
 	auto currUICB = mCurrFrameResource->MonsterUICB.get();
-	//monsterUI.UpdateUICBs(currUICB, XMLoadFloat4x4(&GetWorldTransform4x4f(0)), mTransformDirty);
+	//monsterUI.UpdateUICBs(currUICB, XMLoadFloat4x4(&GetWorldTransformMatrix(0)), mTransformDirty);
 	//monsterUI.UpdateUICBs(currUICB, XMMatrixIdentity(), mTransformDirty);
 	/*for (int i = 0; i < numOfCharacter; ++i)
 	{
@@ -380,29 +387,59 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 {
 	// p.. - player
 	// m.. - monster
-	XMVECTOR pPosition = XMLoadFloat3(&Player.GetWorldTransform().Position);
 	XMVECTOR E = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
+	XMVECTOR pPosition = Player.GetCharacterInfo().mMovement.GetPlayerPosition();
 	static std::vector<float> HitTime(numOfCharacter);
 
 	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
 		// Monster Die
-		if (GetHealth(cIndex) <= 0)
+		if (mMonsterInfo[cIndex].mHealth <= 0)
 		{
 			SetClipName("Death", cIndex);
 		}
 		if (mMonsterInfo[cIndex].mClipName == "Death")
+		{
 			continue;
+		}
 		
-		WorldTransform& wTransform = GetWorldTransform(cIndex);
-		XMVECTOR mPosition = XMLoadFloat3(&wTransform.Position);
-		XMMATRIX mRotation = XMLoadFloat4x4(&wTransform.Rotation);
-		XMVECTOR mLook = XMLoadFloat3(&wTransform.Look);
+		auto& M = mMonsterInfo[cIndex];
+		XMVECTOR mUp= M.mMovement.GetPlayerUp();
+		XMVECTOR mLook = M.mMovement.GetPlayerLook();
+		XMVECTOR mPosition = M.mMovement.GetPlayerPosition();
+		XMMATRIX mRotation = M.mMovement.GetPlayerRotation();
 
 		float distance = MathHelper::getDistance(pPosition, mPosition);
 
-		// Move Monster
-		if (distance < 50.0f && distance > 10.0f)
+		if (distance < 3.0f)
+		{
+			// Move Back
+			mPosition = XMVectorSubtract(mPosition, mLook);
+			M.mMovement.SetPlayerPosition(mPosition);
+		}
+		else if (distance < 10.0f)
+		{
+			float pHealth = Player.GetCharacterInfo().mHealth;
+			float curDeltaTime = gt.TotalTime() - HitTime[cIndex];
+
+			if (curDeltaTime > 5.0f && pHealth > 0) // Hit per 5 seconds
+			{
+				HitTime[cIndex] = gt.TotalTime();
+				SetClipName("MAttack1", cIndex);
+				mSkinnedModelInst[cIndex]->TimePos = 0.0f;
+				Player.Damage(mDamage, mPosition, mLook);
+				mSkinnedModelInst[cIndex]->TimePos += 0.01f;
+			}
+			else if (mMonsterInfo[cIndex].mClipName == "MAttack1")
+			{
+				
+			}
+			else if (pHealth <= 0)
+			{
+				SetClipName("Idle", cIndex);
+			}
+		}
+		else if (distance < 50.0f) // Move Monster
 		{
 			// Monster Collision Check
 			for (UINT j = 0; j < numOfCharacter; ++j)
@@ -411,7 +448,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 				if (cIndex == j) continue;
 
 				// Other Monster nth
-				XMVECTOR MnthPos = XMLoadFloat3(&GetWorldTransform(j).Position);
+				XMVECTOR MnthPos = mMonsterInfo[j].mMovement.GetPlayerPosition();
 				if (MathHelper::getDistance(MnthPos, mPosition) < 5.0f)
 				{
 					XMVECTOR Md = XMVectorSubtract(MnthPos, mPosition);
@@ -419,48 +456,34 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 				}
 			}
 
+			XMMATRIX R = XMMatrixIdentity();
 			XMVECTOR D = XMVector3Normalize(XMVectorSubtract(pPosition, mPosition));
-			mPosition = XMVectorAdd(mPosition, 0.1f * mLook);
-			XMStoreFloat3(&wTransform.Position, mPosition);
-			SetClipName("Walking", cIndex);
-
 			float theta = XMVector3AngleBetweenNormals(mLook, D).m128_f32[0];
-			if (theta < XM_PI / 12.0f) continue;
 
-			/*std::wstring text = L"dot: " + std::to_wstring(gt.TotalTime()) + L"\n";
-			::OutputDebugString(text.c_str());*/
-			XMMATRIX R = XMMatrixRotationY(theta * 0.03f);
-
-			XMStoreFloat3(&wTransform.Look, XMVector3TransformNormal(mLook, R));
-			XMStoreFloat4x4(&wTransform.Rotation, mRotation * R);
-		}
-		else if (distance < 10.0f)
-		{
-			if (gt.TotalTime() - HitTime[cIndex] > 5.0f && Player.GetHealth() > 0) // Hit per 5 seconds
+			if (theta < XM_PI / 18.0f)
 			{
-				HitTime[cIndex] = gt.TotalTime();
-				SetClipName("MAttack1", cIndex);
-				mSkinnedModelInst[cIndex]->TimePos = 0.0f;
-
-				Player.Damage(mDamage, wTransform.Position, wTransform.Look);
-				continue;
+				mPosition = XMVectorAdd(mPosition, 0.1f * mLook);
 			}
-			else if(Player.GetHealth() <= 0)
+			else
 			{
-				SetClipName("Idle", cIndex);
+				// left right check ; Left - minus / Right - plus
+				float res = XMVector3Dot(XMVector3Cross(D, mLook), mUp).m128_f32[0];
+
+				if(res > 0)
+					R = XMMatrixRotationY(-theta * 0.03f);
+				else
+					R = XMMatrixRotationY(theta * 0.03f);
 			}
-		}
-		else if (distance < 3.0f)
-		{
-			// Move Back
-			mPosition = XMVectorSubtract(mPosition, mLook);
-			XMStoreFloat3(&wTransform.Position, mPosition);
+
+			M.mMovement.SetPlayerLook(XMVector3TransformNormal(mLook, R));
+			M.mMovement.SetPlayerRotation(mRotation * R);
+			M.mMovement.SetPlayerPosition(mPosition);
+			SetClipName("Walking", cIndex);
 		}
 		else
 		{
 			SetClipName("Idle", cIndex);
 		}
-
 	}
 }
 
@@ -484,3 +507,5 @@ void Monster::UpdateCharacterShadows(const Light& mMainLight)
 	}
 }
 
+/*std::wstring text = L"dot: " + std::to_wstring(gt.TotalTime()) + L"\n";
+::OutputDebugString(text.c_str());*/

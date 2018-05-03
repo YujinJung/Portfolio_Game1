@@ -1,8 +1,7 @@
 #pragma once
 
-//#include "Player.h"
-//#include "Monster.h"
 #include "SkinnedData.h"
+#include "CharacterMovement.h"
 
 enum eClipList
 {
@@ -14,11 +13,24 @@ enum eClipList
 	FlyingKick
 };
 
-//struct CharacterList
-//{
-//	static Player mPlayer;
-//	static Monster mMonster;
-//};
+enum eUIList : int
+{
+	Rect,
+	Count
+};
+
+enum class RenderLayer : int
+{
+	Opaque = 0,
+	Mirrors,
+	Reflected,
+	Transparent,
+	Character,
+	Monster,
+	Shadow,
+	UI,
+	Count
+};
 
 struct SkinnedModelInstance
 {
@@ -47,7 +59,6 @@ struct SkinnedModelInstance
 		}
 		//else if (ClipName == "")
 
-
 		ClipEnd = false;
 		if (ClipName == "Idle")
 		{
@@ -72,12 +83,15 @@ struct SkinnedModelInstance
 	// TODO SetClipName?
 };
 
-struct WorldTransform
+struct CharacterInfo
 {
-	DirectX::XMFLOAT3 Position;
-	DirectX::XMFLOAT3 Scale;
-	DirectX::XMFLOAT4X4 Rotation;
-	DirectX::XMFLOAT3 Look;
+	ChracterMovement mMovement;
+	std::string mClipName;
+	int mHealth;
+	
+	CharacterInfo()
+		: mClipName("Idle"), mHealth(100)
+	{ }
 };
 
 struct RenderItem
@@ -107,25 +121,6 @@ struct RenderItem
 	UINT IndexCount = 0;
 	UINT StartIndexLocation = 0;
 	int BaseVertexLocation = 0;
-};
-
-enum class RenderLayer : int
-{
-	Opaque = 0,
-	Mirrors,
-	Reflected,
-	Transparent,
-	Character,
-	Monster,
-	Shadow,
-	UI,
-	Count
-};
-
-enum eUIList
-{
-	Rect,
-	Count
 };
 
 //void printMatrix(const std::wstring& Name, const int& i, const DirectX::XMMATRIX &M)

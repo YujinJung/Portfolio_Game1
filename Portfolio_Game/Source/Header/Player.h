@@ -1,11 +1,8 @@
 #pragma once
 
-#include "Character.h"
 #include "DXUI.h"
-#include "RenderItem.h"
 #include "PlayerCamera.h"
-#include "PlayerMovement.h"
-#include "PlayerController.h"
+#include "Character.h"
 
 enum PlayerMoveList
 {
@@ -16,6 +13,8 @@ enum PlayerMoveList
 	Death
 };
 
+class PlayerCamera;
+class DXUI;
 class Player : public Character
 {
 public:
@@ -29,9 +28,10 @@ public:
 	UINT GetBoneSize() const;
 	UINT GetAllRitemsSize() const;
 	eClipList GetCurrentClip() const;
-	DirectX::XMFLOAT4X4 GetWorldTransform4x4f() const;
-	virtual WorldTransform & GetWorldTransform(int i = 0);
+	DirectX::XMMATRIX GetWorldTransformMatrix() const;
+	virtual WorldTransform  GetWorldTransform(int i = 0);
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
+	virtual CharacterInfo& GetCharacterInfo(int cIndex = 0);
 
 	void SetClipName(const std::string & inClipName);
 	void SetClipTime(float time);
@@ -39,7 +39,7 @@ public:
 public:
 	bool isClipEnd();
 	virtual int GetHealth(int i = 0) const override;
-	virtual void Damage(int damage, DirectX::XMFLOAT3 Position, DirectX::XMFLOAT3 Look) override;
+	virtual bool Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
 	void Attack(Character& inMonster);
 
 public:
@@ -53,7 +53,7 @@ public:
 	void UpdateCharacterShadows(const Light & mMainLight);
 	
 private:
-	PlayerMovement mPlayerMovement;
+	CharacterInfo mPlayerInfo;
 	
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
@@ -63,10 +63,15 @@ private:
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 
 private:
-	int mHealth;
 	UINT fullHealth;
 	bool DeathCamFinished = false;
-
-	std::string mClipName;
-	WorldTransform mWorldTransform;
 };
+
+/*
+struct WorldTransform
+{
+	DirectX::XMFLOAT3 Position;
+	DirectX::XMFLOAT3 Scale;
+	DirectX::XMFLOAT4X4 Rotation;
+	DirectX::XMFLOAT3 Look;
+};*/
