@@ -423,10 +423,10 @@ void PortfolioGameApp::UpdateMaterialCB(const GameTimer & gt)
 
 void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 {
-	static bool DeathCamFinished = false;
+	static bool playerDeathCamFinished = false;
 	XMVECTOR PlayerPos = mPlayer.GetCharacterInfo().mMovement.GetPlayerPosition();
 	
-	if (mPlayer.GetHealth() <= 0 && !DeathCamFinished)
+	if (mPlayer.GetHealth() <= 0 && !playerDeathCamFinished)
 	{
 		mCameraDetach = true;
 
@@ -439,11 +439,16 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 		}
 		else
 		{
-			DeathCamFinished = true;
+			playerDeathCamFinished = true;
 		}
 	}
 
-	mMonster.UpdateMonsterPosition(mPlayer, gt);
+	static float lastTime = gt.TotalTime();
+	if (gt.TotalTime() - lastTime > 0.04f)
+	{
+		mMonster.UpdateMonsterPosition(mPlayer, gt);
+		lastTime = gt.TotalTime();
+	}
 	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 }

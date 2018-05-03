@@ -6,7 +6,7 @@
 
 using namespace DirectX;
 Monster::Monster()
-	:	numOfCharacter(1),
+	:	numOfCharacter(5),
 	mDamage(5),
 	MonsterAreaSize(20)
 {
@@ -409,6 +409,21 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		XMVECTOR mPosition = M.mMovement.GetPlayerPosition();
 		XMMATRIX mRotation = M.mMovement.GetPlayerRotation();
 
+		XMMATRIX R = XMMatrixIdentity();
+		XMVECTOR D = XMVector3Normalize(XMVectorSubtract(pPosition, mPosition));
+		float theta = XMVector3AngleBetweenNormals(mLook, D).m128_f32[0];
+
+		// left right check ; Left - minus / Right - plus
+		float res = XMVector3Dot(XMVector3Cross(D, mLook), mUp).m128_f32[0];
+
+		if (theta > XM_PI / 36.0f)
+		{
+			if (res > 0)
+				R = R * XMMatrixRotationY(0.03f * -theta);
+			else
+				R = R * XMMatrixRotationY(0.03f * theta);
+		}
+
 		float curDeltaTime = gt.TotalTime() - HitTime[cIndex].first;
 		float curClipTime = mSkinnedModelInst[cIndex]->TimePos;
 		if (curDeltaTime < 5.0f) // Attack
@@ -456,41 +471,38 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 
 				// Other Monster nth
 				XMVECTOR MnthPos = mMonsterInfo[j].mMovement.GetPlayerPosition();
+				XMVECTOR MnthDirection = XMVectorSubtract(MnthPos, mPosition);
+
+				// Monster nth`s Position is NOT Front
+				if (XMVector3Dot(mLook, MnthDirection).m128_f32[0] < 0)
+					continue;
+
 				if (MathHelper::getDistance(MnthPos, mPosition) < 5.0f)
 				{
 					XMVECTOR Md = XMVectorSubtract(MnthPos, mPosition);
-					mPosition = XMVectorSubtract(mPosition, 0.1f * Md);
+					mPosition = XMVectorSubtract(mPosition, 0.2f * Md);
+
+					// Rotate opposite direction
+					if (res > 0)
+						R = R * XMMatrixRotationY(0.5f * theta);
+					else
+						R = R * XMMatrixRotationY(0.5f * -theta);
 				}
 			}
 
-			XMMATRIX R = XMMatrixIdentity();
-			XMVECTOR D = XMVector3Normalize(XMVectorSubtract(pPosition, mPosition));
-			float theta = XMVector3AngleBetweenNormals(mLook, D).m128_f32[0];
-
-			if (theta < XM_PI / 18.0f)
-			{
-				mPosition = XMVectorAdd(mPosition, 0.1f * mLook);
-			}
-			else
-			{
-				// left right check ; Left - minus / Right - plus
-				float res = XMVector3Dot(XMVector3Cross(D, mLook), mUp).m128_f32[0];
-
-				if(res > 0)
-					R = XMMatrixRotationY(-theta * 0.03f);
-				else
-					R = XMMatrixRotationY(theta * 0.03f);
-			}
-
-			M.mMovement.SetPlayerLook(XMVector3TransformNormal(mLook, R));
-			M.mMovement.SetPlayerRotation(mRotation * R);
-			M.mMovement.SetPlayerPosition(mPosition);
+			// Move to player
+			mPosition = XMVectorAdd(mPosition, 0.1f * mLook);
+		
 			SetClipName("Walking", cIndex);
 		}
 		else
 		{
 			SetClipName("Idle", cIndex);
 		}
+
+		M.mMovement.SetPlayerLook(XMVector3TransformNormal(mLook, R));
+		M.mMovement.SetPlayerRotation(mRotation * R);
+		M.mMovement.SetPlayerPosition(mPosition);
 	}
 }
 
