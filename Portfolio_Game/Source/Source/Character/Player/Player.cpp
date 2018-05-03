@@ -8,8 +8,8 @@ using namespace DirectX;
 Player::Player()
 	: Character(),
 	mPlayerInfo(),
-	
-	fullHealth(100)
+	fullHealth(100),
+	mDamage(10)
 {
 }
 
@@ -47,7 +47,7 @@ void Player::Attack(Character & inMonster)
 		SetClipName("FlyingKick");
 	SetClipTime(0.0f);
 
-	inMonster.Damage(30, mPlayerInfo.mMovement.GetPlayerPosition(), mPlayerInfo.mMovement.GetPlayerLook());
+	inMonster.Damage(mDamage, mPlayerInfo.mMovement.GetPlayerPosition(), mPlayerInfo.mMovement.GetPlayerLook());
 }
 UINT Player::GetAllRitemsSize() const
 {

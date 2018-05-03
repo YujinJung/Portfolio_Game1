@@ -64,14 +64,7 @@ private:
 
 private:
 	UINT fullHealth;
+	UINT mDamage;
 	bool DeathCamFinished = false;
 };
 
-/*
-struct WorldTransform
-{
-	DirectX::XMFLOAT3 Position;
-	DirectX::XMFLOAT3 Scale;
-	DirectX::XMFLOAT4X4 Rotation;
-	DirectX::XMFLOAT3 Look;
-};*/

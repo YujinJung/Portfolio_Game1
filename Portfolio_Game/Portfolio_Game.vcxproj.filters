@@ -65,7 +65,7 @@
       <Filter>UI</Filter>
     </ClCompile>
     <ClCompile Include="Source\Source\Character\Player\CharacterMovement.cpp">
-      <Filter>Character\Player</Filter>
+      <Filter>Character</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

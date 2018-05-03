@@ -7,7 +7,7 @@
 using namespace DirectX;
 Monster::Monster()
 	:	numOfCharacter(5),
-	mDamage(10),
+	mDamage(5),
 	MonsterAreaSize(20)
 {
 	for (int i = 0; i < numOfCharacter; ++i)
@@ -389,7 +389,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 	// m.. - monster
 	XMVECTOR E = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 	XMVECTOR pPosition = Player.GetCharacterInfo().mMovement.GetPlayerPosition();
-	static std::vector<float> HitTime(numOfCharacter);
+	static std::vector<std::pair<float, bool>> HitTime(numOfCharacter);
 
 	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
@@ -404,11 +404,23 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		}
 		
 		auto& M = mMonsterInfo[cIndex];
-		XMVECTOR mUp= M.mMovement.GetPlayerUp();
+		XMVECTOR mUp = M.mMovement.GetPlayerUp();
 		XMVECTOR mLook = M.mMovement.GetPlayerLook();
 		XMVECTOR mPosition = M.mMovement.GetPlayerPosition();
 		XMMATRIX mRotation = M.mMovement.GetPlayerRotation();
 
+		float curDeltaTime = gt.TotalTime() - HitTime[cIndex].first;
+		float curClipTime = mSkinnedModelInst[cIndex]->TimePos;
+		if (curDeltaTime < 5.0f) // Attack
+		{
+			if (mSkinnedInfo.GetClipEndTime("MAttack1") - 2.f < curClipTime && HitTime[cIndex].second)
+			{
+				Player.Damage(mDamage, mPosition, mLook);
+
+				HitTime[cIndex].second = false;
+			}
+		}
+		
 		float distance = MathHelper::getDistance(pPosition, mPosition);
 
 		if (distance < 3.0f)
@@ -420,19 +432,14 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		else if (distance < 10.0f)
 		{
 			float pHealth = Player.GetCharacterInfo().mHealth;
-			float curDeltaTime = gt.TotalTime() - HitTime[cIndex];
 
 			if (curDeltaTime > 5.0f && pHealth > 0) // Hit per 5 seconds
 			{
-				HitTime[cIndex] = gt.TotalTime();
+				HitTime[cIndex].first = gt.TotalTime();
 				SetClipName("MAttack1", cIndex);
 				mSkinnedModelInst[cIndex]->TimePos = 0.0f;
-				Player.Damage(mDamage, mPosition, mLook);
-				mSkinnedModelInst[cIndex]->TimePos += 0.01f;
-			}
-			else if (mMonsterInfo[cIndex].mClipName == "MAttack1")
-			{
-				
+
+				HitTime[cIndex].second = true;
 			}
 			else if (pHealth <= 0)
 			{
