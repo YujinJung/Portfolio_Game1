@@ -3,7 +3,6 @@
 #include "MonsterUI.h"
 #include "Character.h"
 
-class MonsterUI;
 class Monster : public Character
 {
 public:
@@ -11,37 +10,57 @@ public:
 	~Monster();
 
 	MonsterUI monsterUI;
-	UINT GetUISize() const;
 
 public:
-	UINT GetBoneSize() const;
-	UINT GetAllRitemsSize() const;
-	UINT GetNumOfCharacter() const;
-	virtual WorldTransform GetWorldTransform(int i);
-	DirectX::XMMATRIX GetWorldTransformMatrix(int i) const;
-	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
+	virtual int GetHealth(int i = 0) const override;
 	virtual CharacterInfo& GetCharacterInfo(int cIndex = 0);
+	virtual void Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
 
 public:
 	bool isClipEnd(std::string clipName, int i);
-	bool isClipMid(std::string clipName, int i);
-	virtual int GetHealth(int i = 0) const override;
-	virtual void Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
+	DirectX::XMMATRIX GetWorldTransformMatrix(int i) const;
+
+	UINT GetUISize() const;
+	UINT GetAllRitemsSize() const;
+	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
 
 	void SetClipName(const std::string & inClipName, int cIndex);
 
 public:
-	virtual void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList * cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData & inSkinInfo, std::string geoName) override;
-	virtual void BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mChaCbvOffset) override;
-	virtual void BuildRenderItem(Materials & mMaterials, std::string matrialPrefix) override;
-	void BuildUIConstantBuffer(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mUICbvOffset);
-	void BuildUIRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries, Materials & mMaterials);
+	virtual void BuildGeometry(
+		ID3D12Device * device,
+		ID3D12GraphicsCommandList * cmdList,
+		const std::vector<SkinnedVertex>& inVertices,
+		const std::vector<std::uint32_t>& inIndices,
+		const SkinnedData & inSkinInfo, std::string geoName) override;
+	virtual void BuildConstantBufferViews(
+		ID3D12Device * device,
+		ID3D12DescriptorHeap * mCbvHeap,
+		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
+		int mChaCbvOffset) override;
+	virtual void BuildRenderItem(
+		Materials & mMaterials,
+		std::string matrialPrefix) override;
 
-	void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt);
+	void BuildUIConstantBuffer(
+		ID3D12Device * device,
+		ID3D12DescriptorHeap * mCbvHeap,
+		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
+		int mUICbvOffset);
+	void BuildUIRenderItem(
+		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
+		Materials & mMaterials);
+
+	virtual void UpdateCharacterCBs(
+		FrameResource* mCurrFrameResource,
+		const Light& mMainLight,
+		const GameTimer & gt);
+	virtual void UpdateCharacterShadows(const Light & mMainLight);
 	void UpdateMonsterPosition(Character& Player, const GameTimer & gt);
-	void UpdateCharacterShadows(const Light & mMainLight);
 
 private:
+	std::vector<CharacterInfo> mMonsterInfo;
+
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
 	std::vector<std::unique_ptr<SkinnedModelInstance>> mSkinnedModelInst;
@@ -50,9 +69,8 @@ private:
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 
 private:
-	std::vector<CharacterInfo> mMonsterInfo;
-	
 	UINT mDamage;
+	UINT mFullHealth;
 	UINT numOfCharacter;
 	int MonsterAreaSize;
 };

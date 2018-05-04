@@ -6,7 +6,7 @@
 
 using namespace DirectX;
 Monster::Monster()
-	:	numOfCharacter(5),
+	: numOfCharacter(5),
 	mDamage(5),
 	MonsterAreaSize(20)
 {
@@ -32,68 +32,13 @@ Monster::~Monster()
 {
 }
 
-UINT Monster::GetUISize() const
+int Monster::GetHealth(int i) const
 {
-	UINT ret = 0;
-	for (int i = 0; i < numOfCharacter; ++i)
-	{
-		ret = ret + monsterUI.GetSize();
-	}
-	return ret;
-}
-
-UINT Monster::GetAllRitemsSize() const
-{
-	return (UINT)mAllRitems.size();
-}
-UINT Monster::GetBoneSize() const
-{
-	return (UINT)mSkinnedInfo.BoneCount();
-}
-UINT Monster::GetNumOfCharacter() const
-{
-	return numOfCharacter;
-}
-WorldTransform Monster::GetWorldTransform(int i)
-{
-	return mMonsterInfo[i].mMovement.GetWorldTransformInfo();
-}
-DirectX::XMMATRIX Monster::GetWorldTransformMatrix(int i) const
-{
-	auto T = mMonsterInfo[i].mMovement.GetWorldTransformInfo();
-	XMMATRIX P = XMMatrixTranslation(T.Position.x, T.Position.y, T.Position.z);
-	XMMATRIX R = XMLoadFloat4x4(&T.Rotation);
-	XMMATRIX S = XMMatrixScaling(T.Scale.x, T.Scale.y, T.Scale.z);
-
-	return S * R * P;
-}
-const std::vector<RenderItem*> Monster::GetRenderItem(RenderLayer Type) const
-{
-	return mRitems[(int)Type];
+	return mMonsterInfo[i].mHealth;
 }
 CharacterInfo & Monster::GetCharacterInfo(int cIndex)
 {
 	return mMonsterInfo[cIndex];
-}
-
-
-bool Monster::isClipEnd(std::string clipName, int i)
-{
-	if (mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedModelInst[i]->TimePos < 0.001f)
-		return true;
-	return false;
-}
-bool Monster::isClipMid(std::string clipName, int i)
-{
-	float delta = mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedInfo.GetAnimation(clipName).GetClipStartTime();
-	delta *= 0.9f;
-	if (mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedModelInst[i]->TimePos < delta)
-		return true;
-	return false;
-}
-int Monster::GetHealth(int i) const
-{
-	return mMonsterInfo[i].mHealth;
 }
 void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 {
@@ -116,14 +61,48 @@ void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 	return;
 }
 
+bool Monster::isClipEnd(std::string clipName, int i)
+{
+	if (mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedModelInst[i]->TimePos < 0.001f)
+		return true;
+	return false;
+}
+DirectX::XMMATRIX Monster::GetWorldTransformMatrix(int i) const
+{
+	auto T = mMonsterInfo[i].mMovement.GetWorldTransformInfo();
+	XMMATRIX P = XMMatrixTranslation(T.Position.x, T.Position.y, T.Position.z);
+	XMMATRIX R = XMLoadFloat4x4(&T.Rotation);
+	XMMATRIX S = XMMatrixScaling(T.Scale.x, T.Scale.y, T.Scale.z);
+
+	return S * R * P;
+}
+
+UINT Monster::GetUISize() const
+{
+	UINT ret = 0;
+	for (int i = 0; i < numOfCharacter; ++i)
+	{
+		ret = ret + monsterUI.GetSize();
+	}
+	return ret;
+}
+UINT Monster::GetAllRitemsSize() const // All mesh items * num of Monsters
+{
+	return (UINT)mAllRitems.size() * (UINT)numOfCharacter;
+}
+const std::vector<RenderItem*> Monster::GetRenderItem(RenderLayer Type) const
+{
+	return mRitems[(int)Type];
+}
+
 void Monster::SetClipName(const std::string& inClipName, int cIndex)
 {
 	if (mMonsterInfo[cIndex].mClipName != "Death")
 	{
 		mMonsterInfo[cIndex].mClipName = inClipName;
-		if(inClipName == "Death")
+		if (inClipName == "Death")
 			mSkinnedModelInst[cIndex]->TimePos = 0.0f;
-	} 
+	}
 }
 
 void Monster::BuildGeometry(
@@ -197,10 +176,46 @@ void Monster::BuildGeometry(
 
 	mGeometry = std::move(geo);
 }
-void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
+void Monster::BuildConstantBufferViews(
+	ID3D12Device * device,
+	ID3D12DescriptorHeap * mCbvHeap,
+	const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
+	int mMonsterCbvOffset)
+{
+	UINT MonsterCount = GetAllRitemsSize();
+	UINT MonsterCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MonsterContants));
+	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
+	{
+		auto MonsterCB = mFrameResources[frameIndex]->MonsterCB->Resource();
+
+		for (UINT i = 0; i < MonsterCount; ++i)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = MonsterCB->GetGPUVirtualAddress();
+
+			// Offset to the ith object constant buffer in the buffer.
+			cbAddress += i * MonsterCBByteSize;
+
+			// Offset to the object cbv in the descriptor heap.
+			int heapIndex = mMonsterCbvOffset + frameIndex * MonsterCount + i;
+			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
+
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+			cbvDesc.BufferLocation = cbAddress;
+			cbvDesc.SizeInBytes = MonsterCBByteSize;
+
+			device->CreateConstantBufferView(&cbvDesc, handle);
+		}
+	}
+}
+void Monster::BuildRenderItem(
+	Materials& mMaterials,
+	std::string matrialPrefix)
 {
 	int chaIndex = 0;
-	int BoneCount = GetBoneSize();
+	int BoneCount = (UINT)mSkinnedInfo.BoneCount();
 	auto boneName = mSkinnedInfo.GetBoneName();
 
 	for (int cIndex = 0; cIndex < numOfCharacter; ++cIndex)
@@ -254,7 +269,12 @@ void Monster::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
 		mMonsterInfo[cIndex] = cInfo;
 	}
 }
-void Monster::BuildUIConstantBuffer(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mMonsterUICbvOffset)
+
+void Monster::BuildUIConstantBuffer(
+	ID3D12Device * device,
+	ID3D12DescriptorHeap * mCbvHeap,
+	const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
+	int mMonsterUICbvOffset)
 {
 	UINT UICount = GetUISize();
 	UINT UICBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(UIConstants));
@@ -284,42 +304,17 @@ void Monster::BuildUIConstantBuffer(ID3D12Device * device, ID3D12DescriptorHeap 
 		}
 	}
 }
-void Monster::BuildUIRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries, Materials & mMaterials)
+void Monster::BuildUIRenderItem(
+	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
+	Materials & mMaterials)
 {
 	monsterUI.BuildRenderItem(mGeometries, mMaterials);
 }
-void Monster::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mMonsterCbvOffset)
-{
-	UINT MonsterCount = GetAllRitemsSize();
-	UINT MonsterCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MonsterContants));
-	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	{
-		auto MonsterCB = mFrameResources[frameIndex]->MonsterCB->Resource();
-
-		for (UINT i = 0; i < MonsterCount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = MonsterCB->GetGPUVirtualAddress();
-
-			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * MonsterCBByteSize;
-
-			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mMonsterCbvOffset + frameIndex * MonsterCount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = MonsterCBByteSize;
-
-			device->CreateConstantBufferView(&cbvDesc, handle);
-		}
-	}
-}
-
-void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light & mMainLight, const GameTimer & gt)
+void Monster::UpdateCharacterCBs(
+	FrameResource * mCurrFrameResource,
+	const Light & mMainLight,
+	const GameTimer & gt)
 {
 	for (int i = 0; i < numOfCharacter; ++i)
 	{
@@ -370,7 +365,7 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 			}
 			++j;
 		}
-		
+
 	}
 
 	// UI
@@ -379,9 +374,28 @@ void Monster::UpdateCharacterCBs(FrameResource * mCurrFrameResource, const Light
 	//monsterUI.UpdateUICBs(currUICB, XMMatrixIdentity(), mTransformDirty);
 	/*for (int i = 0; i < numOfCharacter; ++i)
 	{
-		
+
 	}*/
 
+}
+void Monster::UpdateCharacterShadows(const Light& mMainLight)
+{
+	int i = 0;
+	for (auto& e : mRitems[(int)RenderLayer::Shadow])
+	{
+		// Load the object world
+		auto& o = mRitems[(int)RenderLayer::Monster][i];
+		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World);
+
+		XMVECTOR shadowPlane = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMVECTOR toMainLight = -XMLoadFloat3(&mMainLight.Direction);
+		XMMATRIX S = XMMatrixShadow(shadowPlane, toMainLight);
+		XMMATRIX shadowOffsetY = XMMatrixTranslation(0.0f, 0.001f, 0.0f);
+		XMStoreFloat4x4(&e->World, shadowWorld * S * shadowOffsetY);
+		e->NumFramesDirty = gNumFrameResources;
+
+		++i;
+	}
 }
 void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 {
@@ -402,7 +416,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		{
 			continue;
 		}
-		
+
 		auto& M = mMonsterInfo[cIndex];
 		XMVECTOR mUp = M.mMovement.GetPlayerUp();
 		XMVECTOR mLook = M.mMovement.GetPlayerLook();
@@ -428,14 +442,15 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		float curClipTime = mSkinnedModelInst[cIndex]->TimePos;
 		if (curDeltaTime < 5.0f) // Attack
 		{
-			if (mSkinnedInfo.GetClipEndTime("MAttack1") - 2.0f < curClipTime && HitTime[cIndex].second)
+			// After half the full time of the clip
+			if (mSkinnedInfo.GetClipEndTime("MAttack1") / 2.0f < curClipTime && HitTime[cIndex].second)
 			{
 				Player.Damage(mDamage, mPosition, mLook);
 
 				HitTime[cIndex].second = false;
 			}
 		}
-		
+
 		float distance = MathHelper::getDistance(pPosition, mPosition);
 
 		if (distance < 3.0f)
@@ -492,7 +507,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 
 			// Move to player
 			mPosition = XMVectorAdd(mPosition, 0.1f * mLook);
-		
+
 			SetClipName("Walking", cIndex);
 		}
 		else
@@ -503,26 +518,6 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		M.mMovement.SetPlayerLook(XMVector3TransformNormal(mLook, R));
 		M.mMovement.SetPlayerRotation(mRotation * R);
 		M.mMovement.SetPlayerPosition(mPosition);
-	}
-}
-
-void Monster::UpdateCharacterShadows(const Light& mMainLight)
-{
-	int i = 0;
-	for (auto& e : mRitems[(int)RenderLayer::Shadow])
-	{
-		// Load the object world
-		auto& o = mRitems[(int)RenderLayer::Monster][i];
-		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World);
-
-		XMVECTOR shadowPlane = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-		XMVECTOR toMainLight = -XMLoadFloat3(&mMainLight.Direction);
-		XMMATRIX S = XMMatrixShadow(shadowPlane, toMainLight);
-		XMMATRIX shadowOffsetY = XMMatrixTranslation(0.0f, 0.001f, 0.0f);
-		XMStoreFloat4x4(&e->World, shadowWorld * S * shadowOffsetY);
-		e->NumFramesDirty = gNumFrameResources;
-
-		++i;
 	}
 }
 

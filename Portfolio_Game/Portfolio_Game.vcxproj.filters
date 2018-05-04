@@ -96,9 +96,6 @@
     <ClInclude Include="Source\Header\Camera.h">
       <Filter>Common\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\Character.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Header\DDSTextureLoader.h">
       <Filter>Common\Header Files</Filter>
     </ClInclude>
@@ -143,6 +140,9 @@
     </ClInclude>
     <ClInclude Include="Source\Header\RenderItem.h">
       <Filter>Common\Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Character.h">
+      <Filter>Character</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

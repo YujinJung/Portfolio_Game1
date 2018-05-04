@@ -8,10 +8,10 @@ using namespace DirectX::PackedVector;
 
 const int gNumFrameResources = 3;
 
-class Materials;
-class Textures;
 class Player;
 class Monster;
+class Textures;
+class Materials;
 
 class PortfolioGameApp : public D3DApp
 {

@@ -1,4 +1,3 @@
-#include "PlayerController.h"
 #include "RenderItem.h"
 #include "GameTimer.h"
 #include "Player.h"
@@ -8,7 +7,7 @@ using namespace DirectX;
 Player::Player()
 	: Character(),
 	mPlayerInfo(),
-	fullHealth(100),
+	mFullHealth(100),
 	mDamage(10)
 {
 }
@@ -22,7 +21,11 @@ int Player::GetHealth(int i) const
 {
 	return mPlayerInfo.mHealth;
 }
-void Player::Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look)
+CharacterInfo & Player::GetCharacterInfo(int cIndex)
+{
+	return mPlayerInfo;
+}
+void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 {
 	XMVECTOR mP = Position;
 	XMVECTOR P = mPlayerInfo.mMovement.GetPlayerPosition();
@@ -34,41 +37,36 @@ void Player::Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Lo
 	{
 		mSkinnedModelInst->TimePos = 0.0f;
 	}
-	else 
+	else
 	{
 		return;
 	}
 
+	// TODO: Monster Look Check
 	SetClipName("HitReaction");
-	//system("pause");
 	mPlayerInfo.mHealth -= damage;
 
-	mUI.SetDamageScale(-mPlayerInfo.mMovement.GetPlayerRight(), static_cast<float>(mPlayerInfo.mHealth) / static_cast<float>(fullHealth));
+	mUI.SetDamageScale(-mPlayerInfo.mMovement.GetPlayerRight(), static_cast<float>(mPlayerInfo.mHealth) / static_cast<float>(mFullHealth));
 }
 void Player::Attack(Character & inMonster)
 {
-		SetClipName("FlyingKick");
+	SetClipName("FlyingKick");
 	SetClipTime(0.0f);
 
 	inMonster.Damage(mDamage, mPlayerInfo.mMovement.GetPlayerPosition(), mPlayerInfo.mMovement.GetPlayerLook());
 }
-UINT Player::GetAllRitemsSize() const
+
+bool Player::isClipEnd()
 {
-	return (UINT)mAllRitems.size();
-}
-UINT Player::GetBoneSize() const
-{
-	return (UINT)mSkinnedInfo.BoneCount();
+	if (mSkinnedInfo.GetAnimation(mPlayerInfo.mClipName).GetClipEndTime() - mSkinnedModelInst->TimePos < 0.001f)
+		return true;
+	return false;
 }
 eClipList Player::GetCurrentClip() const
 {
 	return mSkinnedModelInst->state;
 }
-WorldTransform Player::GetWorldTransform(int i)
-{
-	return mPlayerInfo.mMovement.GetWorldTransformInfo();
-}
-DirectX::XMMATRIX Player::GetWorldTransformMatrix() const
+XMMATRIX Player::GetWorldTransformMatrix() const
 {
 	auto T = mPlayerInfo.mMovement.GetWorldTransformInfo();
 	XMMATRIX P = XMMatrixTranslation(T.Position.x, T.Position.y, T.Position.z);
@@ -77,13 +75,14 @@ DirectX::XMMATRIX Player::GetWorldTransformMatrix() const
 
 	return  S * R * P;
 }
+
+UINT Player::GetAllRitemsSize() const
+{
+	return (UINT)mAllRitems.size();
+}
 const std::vector<RenderItem*> Player::GetRenderItem(RenderLayer Type) const
 {
 	return mRitems[(int)Type];
-}
-CharacterInfo & Player::GetCharacterInfo(int cIndex)
-{
-	return mPlayerInfo;
 }
 
 void Player::SetClipName(const std::string& inClipName)
@@ -97,14 +96,14 @@ void Player::SetClipTime(float time)
 {
 	mSkinnedModelInst->TimePos = time;
 }
-bool Player::isClipEnd()
-{
-	if (mSkinnedInfo.GetAnimation(mPlayerInfo.mClipName).GetClipEndTime() - mSkinnedModelInst->TimePos < 0.001f)
-		return true;
-	return false;
-}
 
-void Player::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData& inSkinInfo, std::string geoName)
+void Player::BuildGeometry(
+	ID3D12Device * device,
+	ID3D12GraphicsCommandList* cmdList,
+	const std::vector<SkinnedVertex>& inVertices,
+	const std::vector<std::uint32_t>& inIndices,
+	const SkinnedData& inSkinInfo,
+	std::string geoName)
 {
 	mSkinnedInfo = inSkinInfo;
 
@@ -144,7 +143,7 @@ void Player::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmd
 	geo->IndexBufferByteSize = ibByteSize;
 
 	auto vSubmeshOffset = mSkinnedInfo.GetSubmeshOffset();
-	auto boneName = mSkinnedInfo.GetBoneName();
+	auto vBoneName = mSkinnedInfo.GetBoneName();
 
 	UINT SubmeshOffsetIndex = 0;
 	for (int i = 0; i < vSubmeshOffset.size(); ++i)
@@ -156,7 +155,7 @@ void Player::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmd
 		FbxSubmesh.StartIndexLocation = SubmeshOffsetIndex;
 		FbxSubmesh.BaseVertexLocation = 0;
 
-		std::string SubmeshName = boneName[i];
+		std::string SubmeshName = vBoneName[i];
 		geo->DrawArgs[SubmeshName] = FbxSubmesh;
 
 		SubmeshOffsetIndex += CurrSubmeshOffsetIndex;
@@ -164,116 +163,84 @@ void Player::BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList* cmd
 
 	mGeometry = std::move(geo);
 }
-void Player::BuildRenderItem(Materials& mMaterials, std::string matrialPrefix)
+void Player::BuildConstantBufferViews(
+	ID3D12Device * device,
+	ID3D12DescriptorHeap * mCbvHeap,
+	const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
+	int mPlayerCbvOffset)
 {
-	int chaIndex = 0;
-	int BoneCount = GetBoneSize();
-	auto boneName = mSkinnedInfo.GetBoneName();
-
-	WorldTransform wTransform;
-	wTransform.Position = { 0.0f, 0.0f, 0.0f };
-	wTransform.Scale = { 1.0f, 1.0f, 1.0f };
-	//wTransform.Look = { 0.0f, 0.0f, 1.0f };
-	XMStoreFloat4x4(&wTransform.Rotation, XMMatrixRotationRollPitchYaw(0.0f, 0.0f, 0.0f));
-
-	// Character Mesh
-	for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)
-	{
-		std::string SubmeshName = boneName[submeshIndex];
-		std::string MaterialName = matrialPrefix; // TODO : Setting the Name
-
-		auto FbxRitem = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&FbxRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));
-		FbxRitem->TexTransform = MathHelper::Identity4x4();
-		FbxRitem->Mat = mMaterials.Get(MaterialName);
-		FbxRitem->Geo = mGeometry.get();
-		FbxRitem->NumFramesDirty = gNumFrameResources;
-		FbxRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		FbxRitem->StartIndexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
-		FbxRitem->BaseVertexLocation = FbxRitem->Geo->DrawArgs[SubmeshName].BaseVertexLocation;
-		FbxRitem->IndexCount = FbxRitem->Geo->DrawArgs[SubmeshName].IndexCount;
-		FbxRitem->SkinnedModelInst = mSkinnedModelInst.get();
-		FbxRitem->PlayerCBIndex = chaIndex++;
-
-		auto shadowedObjectRitem = std::make_unique<RenderItem>();
-		*shadowedObjectRitem = *FbxRitem;
-		shadowedObjectRitem->Mat = mMaterials.Get("shadow0");
-		shadowedObjectRitem->NumFramesDirty = gNumFrameResources;
-		shadowedObjectRitem->SkinnedModelInst = mSkinnedModelInst.get();
-		shadowedObjectRitem->PlayerCBIndex = chaIndex++;
-
-		mRitems[(int)RenderLayer::Character].push_back(FbxRitem.get());
-		mAllRitems.push_back(std::move(FbxRitem));
-		mRitems[(int)RenderLayer::Shadow].push_back(shadowedObjectRitem.get());
-		mAllRitems.push_back(std::move(shadowedObjectRitem));
-	}
-
-	mPlayerInfo.mMovement.SetWorldTransformInfo(wTransform);
-}
-void Player::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mChaCbvOffset)
-{
-	UINT characterCount = GetAllRitemsSize();
-	UINT chaCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(SkinnedConstants));
+	UINT playerCount = GetAllRitemsSize();
+	UINT playerCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(SkinnedConstants));
 	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
 	{
-		auto characterCB = mFrameResources[frameIndex]->PlayerCB->Resource();
+		auto playerCB = mFrameResources[frameIndex]->PlayerCB->Resource();
 
-		for (UINT i = 0; i < characterCount; ++i)
+		for (UINT i = 0; i < playerCount; ++i)
 		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = characterCB->GetGPUVirtualAddress();
+			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = playerCB->GetGPUVirtualAddress();
 
 			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * chaCBByteSize;
+			cbAddress += i * playerCBByteSize;
 
 			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mChaCbvOffset + frameIndex * characterCount + i;
+			int heapIndex = mPlayerCbvOffset + frameIndex * playerCount + i;
 			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
 			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = chaCBByteSize;
+			cbvDesc.SizeInBytes = playerCBByteSize;
 
 			device->CreateConstantBufferView(&cbvDesc, handle);
 		}
 	}
 }
-
-void Player::UpdatePlayerPosition(const Character& Monster, PlayerMoveList move, float velocity)
+void Player::BuildRenderItem(
+	Materials& mMaterials,
+	std::string matrialPrefix)
 {
-	switch (move)
+	int playerIndex = 0;
+	int boneCount = (UINT)mSkinnedInfo.BoneCount();
+	auto vBoneName = mSkinnedInfo.GetBoneName();
+
+	// Character Mesh
+	for (int submeshIndex = 0; submeshIndex < boneCount - 1; ++submeshIndex)
 	{
-	case PlayerMoveList::Walk :
-		mPlayerInfo.mMovement.Walk(velocity);
-		break;
+		std::string SubmeshName = vBoneName[submeshIndex];
 
-	case PlayerMoveList::SideWalk :
-		mPlayerInfo.mMovement.SideWalk(velocity);
-		break;
+		auto PlayerRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&PlayerRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));
+		PlayerRitem->TexTransform = MathHelper::Identity4x4();
+		PlayerRitem->Mat = mMaterials.Get(matrialPrefix);
+		PlayerRitem->Geo = mGeometry.get();
+		PlayerRitem->NumFramesDirty = gNumFrameResources;
+		PlayerRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		PlayerRitem->StartIndexLocation = PlayerRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
+		PlayerRitem->BaseVertexLocation = PlayerRitem->Geo->DrawArgs[SubmeshName].BaseVertexLocation;
+		PlayerRitem->IndexCount = PlayerRitem->Geo->DrawArgs[SubmeshName].IndexCount;
+		PlayerRitem->SkinnedModelInst = mSkinnedModelInst.get();
+		PlayerRitem->PlayerCBIndex = playerIndex++;
 
-	case PlayerMoveList::AddYaw :
-		mPlayerInfo.mMovement.AddYaw(velocity);
-		break;
-		
-	case PlayerMoveList::AddPitch :
-		mPlayerInfo.mMovement.AddPitch(velocity);
-		break;
-	case PlayerMoveList::Death :
-		
-		break;
+		auto ShadowedRitem = std::make_unique<RenderItem>();
+		*ShadowedRitem = *PlayerRitem;
+		ShadowedRitem->Mat = mMaterials.Get("shadow0");
+		ShadowedRitem->NumFramesDirty = gNumFrameResources;
+		ShadowedRitem->SkinnedModelInst = mSkinnedModelInst.get();
+		ShadowedRitem->PlayerCBIndex = playerIndex++;
+
+		mRitems[(int)RenderLayer::Character].push_back(PlayerRitem.get());
+		mAllRitems.push_back(std::move(PlayerRitem));
+		mRitems[(int)RenderLayer::Shadow].push_back(ShadowedRitem.get());
+		mAllRitems.push_back(std::move(ShadowedRitem));
 	}
-
-	mCamera.UpdatePosition(
-		mPlayerInfo.mMovement.GetPlayerPosition(),
-		mPlayerInfo.mMovement.GetPlayerLook(),
-		mPlayerInfo.mMovement.GetPlayerUp(),
-		mPlayerInfo.mMovement.GetPlayerRight());
-
-	mTransformDirty = true;
 }
-void Player::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt)
+
+void Player::UpdateCharacterCBs(
+	FrameResource* mCurrFrameResource,
+	const Light& mMainLight,
+	const GameTimer & gt)
 {
 	if (mPlayerInfo.mHealth <= 0 && mPlayerInfo.mClipName != "Death")
 	{
@@ -281,7 +248,7 @@ void Player::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& 
 		mSkinnedModelInst->TimePos = 0.0f;
 	}
 
-	auto currCharacterCB = mCurrFrameResource->PlayerCB.get();
+	auto currPlayerCB = mCurrFrameResource->PlayerCB.get();
 	UpdateCharacterShadows(mMainLight);
 
 	mSkinnedModelInst->UpdateSkinnedAnimation(mPlayerInfo.mClipName, gt.DeltaTime());
@@ -297,34 +264,24 @@ void Player::UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& 
 				std::end(mSkinnedModelInst->FinalTransforms),
 				&skinnedConstants.BoneTransforms[0]);
 
-			// TODO : player constroller
 			XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix();
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
 			XMStoreFloat4x4(&skinnedConstants.World, XMMatrixTranspose(world));
 			XMStoreFloat4x4(&skinnedConstants.TexTransform, XMMatrixTranspose(texTransform));
 
-			currCharacterCB->CopyData(e->PlayerCBIndex, skinnedConstants);
-
-			// Next FrameResource need to be updated too.
-
-			// TODO:
-			//e->NumFramesDirty--;
+			currPlayerCB->CopyData(e->PlayerCBIndex, skinnedConstants);
 		}
 	}
 
 	mCamera.UpdateViewMatrix();
 
-	XMVECTOR Translation = 0.9 * XMVectorSubtract(mCamera.GetEyePosition(), mPlayerInfo.mMovement.GetPlayerPosition());
-	mUI.SetPosition(Translation);
+	XMVECTOR translation = 0.9 * XMVectorSubtract(mCamera.GetEyePosition(), mPlayerInfo.mMovement.GetPlayerPosition());
+	mUI.SetPosition(translation);
 
 	// UI
-	auto currUICB = mCurrFrameResource->UICB.get();
-	mUI.UpdateUICBs(currUICB, GetWorldTransformMatrix(), mTransformDirty);
-}
-void Player::UpdateTransformationMatrix()
-{
-	mPlayerInfo.mMovement.UpdateTransformationMatrix();
+	auto curUICB = mCurrFrameResource->UICB.get();
+	mUI.UpdateUICBs(curUICB, GetWorldTransformMatrix(), mTransformDirty);
 }
 void Player::UpdateCharacterShadows(const Light& mMainLight)
 {
@@ -333,8 +290,8 @@ void Player::UpdateCharacterShadows(const Light& mMainLight)
 	{
 		// Load the object world
 		auto& o = mRitems[(int)RenderLayer::Character][i];
-		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World);
 
+		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World);
 		XMVECTOR shadowPlane = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 		XMVECTOR toMainLight = -XMLoadFloat3(&mMainLight.Direction);
 		XMMATRIX S = XMMatrixShadow(shadowPlane, toMainLight);
@@ -344,4 +301,40 @@ void Player::UpdateCharacterShadows(const Light& mMainLight)
 
 		++i;
 	}
+}
+void Player::UpdatePlayerPosition(PlayerMoveList moveName, float velocity)
+{
+	switch (moveName)
+	{
+	case PlayerMoveList::Walk:
+		mPlayerInfo.mMovement.Walk(velocity);
+		break;
+
+	case PlayerMoveList::SideWalk:
+		mPlayerInfo.mMovement.SideWalk(velocity);
+		break;
+
+	case PlayerMoveList::AddYaw:
+		mPlayerInfo.mMovement.AddYaw(velocity);
+		break;
+
+	case PlayerMoveList::AddPitch:
+		mPlayerInfo.mMovement.AddPitch(velocity);
+		break;
+	case PlayerMoveList::Death:
+
+		break;
+	}
+
+	mCamera.UpdatePosition(
+		mPlayerInfo.mMovement.GetPlayerPosition(),
+		mPlayerInfo.mMovement.GetPlayerLook(),
+		mPlayerInfo.mMovement.GetPlayerUp(),
+		mPlayerInfo.mMovement.GetPlayerRight());
+
+	mTransformDirty = true;
+}
+void Player::UpdateTransformationMatrix()
+{
+	mPlayerInfo.mMovement.UpdateTransformationMatrix();
 }

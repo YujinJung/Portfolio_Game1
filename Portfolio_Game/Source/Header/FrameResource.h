@@ -99,7 +99,7 @@ struct FrameResource
 {
 public:
     
-    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterCount, UINT MonsterBoneCount, UINT UICount, UINT MonsterUICount);
+    FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterCount, UINT UICount, UINT MonsterUICount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();

@@ -17,7 +17,6 @@
 #include "FrameResource.h"
 #include "GeometryGenerator.h"
 
-#include "Camera.h"
 #include "Player.h"
 #include "Monster.h"
 #include "Textures.h"
@@ -265,7 +264,7 @@ void PortfolioGameApp::OnMouseMove(WPARAM btnState, int x, int y)
 		// Rotate Camera with Player
 		mPlayer.mCamera.AddYaw(dx);
 		if(!mCameraDetach)
-			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::AddYaw, dx);
+			mPlayer.UpdatePlayerPosition(PlayerMoveList::AddYaw, dx);
 	}
 
 	mLastMousePos.x = x;
@@ -296,7 +295,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	{
 		if (!mCameraDetach)
 		{
-			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::Walk, 5.0f * dt);
+			mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 5.0f * dt);
 			mPlayer.SetClipName("playerWalking");
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
@@ -313,7 +312,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	{
 		if (!mCameraDetach)
 		{
-			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::Walk, -5.0f * dt);
+			mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, -5.0f * dt);
 			mPlayer.SetClipName("WalkingBackward");
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
@@ -340,14 +339,14 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
 		if (!mCameraDetach)
-			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::AddYaw, -1.0f * dt);
+			mPlayer.UpdatePlayerPosition(PlayerMoveList::AddYaw, -1.0f * dt);
 		else
 			mPlayer.mCamera.WalkSideway(-10.0f * dt);
 	}
 	else if (GetAsyncKeyState('D') & 0x8000)
 	{
 		if (!mCameraDetach)
-			mPlayer.UpdatePlayerPosition(mMonster, PlayerMoveList::AddYaw, 1.0f * dt);
+			mPlayer.UpdatePlayerPosition(PlayerMoveList::AddYaw, 1.0f * dt);
 		else
 			mPlayer.mCamera.WalkSideway(10.0f * dt);
 	}
@@ -645,7 +644,10 @@ void PortfolioGameApp::BuildFrameResources()
 			md3dDevice.Get(),
 			1, (UINT)mAllRitems.size(),
 			mMaterials.GetSize(),
-			mPlayer.GetAllRitemsSize(),mMonster.GetNumOfCharacter(),  mMonster.GetAllRitemsSize(), mPlayer.mUI.GetSize(), mMonster.GetUISize()));
+			mPlayer.GetAllRitemsSize(),
+			mMonster.GetAllRitemsSize(),
+			mPlayer.mUI.GetSize(),
+			mMonster.GetUISize()));
 	}
 }
 
@@ -990,13 +992,12 @@ void PortfolioGameApp::BuildShapeGeometry()
 void PortfolioGameApp::BuildFbxGeometry()
 {
 	FbxLoader fbx;
-
 	std::vector<SkinnedVertex> outVertices;
 	std::vector<std::uint32_t> outIndices;
 	std::vector<Material> outMaterial;
 	SkinnedData outSkinnedInfo;
 
-	//std::string FileName = "../Resource/FBX/Capoeira.FBX";
+	// Player
 	std::string FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
@@ -1014,11 +1015,6 @@ void PortfolioGameApp::BuildFbxGeometry()
 
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
-	/*FileName = "../Resource/FBX/Character/";
-	fbx.LoadFBX(outSkinnedInfo, "StartWalking", FileName);
-
-	FileName = "../Resource/FBX/Character/";
-	fbx.LoadFBX(outSkinnedInfo, "StopWalking", FileName);*/
 	
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "WalkingBackward", FileName);
@@ -1064,6 +1060,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 	outMaterial.clear();
 	outSkinnedInfo.clear();
 
+	// Monster FBX
 	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
@@ -1272,10 +1269,12 @@ void PortfolioGameApp::BuildRenderItems()
 		mAllRitems.push_back(std::move(boxRitem));
 	}
 
+	// Player
 	mPlayer.BuildRenderItem(mMaterials, "material_0");
 
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
 
+	// Monster
 	mMonster.BuildRenderItem(mMaterials, "monsterMat_1");
 
 	mMonster.BuildUIRenderItem(mGeometries, mMaterials);

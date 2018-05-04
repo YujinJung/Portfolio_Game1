@@ -1,8 +1,8 @@
 #pragma once
 
-#include "DXUI.h"
-#include "PlayerCamera.h"
 #include "Character.h"
+#include "PlayerCamera.h"
+#include "DXUI.h"
 
 enum PlayerMoveList
 {
@@ -13,8 +13,6 @@ enum PlayerMoveList
 	Death
 };
 
-class PlayerCamera;
-class DXUI;
 class Player : public Character
 {
 public:
@@ -25,32 +23,45 @@ public:
 	PlayerCamera mCamera;
 
 public:
-	UINT GetBoneSize() const;
-	UINT GetAllRitemsSize() const;
+	virtual int GetHealth(int i = 0) const override;
+	virtual CharacterInfo& GetCharacterInfo(int cIndex = 0);
+	virtual void Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
+	void Attack(Character& inMonster);
+
+public:
+	bool isClipEnd();
 	eClipList GetCurrentClip() const;
 	DirectX::XMMATRIX GetWorldTransformMatrix() const;
-	virtual WorldTransform  GetWorldTransform(int i = 0);
+
+	UINT GetAllRitemsSize() const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
-	virtual CharacterInfo& GetCharacterInfo(int cIndex = 0);
 
 	void SetClipName(const std::string & inClipName);
 	void SetClipTime(float time);
 
 public:
-	bool isClipEnd();
-	virtual int GetHealth(int i = 0) const override;
-	virtual void Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
-	void Attack(Character& inMonster);
+	virtual void BuildGeometry(
+		ID3D12Device * device,
+		ID3D12GraphicsCommandList * cmdList,
+		const std::vector<SkinnedVertex>& inVertices,
+		const std::vector<std::uint32_t>& inIndices,
+		const SkinnedData & inSkinInfo, std::string geoName) override;
+	virtual void BuildConstantBufferViews(
+		ID3D12Device * device,
+		ID3D12DescriptorHeap * mCbvHeap,
+		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
+		int mPlayerCbvOffset) override;
+	virtual void BuildRenderItem(
+		Materials & mMaterials,
+		std::string matrialPrefix) override;
 
-public:
-	virtual void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList * cmdList, const std::vector<SkinnedVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, const SkinnedData & inSkinInfo, std::string geoName) override;
-	virtual void BuildRenderItem(Materials & mMaterials, std::string matrialPrefix) override;
-	virtual void BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mChaCbvOffset) override;
-
-	void UpdatePlayerPosition(const Character& Monster, PlayerMoveList move, float velocity);
-	void UpdateCharacterCBs(FrameResource* mCurrFrameResource, const Light& mMainLight, const GameTimer & gt);
+	virtual void UpdateCharacterCBs(
+		FrameResource* mCurrFrameResource,
+		const Light& mMainLight,
+		const GameTimer & gt);
+	virtual void UpdateCharacterShadows(const Light & mMainLight);
+	void UpdatePlayerPosition(PlayerMoveList move, float velocity);
 	void UpdateTransformationMatrix();
-	void UpdateCharacterShadows(const Light & mMainLight);
 	
 private:
 	CharacterInfo mPlayerInfo;
@@ -63,8 +74,8 @@ private:
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 
 private:
-	UINT fullHealth;
 	UINT mDamage;
+	UINT mFullHealth;
 	bool DeathCamFinished = false;
 };
 
