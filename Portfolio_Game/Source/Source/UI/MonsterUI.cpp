@@ -5,9 +5,6 @@ using namespace DirectX;
 
 MonsterUI::MonsterUI()
 {
-	mWorldTransform.Scale = { 10.0f, 10.0f, 10.0f };
-	mWorldTransform.Position = { 0.0f, 0.0f, 0.0f };
-	UIoffset = { 0.0f, 10.0f, 0.0f };
 }
 
 
@@ -25,6 +22,11 @@ const std::vector<RenderItem*> MonsterUI::GetRenderItem(eUIList Type)const
 	return mRitems[(int)Type];
 }
 
+void MonsterUI::SetDamageScale(int cIndex, float inScale)
+{
+	mWorldTransform[cIndex].Scale.x = inScale;
+}
+
 void MonsterUI::BuildRenderItem(
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
 	Materials & mMaterials,
@@ -34,8 +36,10 @@ void MonsterUI::BuildRenderItem(
 	for (UINT i = 0; i < numOfMonster; ++i)
 	{
 		// place over the head
+		// odd are background HP bar
+
 		auto frontHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&frontHealthBar->World, XMMatrixScaling(0.04f, 1.0f, 0.004f)  * XMMatrixRotationX(XM_PIDIV2) * XMMatrixTranslation(0.0f, -0.5f, 0.0f));
+		XMStoreFloat4x4(&frontHealthBar->World,XMMatrixScaling(0.02f, 1.0f, 0.002f)  * XMMatrixRotationX(XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5001f));
 		frontHealthBar->TexTransform = MathHelper::Identity4x4();
 		frontHealthBar->Mat = mMaterials.Get("red");
 		frontHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -45,8 +49,19 @@ void MonsterUI::BuildRenderItem(
 		frontHealthBar->BaseVertexLocation = frontHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
 		frontHealthBar->IndexCount = frontHealthBar->Geo->DrawArgs["grid"].IndexCount;
 
+		auto frontBGHealthBar = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&frontBGHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.002f)  * XMMatrixRotationX(XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
+		frontBGHealthBar->TexTransform = MathHelper::Identity4x4();
+		frontBGHealthBar->Mat = mMaterials.Get("bricks0");
+		frontBGHealthBar->Geo = mGeometries["shapeGeo"].get();
+		frontBGHealthBar->ObjCBIndex = UIIndex++;
+		frontBGHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		frontBGHealthBar->StartIndexLocation = frontBGHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
+		frontBGHealthBar->BaseVertexLocation = frontBGHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
+		frontBGHealthBar->IndexCount = frontBGHealthBar->Geo->DrawArgs["grid"].IndexCount;
+
 		auto backHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&backHealthBar->World, XMMatrixScaling(0.04f, 1.0f, 0.003f)  * XMMatrixRotationX(-XM_PIDIV2) * XMMatrixTranslation(0.0f, -0.5f, 0.0f));
+		XMStoreFloat4x4(&backHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.002f)  * XMMatrixRotationX(-XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.4999f));
 		backHealthBar->TexTransform = MathHelper::Identity4x4();
 		backHealthBar->Mat = mMaterials.Get("red");
 		backHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -56,11 +71,28 @@ void MonsterUI::BuildRenderItem(
 		backHealthBar->BaseVertexLocation = backHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
 		backHealthBar->IndexCount = backHealthBar->Geo->DrawArgs["grid"].IndexCount;
 
+		auto backBGHealthBar = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&backBGHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.002f)  * XMMatrixRotationX(-XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
+		backBGHealthBar->TexTransform = MathHelper::Identity4x4();
+		backBGHealthBar->Mat = mMaterials.Get("bricks0");
+		backBGHealthBar->Geo = mGeometries["shapeGeo"].get();
+		backBGHealthBar->ObjCBIndex = UIIndex++;
+		backBGHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		backBGHealthBar->StartIndexLocation = backBGHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
+		backBGHealthBar->BaseVertexLocation = backBGHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
+		backBGHealthBar->IndexCount = backBGHealthBar->Geo->DrawArgs["grid"].IndexCount;
+
 		mRitems[(int)eUIList::Rect].push_back(frontHealthBar.get());
 		mAllRitems.push_back(std::move(frontHealthBar));
 		mRitems[(int)eUIList::Rect].push_back(backHealthBar.get());
-		mAllRitems.push_back(std::move(backHealthBar)); 	
+		mAllRitems.push_back(std::move(backHealthBar));
+		mRitems[(int)eUIList::Rect].push_back(frontBGHealthBar.get());
+		mAllRitems.push_back(std::move(frontBGHealthBar));
+		mRitems[(int)eUIList::Rect].push_back(backBGHealthBar.get());
+		mAllRitems.push_back(std::move(backBGHealthBar));
 	}
+
+	mWorldTransform.resize(numOfMonster);
 }
 void MonsterUI::BuildConstantBufferViews(
 	ID3D12Device * device,
@@ -97,6 +129,7 @@ void MonsterUI::BuildConstantBufferViews(
 void MonsterUI::UpdateUICBs(
 	UploadBuffer<UIConstants>* currUICB,
 	std::vector<XMMATRIX> playerWorlds,
+	std::vector<XMVECTOR> inEyeLeft,
 	bool mTransformDirty)
 {
 	int uIndex = 0;
@@ -116,19 +149,41 @@ void MonsterUI::UpdateUICBs(
 
 		if (e->NumFramesDirty > 0)
 		{
+			XMVECTOR UIoffset;
+			// front HP bar 4n
+			if (e->ObjCBIndex % 4 == 0)
+			{
+				UIoffset = (1.0f - mWorldTransform[mIndex].Scale.x) * (-inEyeLeft[mIndex]) * 0.8f;
+			}
+			// back HP bar 4n + 3
+			else if (e->ObjCBIndex % 4 == 3)
+			{
+				UIoffset = (1.0f - mWorldTransform[mIndex].Scale.x) * inEyeLeft[mIndex] * 0.8f;
+			}
+
 			XMMATRIX T = XMMatrixTranslation(
-				mWorldTransform.Position.x + UIoffset.x,
-				mWorldTransform.Position.y + UIoffset.y,
-				mWorldTransform.Position.z + UIoffset.z);
+				mWorldTransform[mIndex].Position.x + UIoffset.m128_f32[0],
+				mWorldTransform[mIndex].Position.y + UIoffset.m128_f32[1],
+				mWorldTransform[mIndex].Position.z + UIoffset.m128_f32[2]);;
+			XMMATRIX S = XMMatrixScaling(
+				mWorldTransform[mIndex].Scale.x,
+				mWorldTransform[mIndex].Scale.y,
+				mWorldTransform[mIndex].Scale.z);
+
+			// Background Health Bar
+			if (e->ObjCBIndex % 2 == 1)
+			{
+				T = XMMatrixTranslation(
+					mWorldTransform[mIndex].Position.x,
+					mWorldTransform[mIndex].Position.y,
+					mWorldTransform[mIndex].Position.z);
+				S = XMMatrixIdentity();
+			}
+
 			XMMATRIX world = XMLoadFloat4x4(&e->World) * playerWorlds[mIndex] * T;
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
-			XMMATRIX S = XMMatrixScaling(
-				mWorldTransform.Scale.x,
-				mWorldTransform.Scale.y,
-				mWorldTransform.Scale.z);
-
 			UIConstants uiConstants;
-			XMStoreFloat4x4(&uiConstants.World, XMMatrixTranspose(world) );
+			XMStoreFloat4x4(&uiConstants.World, XMMatrixTranspose(world) * S);
 			XMStoreFloat4x4(&uiConstants.TexTransform, XMMatrixTranspose(texTransform));
 
 			currUICB->CopyData(e->ObjCBIndex, uiConstants);

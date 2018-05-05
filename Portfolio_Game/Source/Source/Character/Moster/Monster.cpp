@@ -59,7 +59,7 @@ void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 			SetClipName("HitReaction", cIndex);
 			mMonsterInfo[cIndex].mHealth -= damage;
 		}
-		//mMonsterUI.SetDamageScale(static_cast<float>(mMonsterInfo[cIndex].mHealth) / static_cast<float>(mFullHealth));
+		mMonsterUI.SetDamageScale(cIndex, static_cast<float>(mMonsterInfo[cIndex].mHealth) / static_cast<float>(mFullHealth));
 	}
 }
 
@@ -276,6 +276,7 @@ void Monster::BuildRenderItem(
 	}
 }
 
+
 void Monster::UpdateCharacterCBs(
 	FrameResource * mCurrFrameResource,
 	const Light & mMainLight,
@@ -333,6 +334,8 @@ void Monster::UpdateCharacterCBs(
 			if (preMonsterIndex != monsterIndex)
 			{
 				preMonsterIndex = monsterIndex;
+
+				mMonsterInfo[monsterIndex].mMovement.UpdateTransformationMatrix();
 				vWorld.push_back(world);
 				vEyeLeft.push_back(-mMonsterInfo[monsterIndex].mMovement.GetPlayerRight());
 			}
@@ -344,7 +347,7 @@ void Monster::UpdateCharacterCBs(
 
 	//UI
 	auto curUICB = mCurrFrameResource->MonsterUICB.get();
-	mMonsterUI.UpdateUICBs(curUICB, vWorld, mTransformDirty);
+	mMonsterUI.UpdateUICBs(curUICB, vWorld, vEyeLeft, mTransformDirty);
 }
 
 void Monster::UpdateCharacterShadows(const Light& mMainLight)

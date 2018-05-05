@@ -49,35 +49,43 @@ ViewInfo ChracterMovement::GetViewTransformInfo() const
 void ChracterMovement::SetPlayerPosition(DirectX::XMVECTOR P)
 {
 	XMStoreFloat3(&mCharacterWorldInfo.Position, P);
+	mTransformDirty = true;
 }
 void ChracterMovement::SetPlayerScale(DirectX::XMVECTOR S)
 {
 	XMStoreFloat3(&mCharacterWorldInfo.Scale, S);
+	mTransformDirty = true;
 }
 void ChracterMovement::SetPlayerRotation(DirectX::XMMATRIX R)
 {
 	XMStoreFloat4x4(&mCharacterWorldInfo.Rotation, R);
+	mTransformDirty = true;
 }
 void ChracterMovement::SetPlayerRight(DirectX::XMVECTOR R)
 {
 	XMStoreFloat3(&mCharacterViewInfo.Right, R);
+	mTransformDirty = true;
 }
 void ChracterMovement::SetPlayerLook(DirectX::XMVECTOR L)
 {
 	XMStoreFloat3(&mCharacterViewInfo.Look, L);
+	mTransformDirty = true;
 }
 void ChracterMovement::SetPlayerUp(DirectX::XMVECTOR U)
 {
 	XMStoreFloat3(&mCharacterViewInfo.Up, U);
+	mTransformDirty = true;
 }
 
 void ChracterMovement::SetWorldTransformInfo(const WorldTransform & inWorld)
 {
 	mCharacterWorldInfo = inWorld;
+	mTransformDirty = true;
 }
 void ChracterMovement::SetViewTransformInfo(const ViewInfo & inWorld)
 {
 	mCharacterViewInfo = inWorld;
+	mTransformDirty = true;
 }
 
 void ChracterMovement::AddYaw(float dx)

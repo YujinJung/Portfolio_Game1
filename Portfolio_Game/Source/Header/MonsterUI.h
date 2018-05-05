@@ -10,7 +10,7 @@ public:
 	virtual UINT GetSize() const;
 	const std::vector<RenderItem*> GetRenderItem(eUIList Type)const;
 
-	void SetDamageScale(float inScale);
+	void SetDamageScale(int cIndex, float inScale);
 
 	void BuildRenderItem(
 		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
@@ -25,13 +25,13 @@ public:
 	void UpdateUICBs(
 		UploadBuffer<UIConstants>* currUICB,
 		std::vector<DirectX::XMMATRIX> playerWorlds,
+		std::vector<DirectX::XMVECTOR> inEyeLeft,
 		bool mTransformDirty);
 
 private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitems[(int)eUIList::Count];
 
-	DirectX::XMFLOAT3 UIoffset;
-	WorldTransform mWorldTransform;
+	std::vector<WorldTransform> mWorldTransform;
 };
 

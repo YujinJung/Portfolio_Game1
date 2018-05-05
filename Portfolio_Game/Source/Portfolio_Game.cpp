@@ -276,6 +276,7 @@ void PortfolioGameApp::OnMouseMove(WPARAM btnState, int x, int y)
 void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
+	static float curTime = gt.TotalTime();
 
 	if (GetAsyncKeyState('7') & 0x8000)
 		mIsWireframe = true;
@@ -327,8 +328,12 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	}
 	else if(GetAsyncKeyState('1') & 0x8000)
 	{
-		mPlayer.SetClipTime(0.0f);
-		mPlayer.Attack(mMonster);
+		if (gt.TotalTime() - curTime > 3.0f)
+		{
+			mPlayer.SetClipTime(0.0f);
+			mPlayer.Attack(mMonster);
+			curTime = gt.TotalTime();
+		}
 	}
 	else
 	{
