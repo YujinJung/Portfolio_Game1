@@ -46,14 +46,17 @@ void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 	SetClipName("HitReaction");
 	mPlayerInfo.mHealth -= damage;
 
-	mUI.SetDamageScale(-mPlayerInfo.mMovement.GetPlayerRight(), static_cast<float>(mPlayerInfo.mHealth) / static_cast<float>(mFullHealth));
+	mUI.SetDamageScale(static_cast<float>(mPlayerInfo.mHealth) / static_cast<float>(mFullHealth));
 }
 void Player::Attack(Character & inMonster)
 {
 	SetClipName("FlyingKick");
 	SetClipTime(0.0f);
 
-	inMonster.Damage(mDamage, mPlayerInfo.mMovement.GetPlayerPosition(), mPlayerInfo.mMovement.GetPlayerLook());
+	inMonster.Damage(
+		mDamage,
+		mPlayerInfo.mMovement.GetPlayerPosition(),
+		mPlayerInfo.mMovement.GetPlayerLook());
 }
 
 bool Player::isClipEnd()
@@ -281,7 +284,11 @@ void Player::UpdateCharacterCBs(
 
 	// UI
 	auto curUICB = mCurrFrameResource->UICB.get();
-	mUI.UpdateUICBs(curUICB, GetWorldTransformMatrix(), mTransformDirty);
+	mUI.UpdateUICBs(
+		curUICB,
+		GetWorldTransformMatrix(),
+		-mPlayerInfo.mMovement.GetPlayerRight(),
+		mTransformDirty);
 }
 void Player::UpdateCharacterShadows(const Light& mMainLight)
 {

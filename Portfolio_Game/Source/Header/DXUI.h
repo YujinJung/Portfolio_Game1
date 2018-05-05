@@ -15,18 +15,23 @@ public:
 	const std::vector<RenderItem*> GetRenderItem(eUIList Type);
 
 	void SetPosition(DirectX::FXMVECTOR inPosition);
-	void SetDamageScale(DirectX::FXMVECTOR inEyeLeft, float inScale);
+	void SetDamageScale(float inScale);
 
-	void BuildConstantBufferViews(ID3D12Device* device, ID3D12DescriptorHeap* mCbvHeap, const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mUICbvOffset);
-	void BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries, Materials & mMaterials);
+	void BuildConstantBufferViews(
+		ID3D12Device* device,
+		ID3D12DescriptorHeap* mCbvHeap,
+		const std::vector<std::unique_ptr<FrameResource>> &mFrameResources,
+		int mUICbvOffset);
+	void BuildRenderItem(
+		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
+		Materials & mMaterials);
 
-	void UpdateUICBs(UploadBuffer<UIConstants>* currUICB, DirectX::XMMATRIX playerWorld, bool mTransformDirty);
+	void UpdateUICBs(UploadBuffer<UIConstants>* currUICB, DirectX::XMMATRIX playerWorld, DirectX::XMVECTOR inEyeLeft, bool mTransformDirty);
 
 private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitems[(int)eUIList::Count];
 
 	WorldTransform mWorldTransform;
-	DirectX::XMFLOAT3 UIoffset;
 };
 

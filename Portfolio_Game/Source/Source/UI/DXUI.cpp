@@ -2,11 +2,11 @@
 #include "Materials.h"
 
 using namespace DirectX;
+
 DXUI::DXUI()
 {
 	mWorldTransform.Scale = { 1.0f, 1.0f, 1.0f };
 	mWorldTransform.Position = { 0.0f, 0.0f, 0.0f };
-	UIoffset = { 0.0f, 0.0f, 0.0f };
 }
 
 
@@ -27,13 +27,16 @@ void DXUI::SetPosition(FXMVECTOR inPosition)
 {
 	XMStoreFloat3(&mWorldTransform.Position, inPosition);
 }
-void DXUI::SetDamageScale(DirectX::FXMVECTOR inEyeLeft, float inScale)
+void DXUI::SetDamageScale(float inScale)
 {
-	XMStoreFloat3(&UIoffset, (1.0f - inScale) * inEyeLeft * 0.1f);
 	mWorldTransform.Scale.x = inScale;
 }
 
-void DXUI::BuildConstantBufferViews(ID3D12Device * device, ID3D12DescriptorHeap * mCbvHeap, const std::vector<std::unique_ptr<FrameResource>>& mFrameResources, int mUICbvOffset)
+void DXUI::BuildConstantBufferViews(
+	ID3D12Device * device,
+	ID3D12DescriptorHeap * mCbvHeap,
+	const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
+	int mUICbvOffset)
 {
 	UINT UICount = GetSize();
 	UINT UICBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(UIConstants));
@@ -70,56 +73,78 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 	// TODO : Setting the Name
 
 	// place over the head
-	auto temp = std::make_unique<RenderItem>();
+	auto frontHealthBar = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&temp->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 0.87f, 0.0f));
-	temp->TexTransform = MathHelper::Identity4x4();
-	temp->Mat = mMaterials.Get("ice0");
-	temp->Geo = mGeometries["shapeGeo"].get();
-	temp->ObjCBIndex = UIIndex++;
-	temp->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	temp->StartIndexLocation = temp->Geo->DrawArgs["grid"].StartIndexLocation;
-	temp->BaseVertexLocation = temp->Geo->DrawArgs["grid"].BaseVertexLocation;
-	temp->IndexCount = temp->Geo->DrawArgs["grid"].IndexCount;
-	mRitems[(int)eUIList::Rect].push_back(temp.get());
-	mAllRitems.push_back(std::move(temp));
+	XMStoreFloat4x4(&frontHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.0011f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI)  * XMMatrixTranslation(0.0f, 0.895f, 0.0f));
+	frontHealthBar->TexTransform = MathHelper::Identity4x4();
+	frontHealthBar->Mat = mMaterials.Get("ice0");
+	frontHealthBar->Geo = mGeometries["shapeGeo"].get();
+	frontHealthBar->ObjCBIndex = UIIndex++;
+	frontHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	frontHealthBar->StartIndexLocation = frontHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
+	frontHealthBar->BaseVertexLocation = frontHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
+	frontHealthBar->IndexCount = frontHealthBar->Geo->DrawArgs["grid"].IndexCount;
+	mRitems[(int)eUIList::Rect].push_back(frontHealthBar.get());
+	mAllRitems.push_back(std::move(frontHealthBar));
 
-	auto mana = std::make_unique<RenderItem>();
+	auto bgHealthBar = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&mana->World, XMMatrixScaling(0.01f, 0.01f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 0.89f, 0.0f));
-	mana->TexTransform = MathHelper::Identity4x4();
-	mana->Mat = mMaterials.Get("red");
-	mana->Geo = mGeometries["shapeGeo"].get();
-	mana->ObjCBIndex = UIIndex++;
-	mana->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	mana->StartIndexLocation = mana->Geo->DrawArgs["grid"].StartIndexLocation;
-	mana->BaseVertexLocation = mana->Geo->DrawArgs["grid"].BaseVertexLocation;
-	mana->IndexCount = mana->Geo->DrawArgs["grid"].IndexCount;
-	mRitems[(int)eUIList::Rect].push_back(mana.get());
-	mAllRitems.push_back(std::move(mana));
+	XMStoreFloat4x4(&bgHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI)  * XMMatrixTranslation(0.0f, 0.89f, 0.05f));
+	bgHealthBar->TexTransform = MathHelper::Identity4x4();
+	bgHealthBar->Mat = mMaterials.Get("bricks0");
+	bgHealthBar->Geo = mGeometries["shapeGeo"].get();
+	bgHealthBar->ObjCBIndex = UIIndex++;
+	bgHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	bgHealthBar->StartIndexLocation = bgHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
+	bgHealthBar->BaseVertexLocation = bgHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
+	bgHealthBar->IndexCount = bgHealthBar->Geo->DrawArgs["grid"].IndexCount;
+	mRitems[(int)eUIList::Rect].push_back(bgHealthBar.get());
+	mAllRitems.push_back(std::move(bgHealthBar));
 }
 
-void DXUI::UpdateUICBs(UploadBuffer<UIConstants>* currUICB, XMMATRIX playerWorld, bool mTransformDirty)
+void DXUI::UpdateUICBs(
+	UploadBuffer<UIConstants>* curUICB,
+	XMMATRIX playerWorld,
+	XMVECTOR inEyeLeft,
+	bool mTransformDirty)
 {
 	for (auto& e : mAllRitems)
 	{
 		// if Transform then Reset the Dirty flag
 		if (mTransformDirty) { e->NumFramesDirty = gNumFrameResources; }
-		// Only update the cbuffer data if the constants have changed.  
-		// This needs to be tracked per frame resource.
+
 		if (e->NumFramesDirty > 0)
 		{
-			XMMATRIX T = XMMatrixTranslation(mWorldTransform.Position.x + UIoffset.x, mWorldTransform.Position.y + UIoffset.y, mWorldTransform.Position.z + UIoffset.z);
+			// Health Bar move to left
+			XMVECTOR UIoffset = (1.0f- mWorldTransform.Scale.x) * inEyeLeft * 0.1f;
+
+			XMMATRIX T = XMMatrixTranslation(
+				mWorldTransform.Position.x + UIoffset.m128_f32[0],
+				mWorldTransform.Position.y + UIoffset.m128_f32[1],
+				mWorldTransform.Position.z + UIoffset.m128_f32[2]);
+			XMMATRIX S = XMMatrixScaling(
+				mWorldTransform.Scale.x, 
+				mWorldTransform.Scale.y, 
+				mWorldTransform.Scale.z);
+
+			// Background Health Bar
+			if (e->ObjCBIndex % 2 == 1)
+			{
+				T = XMMatrixTranslation(
+					mWorldTransform.Position.x, 
+					mWorldTransform.Position.y, 
+					mWorldTransform.Position.z);
+				S = XMMatrixIdentity();
+			}
+
 			XMMATRIX world = XMLoadFloat4x4(&e->World) * playerWorld * T;
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
 			UIConstants uiConstants;
-			XMMATRIX S = XMMatrixScaling(mWorldTransform.Scale.x, mWorldTransform.Scale.y, mWorldTransform.Scale.z);
-
 			XMStoreFloat4x4(&uiConstants.World, XMMatrixTranspose(world) * S);
 			XMStoreFloat4x4(&uiConstants.TexTransform, XMMatrixTranspose(texTransform));
 
-			currUICB->CopyData(e->ObjCBIndex, uiConstants);
+			curUICB->CopyData(e->ObjCBIndex, uiConstants);
 
 			// Next FrameResource need to be updated too.
 			e->NumFramesDirty--;

@@ -182,7 +182,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	mCommandList->SetPipelineState(mPSOs["UI"].Get());
 	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::Rect));
 	mCommandList->SetPipelineState(mPSOs["MonsterUI"].Get());
-	DrawRenderItems(mCommandList.Get(), mMonster.monsterUI.GetRenderItem(eUIList::Rect));
+	DrawRenderItems(mCommandList.Get(), mMonster.mMonsterUI.GetRenderItem(eUIList::Rect));
 
 	// Character
 	if (!mFbxWireframe)
@@ -578,7 +578,7 @@ void PortfolioGameApp::BuildConstantBufferViews()
 		mFrameResources,
 		mUICbvOffset);
 
-	mMonster.BuildUIConstantBuffer(
+	mMonster.mMonsterUI.BuildConstantBufferViews(
 		md3dDevice.Get(),
 		mCbvHeap.Get(),
 		mFrameResources,
@@ -740,12 +740,12 @@ void PortfolioGameApp::BuildPSOs()
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&UIPsoDesc, IID_PPV_ARGS(&mPSOs["UI"])));
 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC MonsterUIPsoDesc = UIPsoDesc;
-	UIPsoDesc.VS =
+	MonsterUIPsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(mShaders["monsterUIVS"]->GetBufferPointer()),
 		mShaders["monsterUIVS"]->GetBufferSize()
 	};
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&UIPsoDesc, IID_PPV_ARGS(&mPSOs["MonsterUI"])));
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&MonsterUIPsoDesc, IID_PPV_ARGS(&mPSOs["MonsterUI"])));
 
 	// PSO for Player 
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC PlayerPsoDesc = opaquePsoDesc;
@@ -1271,13 +1271,11 @@ void PortfolioGameApp::BuildRenderItems()
 
 	// Player
 	mPlayer.BuildRenderItem(mMaterials, "material_0");
-
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
 
 	// Monster
 	mMonster.BuildRenderItem(mMaterials, "monsterMat_1");
-
-	mMonster.BuildUIRenderItem(mGeometries, mMaterials);
+	mMonster.mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonster.GetNumberOfMonster());
 }
 
 
@@ -1318,7 +1316,7 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 		auto uiCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		uiCbvHandle.Offset(uiIndex, mCbvSrvDescriptorSize);
 
-		UINT monsterUIIndex = mMonsterUICbvOffset + mCurrFrameResourceIndex * mMonster.GetUISize() + ri->ObjCBIndex;
+		UINT monsterUIIndex = mMonsterUICbvOffset + mCurrFrameResourceIndex * mMonster.mMonsterUI.GetSize() + ri->ObjCBIndex;
 		auto monsterUICbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		monsterUICbvHandle.Offset(monsterUIIndex, mCbvSrvDescriptorSize);
 
@@ -1326,6 +1324,7 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 		cmdList->SetGraphicsRootDescriptorTable(1, cbvHandle);
 		cmdList->SetGraphicsRootDescriptorTable(2, matCbvHandle);
 		cmdList->SetGraphicsRootDescriptorTable(6, uiCbvHandle);
+			cmdList->SetGraphicsRootDescriptorTable(7, monsterUICbvHandle);
 		if (ri->PlayerCBIndex >= 0)
 		{
 			cmdList->SetGraphicsRootDescriptorTable(4, skinCbvHandle);
@@ -1333,10 +1332,6 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 		else if (ri->MonsterCBIndex >= 0)
 		{
 			cmdList->SetGraphicsRootDescriptorTable(5, monsterCbvHandle);
-		}
-		if (ri->UICBIndex >= 0)
-		{
-			cmdList->SetGraphicsRootDescriptorTable(7, monsterUICbvHandle);
 		}
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);

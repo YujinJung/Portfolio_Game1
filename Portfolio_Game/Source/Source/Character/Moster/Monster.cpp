@@ -8,9 +8,10 @@ using namespace DirectX;
 Monster::Monster()
 	: numOfCharacter(5),
 	mDamage(5),
+	mFullHealth(100),
 	MonsterAreaSize(20)
 {
-	for (int i = 0; i < numOfCharacter; ++i)
+	for (UINT i = 0; i < numOfCharacter; ++i)
 	{
 		CharacterInfo M;
 		M.mClipName = "Idle";
@@ -27,6 +28,7 @@ Monster::Monster()
 
 		mMonsterInfo.push_back(M);
 	}
+
 }
 Monster::~Monster()
 {
@@ -45,7 +47,7 @@ void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 	XMVECTOR HitTargetv = XMVectorAdd(Position, Look * 5.0f);
 
 	// Damage
-	for (int cIndex = 0; cIndex < numOfCharacter; ++cIndex)
+	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
 		XMVECTOR MonsterPos = mMonsterInfo[cIndex].mMovement.GetPlayerPosition();
 
@@ -57,8 +59,8 @@ void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 			SetClipName("HitReaction", cIndex);
 			mMonsterInfo[cIndex].mHealth -= damage;
 		}
+		//mMonsterUI.SetDamageScale(static_cast<float>(mMonsterInfo[cIndex].mHealth) / static_cast<float>(mFullHealth));
 	}
-	return;
 }
 
 bool Monster::isClipEnd(std::string clipName, int i)
@@ -77,18 +79,22 @@ DirectX::XMMATRIX Monster::GetWorldTransformMatrix(int i) const
 	return S * R * P;
 }
 
+UINT Monster::GetNumberOfMonster() const
+{
+	return numOfCharacter;
+}
 UINT Monster::GetUISize() const
 {
 	UINT ret = 0;
-	for (int i = 0; i < numOfCharacter; ++i)
+	for (UINT i = 0; i < numOfCharacter; ++i)
 	{
-		ret = ret + monsterUI.GetSize();
+		ret = ret + mMonsterUI.GetSize();
 	}
 	return ret;
 }
-UINT Monster::GetAllRitemsSize() const // All mesh items * num of Monsters
+UINT Monster::GetAllRitemsSize() const 
 {
-	return (UINT)mAllRitems.size() * (UINT)numOfCharacter;
+	return (UINT)mAllRitems.size();
 }
 const std::vector<RenderItem*> Monster::GetRenderItem(RenderLayer Type) const
 {
@@ -113,7 +119,7 @@ void Monster::BuildGeometry(
 	const SkinnedData& inSkinInfo,
 	std::string geoName)
 {
-	for (int i = 0; i < numOfCharacter; ++i)
+	for (UINT i = 0; i < numOfCharacter; ++i)
 	{
 		mSkinnedInfo = inSkinInfo;
 
@@ -132,11 +138,11 @@ void Monster::BuildGeometry(
 	}
 
 	UINT vCount = 0, iCount = 0;
-	vCount = inVertices.size();
-	iCount = inIndices.size();
+	vCount = (UINT)inVertices.size();
+	iCount = (UINT)inIndices.size();
 
-	const UINT vbByteSize = (UINT)inVertices.size() * sizeof(SkinnedVertex);
-	const UINT ibByteSize = (UINT)inIndices.size() * sizeof(std::uint32_t);
+	const UINT vbByteSize = vCount * sizeof(SkinnedVertex);
+	const UINT ibByteSize = iCount * sizeof(std::uint32_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
 	geo->Name = geoName;
@@ -218,7 +224,7 @@ void Monster::BuildRenderItem(
 	int BoneCount = (UINT)mSkinnedInfo.BoneCount();
 	auto boneName = mSkinnedInfo.GetBoneName();
 
-	for (int cIndex = 0; cIndex < numOfCharacter; ++cIndex)
+	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
 		CharacterInfo cInfo;
 
@@ -270,114 +276,77 @@ void Monster::BuildRenderItem(
 	}
 }
 
-void Monster::BuildUIConstantBuffer(
-	ID3D12Device * device,
-	ID3D12DescriptorHeap * mCbvHeap,
-	const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
-	int mMonsterUICbvOffset)
-{
-	UINT UICount = GetUISize();
-	UINT UICBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(UIConstants));
-	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	{
-		auto UICB = mFrameResources[frameIndex]->MonsterUICB->Resource();
-
-		for (UINT i = 0; i < UICount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = UICB->GetGPUVirtualAddress();
-
-			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * UICBByteSize;
-
-			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mMonsterUICbvOffset + frameIndex * UICount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = UICBByteSize;
-
-			device->CreateConstantBufferView(&cbvDesc, handle);
-		}
-	}
-}
-void Monster::BuildUIRenderItem(
-	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
-	Materials & mMaterials)
-{
-	monsterUI.BuildRenderItem(mGeometries, mMaterials);
-}
-
 void Monster::UpdateCharacterCBs(
 	FrameResource * mCurrFrameResource,
 	const Light & mMainLight,
 	const GameTimer & gt)
 {
-	for (int i = 0; i < numOfCharacter; ++i)
+	auto curMonsterCB = mCurrFrameResource->MonsterCB.get();
+	static float time = 0.0f;
+
+	UpdateCharacterShadows(mMainLight);
+
+	// Animation per 0.01s
+	if (gt.TotalTime() - time > 0.01f)
 	{
-		auto currCharacterCB = mCurrFrameResource->MonsterCB.get();
-		UpdateCharacterShadows(mMainLight);
-
-		// Character Offset : mAllsize  / numOfcharacter
-		int characterOffset = mAllRitems.size() / numOfCharacter;
-		int j = 0;
-		static float time = 0.0f;
-		if (gt.TotalTime() - time > 0.01f)
+		for (UINT k = 0; k < numOfCharacter; ++k)
 		{
-			for (int k = 0; k < numOfCharacter; ++k)
-			{
-				mSkinnedModelInst[k]->UpdateSkinnedAnimation(mMonsterInfo[k].mClipName, gt.DeltaTime());
-			}
-			time = gt.TotalTime();
+			mSkinnedModelInst[k]->UpdateSkinnedAnimation(mMonsterInfo[k].mClipName, gt.DeltaTime());
 		}
-
-		for (auto& e : mAllRitems)
-		{
-			int CharacterIndex = j / characterOffset;
-
-			if (mTransformDirty) { e->NumFramesDirty = gNumFrameResources; }
-			if (e->NumFramesDirty > 0)
-			{
-				MonsterContants monsterConstants;
-
-				std::copy(
-					std::begin(mSkinnedModelInst[CharacterIndex]->FinalTransforms),
-					std::end(mSkinnedModelInst[CharacterIndex]->FinalTransforms),
-					&monsterConstants.BoneTransforms[CharacterIndex][0]);
-
-				// TODO : player constroller
-				XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix(CharacterIndex);
-
-				XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
-				monsterConstants.monsterIndex = CharacterIndex;
-
-				XMStoreFloat4x4(&monsterConstants.World[CharacterIndex], XMMatrixTranspose(world));
-				XMStoreFloat4x4(&monsterConstants.TexTransform[CharacterIndex], XMMatrixTranspose(texTransform));
-
-				currCharacterCB->CopyData(e->MonsterCBIndex, monsterConstants);
-
-				// Next FrameResource need to be updated too.
-				// TODO:
-				//e->NumFramesDirty--;
-			}
-			++j;
-		}
-
+		time = gt.TotalTime();
 	}
 
-	// UI
-	auto currUICB = mCurrFrameResource->MonsterUICB.get();
-	//monsterUI.UpdateUICBs(currUICB, XMLoadFloat4x4(&GetWorldTransformMatrix(0)), mTransformDirty);
-	//monsterUI.UpdateUICBs(currUICB, XMMatrixIdentity(), mTransformDirty);
-	/*for (int i = 0; i < numOfCharacter; ++i)
+	// Character Offset : mAllsize  / numOfcharacter
+	int j = 0;
+	int preMonsterIndex = -1;
+	int monsterOffset = mAllRitems.size() / numOfCharacter;
+	std::vector<XMMATRIX> vWorld;
+	std::vector<XMVECTOR> vEyeLeft;
+
+	for (auto& e : mAllRitems)
 	{
+		int monsterIndex = j / monsterOffset;
 
-	}*/
+		if (mTransformDirty)
+		{
+			e->NumFramesDirty = gNumFrameResources;
+		}
+		if (e->NumFramesDirty > 0)
+		{
+			MonsterContants monsterConstants;
 
+			std::copy(
+				std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+				std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+				&monsterConstants.BoneTransforms[monsterIndex][0]);
+
+			// TODO : player constroller
+			XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix(monsterIndex);
+			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
+			monsterConstants.monsterIndex = monsterIndex;
+
+			XMStoreFloat4x4(&monsterConstants.World[monsterIndex], XMMatrixTranspose(world));
+			XMStoreFloat4x4(&monsterConstants.TexTransform[monsterIndex], XMMatrixTranspose(texTransform));
+
+			curMonsterCB->CopyData(e->MonsterCBIndex, monsterConstants);
+
+			if (preMonsterIndex != monsterIndex)
+			{
+				preMonsterIndex = monsterIndex;
+				vWorld.push_back(world);
+				vEyeLeft.push_back(-mMonsterInfo[monsterIndex].mMovement.GetPlayerRight());
+			}
+
+			e->NumFramesDirty--;
+		}
+		++j;
+	}
+
+	//UI
+	auto curUICB = mCurrFrameResource->MonsterUICB.get();
+	mMonsterUI.UpdateUICBs(curUICB, vWorld, mTransformDirty);
 }
+
 void Monster::UpdateCharacterShadows(const Light& mMainLight)
 {
 	int i = 0;
@@ -397,6 +366,7 @@ void Monster::UpdateCharacterShadows(const Light& mMainLight)
 		++i;
 	}
 }
+
 void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 {
 	// p.. - player
@@ -461,7 +431,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		}
 		else if (distance < 10.0f)
 		{
-			float pHealth = Player.GetCharacterInfo().mHealth;
+			float pHealth = static_cast<float>(Player.GetCharacterInfo().mHealth);
 
 			if (curDeltaTime > 5.0f && pHealth > 0) // Hit per 5 seconds
 			{
@@ -509,6 +479,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 			mPosition = XMVectorAdd(mPosition, 0.1f * mLook);
 
 			SetClipName("Walking", cIndex);
+			mTransformDirty = true;
 		}
 		else
 		{

@@ -9,7 +9,7 @@ public:
 	Monster();
 	~Monster();
 
-	MonsterUI monsterUI;
+	MonsterUI mMonsterUI;
 
 public:
 	virtual int GetHealth(int i = 0) const override;
@@ -20,6 +20,7 @@ public:
 	bool isClipEnd(std::string clipName, int i);
 	DirectX::XMMATRIX GetWorldTransformMatrix(int i) const;
 
+	UINT GetNumberOfMonster() const;
 	UINT GetUISize() const;
 	UINT GetAllRitemsSize() const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
@@ -42,15 +43,7 @@ public:
 		Materials & mMaterials,
 		std::string matrialPrefix) override;
 
-	void BuildUIConstantBuffer(
-		ID3D12Device * device,
-		ID3D12DescriptorHeap * mCbvHeap,
-		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
-		int mUICbvOffset);
-	void BuildUIRenderItem(
-		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
-		Materials & mMaterials);
-
+	
 	virtual void UpdateCharacterCBs(
 		FrameResource* mCurrFrameResource,
 		const Light& mMainLight,
