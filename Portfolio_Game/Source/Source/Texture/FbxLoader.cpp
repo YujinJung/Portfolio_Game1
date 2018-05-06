@@ -106,6 +106,7 @@ HRESULT FbxLoader::LoadFBX(std::vector<SkinnedVertex>& outVertexVector, std::vec
 
 	return S_OK;
 }
+
 HRESULT FbxLoader::LoadFBX(SkinnedData& outSkinnedData, const std::string& clipName, std::string fileName)
 {
 	AnimationClip animation;
@@ -170,6 +171,7 @@ HRESULT FbxLoader::LoadFBX(SkinnedData& outSkinnedData, const std::string& clipN
 	outSkinnedData.SetAnimation(animation, clipName);
 	return S_OK;
 }
+
 bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector<uint32_t>& outIndexVector, SkinnedData& outSkinnedData, const std::string& clipName, std::vector<Material>& outMaterial, std::string fileName)
 {
 	fileName = fileName + clipName + ".txt";
@@ -193,7 +195,7 @@ bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector
 			return false;
 
 		// Vertex Data
-		for (int i = 0; i < vertexSize; ++i)
+		for (uint32_t i = 0; i < vertexSize; ++i)
 		{
 			SkinnedVertex vertex;
 			int temp[4];
@@ -214,7 +216,7 @@ bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector
 
 		// Index Data
 		fileIn >> ignore;
-		for (int i = 0; i < indexSize; ++i)
+		for (uint32_t i = 0; i < indexSize; ++i)
 		{
 			uint32_t index;
 			fileIn >> index;
@@ -225,7 +227,7 @@ bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector
 		// Bone Hierarchy
 		fileIn >> ignore;
 		std::vector<int> boneHierarchy;
-		for (int i = 0; i < boneSize; ++i)
+		for (uint32_t i = 0; i < boneSize; ++i)
 		{
 			int tempBoneHierarchy;
 			fileIn >> tempBoneHierarchy;
@@ -233,7 +235,7 @@ bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector
 		}
 		
 		fileIn >> ignore;
-		for (int i = 0; i < boneSize; ++i)
+		for (uint32_t i = 0; i < boneSize; ++i)
 		{
 			std::string tempBoneName;
 			fileIn >> tempBoneName;
@@ -242,7 +244,7 @@ bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector
 		// Bone Offset
 		fileIn >> ignore;
 		std::vector<DirectX::XMFLOAT4X4> boneOffsets;
-		for (int i = 0; i < boneSize; ++i)
+		for (uint32_t i = 0; i < boneSize; ++i)
 		{
 			DirectX::XMFLOAT4X4 tempBoneOffset;
 			for (int i = 0; i < 4; ++i)
@@ -257,7 +259,7 @@ bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector
 		// Bone Submesh Offset
 		fileIn >> ignore;
 		std::vector<int> boneSubmeshOffset;
-		for (int i = 0; i < boneSize; ++i)
+		for (uint32_t i = 0; i < boneSize; ++i)
 		{
 			int tempBoneSubmeshOffset;
 			fileIn >> tempBoneSubmeshOffset;
@@ -290,7 +292,7 @@ bool FbxLoader::LoadTXT(std::vector<SkinnedVertex>& outVertexVector, std::vector
 
 		// Material Data
 		fileIn >> ignore;
-		for (int i = 0; i < materialSize; ++i)
+		for (uint32_t i = 0; i < materialSize; ++i)
 		{
 			Material tempMaterial;
 
@@ -393,13 +395,13 @@ void FbxLoader::GetAnimation(FbxScene* pFbxScene, FbxNode * pFbxChildNode, std::
 
 	// Deformer - Cluster - Link
 	// Deformer
-	for (uint32_t deformerIndex = 0; deformerIndex < pMesh->GetDeformerCount(); ++deformerIndex)
+	for (int deformerIndex = 0; deformerIndex < pMesh->GetDeformerCount(); ++deformerIndex)
 	{
 		FbxSkin* pCurrSkin = reinterpret_cast<FbxSkin*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eSkin));
 		if (!pCurrSkin) { continue; }
 
 		// Cluster
-		for (uint32_t clusterIndex = 0; clusterIndex < pCurrSkin->GetClusterCount(); ++clusterIndex)
+		for (int clusterIndex = 0; clusterIndex < pCurrSkin->GetClusterCount(); ++clusterIndex)
 		{
 			FbxCluster* pCurrCluster = pCurrSkin->GetCluster(clusterIndex);
 
@@ -672,7 +674,7 @@ void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<Skinne
 	uint32_t tCount = pMesh->GetPolygonCount(); // Triangle
 	bool isSameCount = MaterialIndices->GetCount() == tCount;
 
-	for (int i = 0; i < tCount; ++i)
+	for (uint32_t i = 0; i < tCount; ++i)
 	{
 		// For indexing by bone
 		std::string CurrBoneName = mControlPoints[pMesh->GetPolygonVertex(i, 1)]->mBoneName;
@@ -729,13 +731,13 @@ void FbxLoader::GetVerticesAndIndice(fbxsdk::FbxMesh * pMesh, std::vector<Skinne
 			Temp.Pos.z = CurrCtrlPoint->mPosition.z;
 
 			// Normal
-			Temp.Normal.x = pNormal.mData[0];
-			Temp.Normal.y = pNormal.mData[1];
-			Temp.Normal.z = pNormal.mData[2];
+			Temp.Normal.x = static_cast<float>(pNormal.mData[0]);
+			Temp.Normal.y = static_cast<float>(pNormal.mData[1]);
+			Temp.Normal.z = static_cast<float>(pNormal.mData[2]);
 
 			// UV
-			Temp.TexC.x = pUVs.mData[0];
-			Temp.TexC.y = 1.0f - pUVs.mData[1];
+			Temp.TexC.x = static_cast<float>(pUVs.mData[0]);
+			Temp.TexC.y = static_cast<float>(1.0f - pUVs.mData[1]);
 
 			// push vertex and index
 			auto lookup = IndexMapping.find(Temp);
@@ -803,7 +805,7 @@ void FbxLoader::GetMaterials(FbxNode* pNode, std::vector<Material>& outMaterial)
 {
 	uint32_t MaterialCount = pNode->GetMaterialCount();
 
-	for (int i = 0; i < MaterialCount; ++i)
+	for (uint32_t i = 0; i < MaterialCount; ++i)
 	{
 		FbxSurfaceMaterial* SurfaceMaterial = pNode->GetMaterial(i);
 		GetMaterialAttribute(SurfaceMaterial, outMaterial);
@@ -1022,7 +1024,7 @@ void FbxLoader::ExportFBX(std::vector<SkinnedVertex>& outVertexVector, std::vect
 		}
 
 		fileOut << "Indices " << "\n";
-		for (int i = 0; i < indexSize / 3; ++i)
+		for (uint32_t i = 0; i < indexSize / 3; ++i)
 		{
 			fileOut << outIndexVector[3 * i] << " " << outIndexVector[3 * i + 1] << " " << outIndexVector[3 * i + 2] << "\n";
 		}
@@ -1056,7 +1058,7 @@ void FbxLoader::ExportFBX(std::vector<SkinnedVertex>& outVertexVector, std::vect
 
 		fileOut << "SubmeshOffset " << "\n";
 		auto & e = outSkinnedData.GetSubmeshOffset();
-		for(int i = 0; i < boneSize; ++i)
+		for(uint32_t i = 0; i < boneSize; ++i)
 		{
 			fileOut << e[i] << " ";
 		}

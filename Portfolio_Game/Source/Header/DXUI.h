@@ -23,10 +23,15 @@ public:
 		const std::vector<std::unique_ptr<FrameResource>> &mFrameResources,
 		int mUICbvOffset);
 	void BuildRenderItem(
-		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
+		std::unordered_map<std::string,
+		std::unique_ptr<MeshGeometry>>& mGeometries,
 		Materials & mMaterials);
 
-	void UpdateUICBs(UploadBuffer<UIConstants>* currUICB, DirectX::XMMATRIX playerWorld, DirectX::XMVECTOR inEyeLeft, bool mTransformDirty);
+	void UpdateUICBs(
+		UploadBuffer<UIConstants>* currUICB,
+		DirectX::XMMATRIX playerWorld,
+		DirectX::XMVECTOR inEyeLeft,
+		bool mTransformDirty);
 
 private:
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;

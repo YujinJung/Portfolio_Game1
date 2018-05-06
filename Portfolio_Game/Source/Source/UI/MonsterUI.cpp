@@ -28,7 +28,8 @@ void MonsterUI::SetDamageScale(int cIndex, float inScale)
 }
 
 void MonsterUI::BuildRenderItem(
-	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
+	std::unordered_map<std::string,
+	std::unique_ptr<MeshGeometry>>& mGeometries,
 	Materials & mMaterials,
 	UINT numOfMonster)
 {
