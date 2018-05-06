@@ -23,3 +23,4 @@
 # 참고 
 - Character Mesh and Animation Data
     - [Mixamo](https://www.mixamo.com/#/)
+    - [Turbosquid](https://www.turbosquid.com)

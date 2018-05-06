@@ -47,6 +47,7 @@ private:
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
 	void BuildShapeGeometry();
+	void BuildArcheGeometry(std::vector<Vertex> outVertices, std::vector<std::uint32_t> outIndices, std::string geoName);
 	void BuildFbxGeometry();
 	void BuildMaterials();
 	void BuildPSOs();

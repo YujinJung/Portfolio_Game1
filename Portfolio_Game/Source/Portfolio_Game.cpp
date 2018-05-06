@@ -994,17 +994,62 @@ void PortfolioGameApp::BuildShapeGeometry()
 	mGeometries[geo->Name] = std::move(geo);
 }
 
+void PortfolioGameApp::BuildArcheGeometry(
+	std::vector<Vertex> outVertices,
+	std::vector<std::uint32_t> outIndices,
+	std::string geoName)
+{
+	if (outVertices.size() == 0)
+	{
+		MessageBox(0, L"Fbx not found", 0, 0);
+		return;
+	}
+
+	UINT vCount = 0, iCount = 0;
+	vCount = (UINT)outVertices.size();
+	iCount = (UINT)outIndices.size();
+
+	const UINT vbByteSize = vCount * sizeof(Vertex);
+	const UINT ibByteSize = iCount * sizeof(std::uint32_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = "Archetecture";
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), outVertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), outIndices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), outVertices.data(), vbByteSize, geo->VertexBufferUploader);
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), outIndices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(Vertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry houseSubmesh;
+	houseSubmesh.IndexCount = outIndices.size();
+	houseSubmesh.StartIndexLocation = 0;
+	houseSubmesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs[geoName] = houseSubmesh;
+
+	mGeometries[geo->Name] = std::move(geo);
+}
+
 void PortfolioGameApp::BuildFbxGeometry()
 {
 	FbxLoader fbx;
-	std::vector<SkinnedVertex> outVertices;
+	std::vector<SkinnedVertex> outSkinnedVertices;
 	std::vector<std::uint32_t> outIndices;
 	std::vector<Material> outMaterial;
 	SkinnedData outSkinnedInfo;
 
 	// Player
 	std::string FileName = "../Resource/FBX/Character/";
-	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
+	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "playerWalking", FileName);
@@ -1024,7 +1069,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "WalkingBackward", FileName);
 
-	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo, "playerGeo");
+	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "playerGeo");
 
 	// Begin
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
@@ -1060,14 +1105,14 @@ void PortfolioGameApp::BuildFbxGeometry()
 	}
 	mTextures.End();
 
-	outVertices.clear();
+	outSkinnedVertices.clear();
 	outIndices.clear();
 	outMaterial.clear();
 	outSkinnedInfo.clear();
 
 	// Monster FBX
 	FileName = "../Resource/FBX/Monster/";
-	fbx.LoadFBX(outVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
+	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
 	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
@@ -1084,7 +1129,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
 
-	mMonster.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outVertices, outIndices, outSkinnedInfo, "MonsterGeo");
+	mMonster.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "MonsterGeo");
 
 	// Begin
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
@@ -1119,6 +1164,57 @@ void PortfolioGameApp::BuildFbxGeometry()
 		}
 	}
 	mTextures.End();
+
+	outSkinnedVertices.clear();
+	outIndices.clear();
+	outMaterial.clear();
+	outSkinnedInfo.clear();
+
+	// Object FBX
+	std::vector<Vertex> outVertices;
+	FileName = "../Resource/FBX/Architecture/house";
+	fbx.LoadFBX(outVertices, outIndices, outMaterial, FileName);
+
+	BuildArcheGeometry(outVertices, outIndices, "house");
+
+	// Begin
+	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+	// Load Texture and Material
+	MatIndex = mMaterials.GetSize();
+	for (int i = 0; i < outMaterial.size(); ++i)
+	{
+		// Load Texture 
+		if (!outMaterial[i].Name.empty())
+		{
+			std::string TextureName;
+			TextureName = "archeTex_";
+			TextureName.push_back(mTextures.GetSize() + 48);
+			std::wstring TextureFileName;
+			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
+
+			mTextures.SetTexture(
+				TextureName,
+				TextureFileName);
+
+			// Load Material
+			std::string MaterialName = "archeMat_";
+			MaterialName.push_back(MatIndex + 48);
+
+			mMaterials.SetMaterial(
+				MaterialName,
+				MatIndex++,
+				mTextures.GetTextureIndex(TextureName),
+				outMaterial[i].DiffuseAlbedo,
+				outMaterial[i].FresnelR0,
+				outMaterial[i].Roughness);
+		}
+	}
+	mTextures.End();
+
+	outSkinnedVertices.clear();
+	outIndices.clear();
+	outMaterial.clear();
+	outSkinnedInfo.clear();
 }
 
 void PortfolioGameApp::LoadTextures()
@@ -1242,7 +1338,19 @@ void PortfolioGameApp::BuildRenderItems()
 	mRitems[(int)RenderLayer::Opaque].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
 
-
+	
+	auto houseRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&houseRitem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-100.0f, 0.0f, 0.0f));
+	houseRitem->TexTransform = MathHelper::Identity4x4();
+	houseRitem->ObjCBIndex = objCBIndex++;
+	houseRitem->Mat = mMaterials.Get("archeMat_2");
+	houseRitem->Geo = mGeometries["Archetecture"].get();
+	houseRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	houseRitem->IndexCount = houseRitem->Geo->DrawArgs["house"].IndexCount;
+	houseRitem->StartIndexLocation = houseRitem->Geo->DrawArgs["house"].StartIndexLocation;
+	houseRitem->BaseVertexLocation = houseRitem->Geo->DrawArgs["house"].BaseVertexLocation;
+	mRitems[(int)RenderLayer::Opaque].push_back(houseRitem.get());
+	mAllRitems.push_back(std::move(houseRitem));
 
 	// Player
 	mPlayer.BuildRenderItem(mMaterials, "material_0");
