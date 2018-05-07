@@ -26,6 +26,7 @@ enum class RenderLayer : int
 	Mirrors,
 	Reflected,
 	Transparent,
+	Sky,
 	Character,
 	Monster,
 	Shadow,

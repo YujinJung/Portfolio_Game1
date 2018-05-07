@@ -19,7 +19,7 @@ public:
 	void Begin(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* cbvHeap);
 	void End();
 
-	void BuildConstantBufferViews();
+	void BuildConstantBufferViews(int mTextureOffset);
 
 private:
 	ID3D12Device * mDevice;
@@ -32,6 +32,7 @@ private:
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc;
 
 	std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
+	std::vector<Texture*> mOrderTexture;
 
 	bool mInBeginEndPair;
 };

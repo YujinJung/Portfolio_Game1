@@ -75,29 +75,29 @@ void DXUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshG
 	// place over the head
 	auto frontHealthBar = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&frontHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.0011f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI)  * XMMatrixTranslation(0.0f, 0.895f, 0.0f));
+	XMStoreFloat4x4(&frontHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.0021f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI)  * XMMatrixTranslation(0.0f, 0.795f, 0.0f));
 	frontHealthBar->TexTransform = MathHelper::Identity4x4();
 	frontHealthBar->Mat = mMaterials.Get("ice0");
 	frontHealthBar->Geo = mGeometries["shapeGeo"].get();
 	frontHealthBar->ObjCBIndex = UIIndex++;
 	frontHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	frontHealthBar->StartIndexLocation = frontHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
-	frontHealthBar->BaseVertexLocation = frontHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
-	frontHealthBar->IndexCount = frontHealthBar->Geo->DrawArgs["grid"].IndexCount;
+	frontHealthBar->StartIndexLocation = frontHealthBar->Geo->DrawArgs["hpBar"].StartIndexLocation;
+	frontHealthBar->BaseVertexLocation = frontHealthBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+	frontHealthBar->IndexCount = frontHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 	mRitems[(int)eUIList::Rect].push_back(frontHealthBar.get());
 	mAllRitems.push_back(std::move(frontHealthBar));
 
 	auto bgHealthBar = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&bgHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.001f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI)  * XMMatrixTranslation(0.0f, 0.89f, 0.05f));
+	XMStoreFloat4x4(&bgHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.002f) * XMMatrixRotationX(atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI)  * XMMatrixTranslation(0.0f, 0.79f, 0.05f));
 	bgHealthBar->TexTransform = MathHelper::Identity4x4();
 	bgHealthBar->Mat = mMaterials.Get("bricks0");
 	bgHealthBar->Geo = mGeometries["shapeGeo"].get();
 	bgHealthBar->ObjCBIndex = UIIndex++;
 	bgHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	bgHealthBar->StartIndexLocation = bgHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
-	bgHealthBar->BaseVertexLocation = bgHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
-	bgHealthBar->IndexCount = bgHealthBar->Geo->DrawArgs["grid"].IndexCount;
+	bgHealthBar->StartIndexLocation = bgHealthBar->Geo->DrawArgs["hpBar"].StartIndexLocation;
+	bgHealthBar->BaseVertexLocation = bgHealthBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+	bgHealthBar->IndexCount = bgHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 	mRitems[(int)eUIList::Rect].push_back(bgHealthBar.get());
 	mAllRitems.push_back(std::move(bgHealthBar));
 }

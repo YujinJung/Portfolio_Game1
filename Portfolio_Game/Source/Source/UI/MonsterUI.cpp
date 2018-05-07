@@ -40,48 +40,48 @@ void MonsterUI::BuildRenderItem(
 		// odd are background HP bar
 
 		auto frontHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&frontHealthBar->World,XMMatrixScaling(0.02f, 1.0f, 0.002f)  * XMMatrixRotationX(XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5001f));
+		XMStoreFloat4x4(&frontHealthBar->World,XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5001f));
 		frontHealthBar->TexTransform = MathHelper::Identity4x4();
 		frontHealthBar->Mat = mMaterials.Get("red");
 		frontHealthBar->Geo = mGeometries["shapeGeo"].get();
 		frontHealthBar->ObjCBIndex = UIIndex++;
 		frontHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		frontHealthBar->StartIndexLocation = frontHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
-		frontHealthBar->BaseVertexLocation = frontHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
-		frontHealthBar->IndexCount = frontHealthBar->Geo->DrawArgs["grid"].IndexCount;
+		frontHealthBar->StartIndexLocation = frontHealthBar->Geo->DrawArgs["hpBar"].StartIndexLocation;
+		frontHealthBar->BaseVertexLocation = frontHealthBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+		frontHealthBar->IndexCount = frontHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 
 		auto frontBGHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&frontBGHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.002f)  * XMMatrixRotationX(XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
+		XMStoreFloat4x4(&frontBGHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
 		frontBGHealthBar->TexTransform = MathHelper::Identity4x4();
 		frontBGHealthBar->Mat = mMaterials.Get("bricks0");
 		frontBGHealthBar->Geo = mGeometries["shapeGeo"].get();
 		frontBGHealthBar->ObjCBIndex = UIIndex++;
 		frontBGHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		frontBGHealthBar->StartIndexLocation = frontBGHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
-		frontBGHealthBar->BaseVertexLocation = frontBGHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
-		frontBGHealthBar->IndexCount = frontBGHealthBar->Geo->DrawArgs["grid"].IndexCount;
+		frontBGHealthBar->StartIndexLocation = frontBGHealthBar->Geo->DrawArgs["hpBar"].StartIndexLocation;
+		frontBGHealthBar->BaseVertexLocation = frontBGHealthBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+		frontBGHealthBar->IndexCount = frontBGHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 
 		auto backHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&backHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.002f)  * XMMatrixRotationX(-XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.4999f));
+		XMStoreFloat4x4(&backHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(-XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.4999f));
 		backHealthBar->TexTransform = MathHelper::Identity4x4();
 		backHealthBar->Mat = mMaterials.Get("red");
 		backHealthBar->Geo = mGeometries["shapeGeo"].get();
 		backHealthBar->ObjCBIndex = UIIndex++;
 		backHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		backHealthBar->StartIndexLocation = backHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
-		backHealthBar->BaseVertexLocation = backHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
-		backHealthBar->IndexCount = backHealthBar->Geo->DrawArgs["grid"].IndexCount;
+		backHealthBar->StartIndexLocation = backHealthBar->Geo->DrawArgs["hpBar"].StartIndexLocation;
+		backHealthBar->BaseVertexLocation = backHealthBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+		backHealthBar->IndexCount = backHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 
 		auto backBGHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&backBGHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.002f)  * XMMatrixRotationX(-XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
+		XMStoreFloat4x4(&backBGHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(-XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
 		backBGHealthBar->TexTransform = MathHelper::Identity4x4();
 		backBGHealthBar->Mat = mMaterials.Get("bricks0");
 		backBGHealthBar->Geo = mGeometries["shapeGeo"].get();
 		backBGHealthBar->ObjCBIndex = UIIndex++;
 		backBGHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		backBGHealthBar->StartIndexLocation = backBGHealthBar->Geo->DrawArgs["grid"].StartIndexLocation;
-		backBGHealthBar->BaseVertexLocation = backBGHealthBar->Geo->DrawArgs["grid"].BaseVertexLocation;
-		backBGHealthBar->IndexCount = backBGHealthBar->Geo->DrawArgs["grid"].IndexCount;
+		backBGHealthBar->StartIndexLocation = backBGHealthBar->Geo->DrawArgs["hpBar"].StartIndexLocation;
+		backBGHealthBar->BaseVertexLocation = backBGHealthBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+		backBGHealthBar->IndexCount = backBGHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 
 		mRitems[(int)eUIList::Rect].push_back(frontHealthBar.get());
 		mAllRitems.push_back(std::move(frontHealthBar));

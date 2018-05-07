@@ -7,7 +7,7 @@
 using namespace DirectX;
 Monster::Monster()
 	: numOfCharacter(10),
-	mDamage(5),
+	mDamage(0),
 	mFullHealth(100),
 	MonsterAreaSize(20)
 {

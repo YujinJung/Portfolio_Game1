@@ -169,6 +169,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	mCommandList->SetDescriptorHeaps(_countof(descriptorHeaps), descriptorHeaps);
 
 	mCommandList->SetGraphicsRootSignature(mRootSignature.Get());
+	mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
 	int passCbvIndex = mPassCbvOffset + mCurrFrameResourceIndex;
 	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
@@ -176,7 +177,16 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 
 	// Object
 	mCommandList->SetGraphicsRootDescriptorTable(3, passCbvHandle);
+	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+	skyTexDescriptor.Offset(mTextureOffset, mCbvSrvDescriptorSize);
+	mCommandList->SetGraphicsRootDescriptorTable(8, skyTexDescriptor);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Opaque]);
+	mCommandList->SetPipelineState(mPSOs["sky"].Get());
+	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Sky]);
+
+	//// Sky
+	//mCommandList->SetPipelineState(mPSOs["sky"].Get());
+	//DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Sky]);
 
 	// UI
 	mCommandList->SetPipelineState(mPSOs["UI"].Get());
@@ -478,7 +488,7 @@ void PortfolioGameApp::BuildDescriptorHeaps()
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
 	// +matCount for the Materials for each frame resources.
-	UINT numDescriptors = mObjCbvOffset + (objCount + chaCount + monsterCount + matCount + uiCount + monsterUICount + 1) * gNumFrameResources;
+	UINT numDescriptors = mObjCbvOffset + 1 + (objCount + chaCount + monsterCount + matCount + uiCount + monsterUICount + 1) * gNumFrameResources;
 
 	// Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
 	mChaCbvOffset = objCount * gNumFrameResources + mObjCbvOffset;
@@ -487,6 +497,7 @@ void PortfolioGameApp::BuildDescriptorHeaps()
 	mPassCbvOffset = matCount * gNumFrameResources + mMatCbvOffset;
 	mUICbvOffset = 1 * gNumFrameResources + mPassCbvOffset;
 	mMonsterUICbvOffset = uiCount * gNumFrameResources + mUICbvOffset;
+	mTextureOffset = monsterUICount * gNumFrameResources + mMonsterUICbvOffset;
 
 	// mPassCbvOffset + (passSize)
 	// passSize = 1 * gNumFrameResources
@@ -502,7 +513,7 @@ void PortfolioGameApp::BuildDescriptorHeaps()
 void PortfolioGameApp::BuildTextureBufferViews()
 {
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
-	mTextures.BuildConstantBufferViews();
+	mTextures.BuildConstantBufferViews(mTextureOffset);
 	mTextures.End();
 }
 
@@ -592,27 +603,31 @@ void PortfolioGameApp::BuildConstantBufferViews()
 
 void PortfolioGameApp::BuildRootSignature()
 {
-	const int tableNumber = 8;
-	CD3DX12_DESCRIPTOR_RANGE cbvTable[tableNumber];
+	const int texTableNumber = 2;
+	const int cbvTableNumber = 7;
+	const int tableNumber = texTableNumber + cbvTableNumber;
 
-	for (int i = 0; i < tableNumber - 1; ++i)
+	CD3DX12_DESCRIPTOR_RANGE cbvTable[cbvTableNumber];
+	CD3DX12_DESCRIPTOR_RANGE texTable[texTableNumber];
+
+	texTable[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	for (int i = 0; i < cbvTableNumber; ++i)
 	{
 		cbvTable[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, i);
 	}
-
-	CD3DX12_DESCRIPTOR_RANGE texTable;
-	texTable.Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	texTable[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
 
 	// Root parameter can be a table, root descriptor or root constants.
 	// Objects, Materials, Passes
 	CD3DX12_ROOT_PARAMETER slotRootParameter[tableNumber];
 
 	// Create root CBVs.
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable, D3D12_SHADER_VISIBILITY_PIXEL);
-	for (int i = 1; i < tableNumber; ++i)
+	slotRootParameter[0].InitAsDescriptorTable(1, &texTable[0], D3D12_SHADER_VISIBILITY_PIXEL);
+	for (int i = 1; i < cbvTableNumber + 1; ++i)
 	{
 		slotRootParameter[i].InitAsDescriptorTable(1, &cbvTable[i - 1]);
 	}
+	slotRootParameter[cbvTableNumber + 1].InitAsDescriptorTable(1, &texTable[1], D3D12_SHADER_VISIBILITY_PIXEL);
 
 	auto staticSamplers = GetStaticSamplers();
 
@@ -663,7 +678,7 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 		"SKINNED", "1",
 		NULL, NULL
 	};
-	const D3D_SHADER_MACRO MonsterUIDefines[] =
+	const D3D_SHADER_MACRO monsterUIDefines[] =
 	{
 		"MONSTER", "1",
 		NULL, NULL
@@ -673,12 +688,14 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 	mShaders["skinnedVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "VS", "vs_5_1");
 	mShaders["monsterVS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["uiVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["monsterUIVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", MonsterUIDefines, "VS", "vs_5_1");
+	mShaders["monsterUIVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", monsterUIDefines, "VS", "vs_5_1");
+	mShaders["skyVS"] = d3dUtil::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "VS", "vs_5_1");
 
 	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["skinnedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "PS", "ps_5_1");
 	mShaders["monsterPS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["uiPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["skyPS"] = d3dUtil::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "PS", "ps_5_1");
 
 	mInputLayout =
 	{
@@ -766,6 +783,27 @@ void PortfolioGameApp::BuildPSOs()
 		mShaders["skinnedPS"]->GetBufferSize()
 	};
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerPsoDesc, IID_PPV_ARGS(&mPSOs["Player"])));
+
+	// PSO for sky.
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = opaquePsoDesc;
+
+	// The camera is inside the sky sphere, so just turn off culling.
+	skyPsoDesc.RasterizerState.CullMode = D3D12_CULL_MODE_NONE;
+	skyPsoDesc.DepthStencilState.DepthFunc = D3D12_COMPARISON_FUNC_LESS_EQUAL;
+	skyPsoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
+	skyPsoDesc.pRootSignature = mRootSignature.Get();
+	skyPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["skyVS"]->GetBufferPointer()),
+		mShaders["skyVS"]->GetBufferSize()
+	};
+	skyPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["skyPS"]->GetBufferPointer()),
+		mShaders["skyPS"]->GetBufferSize()
+	};
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&skyPsoDesc, IID_PPV_ARGS(&mPSOs["sky"])));
+
 
 	// PSO for Monster
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC MonsterPsoDesc = PlayerPsoDesc;
@@ -872,7 +910,8 @@ void PortfolioGameApp::BuildShapeGeometry()
 
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
-	GeometryGenerator::MeshData grid = geoGen.CreateGrid(20.0f, 30.0f, 60, 40);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(400.0f, 400.0f, 200, 200);
+	GeometryGenerator::MeshData hpBar = geoGen.CreateGrid(20.0f, 20.0f, 20, 20);
 	GeometryGenerator::MeshData sphere = geoGen.CreateGeosphere(0.5f, 3);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
 
@@ -884,13 +923,15 @@ void PortfolioGameApp::BuildShapeGeometry()
 	// Cache the vertex offsets to each object in the concatenated vertex buffer.
 	UINT boxVertexOffset = 0;
 	UINT gridVertexOffset = (UINT)box.Vertices.size();
-	UINT sphereVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
+	UINT hpBarVertexOffset = gridVertexOffset + (UINT)grid.Vertices.size();
+	UINT sphereVertexOffset = hpBarVertexOffset + (UINT)hpBar.Vertices.size();
 	UINT cylinderVertexOffset = sphereVertexOffset + (UINT)sphere.Vertices.size();
 
 	// Cache the starting index for each object in the concatenated index buffer.
 	UINT boxIndexOffset = 0;
 	UINT gridIndexOffset = (UINT)box.Indices32.size();
-	UINT sphereIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
+	UINT hpBarIndexOffset = gridIndexOffset + (UINT)grid.Indices32.size();
+	UINT sphereIndexOffset = hpBarIndexOffset + (UINT)hpBar.Indices32.size();
 	UINT cylinderIndexOffset = sphereIndexOffset + (UINT)sphere.Indices32.size();
 
 	// Define the SubmeshGeometry that cover different 
@@ -904,6 +945,11 @@ void PortfolioGameApp::BuildShapeGeometry()
 	gridSubmesh.IndexCount = (UINT)grid.Indices32.size();
 	gridSubmesh.StartIndexLocation = gridIndexOffset;
 	gridSubmesh.BaseVertexLocation = gridVertexOffset;
+
+	SubmeshGeometry hpBarSubmesh;
+	hpBarSubmesh.IndexCount = (UINT)hpBar.Indices32.size();
+	hpBarSubmesh.StartIndexLocation = hpBarIndexOffset;
+	hpBarSubmesh.BaseVertexLocation = hpBarVertexOffset;
 
 	SubmeshGeometry sphereSubmesh;
 	sphereSubmesh.IndexCount = (UINT)sphere.Indices32.size();
@@ -923,6 +969,7 @@ void PortfolioGameApp::BuildShapeGeometry()
 	auto totalVertexCount =
 		box.Vertices.size() +
 		grid.Vertices.size() +
+		hpBar.Vertices.size() +
 		sphere.Vertices.size() +
 		cylinder.Vertices.size();
 
@@ -943,6 +990,13 @@ void PortfolioGameApp::BuildShapeGeometry()
 		vertices[k].TexC = grid.Vertices[i].TexC;
 	}
 
+	for (size_t i = 0; i < hpBar.Vertices.size(); ++i, ++k)
+	{
+		vertices[k].Pos = hpBar.Vertices[i].Position;
+		vertices[k].Normal = hpBar.Vertices[i].Normal;
+		vertices[k].TexC = hpBar.Vertices[i].TexC;
+	}
+
 	for (size_t i = 0; i < sphere.Vertices.size(); ++i, ++k)
 	{
 		vertices[k].Pos = sphere.Vertices[i].Position;
@@ -957,14 +1011,15 @@ void PortfolioGameApp::BuildShapeGeometry()
 		vertices[k].TexC = cylinder.Vertices[i].TexC;
 	}
 
-	std::vector<std::uint32_t> indices;
+	std::vector<std::uint16_t> indices;
 	indices.insert(indices.end(), std::begin(box.GetIndices16()), std::end(box.GetIndices16()));
 	indices.insert(indices.end(), std::begin(grid.GetIndices16()), std::end(grid.GetIndices16()));
+	indices.insert(indices.end(), std::begin(hpBar.GetIndices16()), std::end(hpBar.GetIndices16()));
 	indices.insert(indices.end(), std::begin(sphere.GetIndices16()), std::end(sphere.GetIndices16()));
 	indices.insert(indices.end(), std::begin(cylinder.GetIndices16()), std::end(cylinder.GetIndices16()));
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint16_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
 	geo->Name = "shapeGeo";
@@ -983,11 +1038,12 @@ void PortfolioGameApp::BuildShapeGeometry()
 
 	geo->VertexByteStride = sizeof(Vertex);
 	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
+	geo->IndexFormat = DXGI_FORMAT_R16_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
 	geo->DrawArgs["box"] = boxSubmesh;
 	geo->DrawArgs["grid"] = gridSubmesh;
+	geo->DrawArgs["hpBar"] = hpBarSubmesh;
 	geo->DrawArgs["sphere"] = sphereSubmesh;
 	geo->DrawArgs["cylinder"] = cylinderSubmesh;
 
@@ -1081,8 +1137,8 @@ void PortfolioGameApp::BuildFbxGeometry()
 		// Load Texture 
 		if (!outMaterial[i].Name.empty())
 		{
-			TextureName = "texture_";
-			TextureName.push_back(mTextures.GetSize() +48);
+			TextureName = "playerTex";
+			TextureName.push_back(i +48);
 			std::wstring TextureFileName;
 			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
 
@@ -1092,9 +1148,10 @@ void PortfolioGameApp::BuildFbxGeometry()
 		}
 
 		// Load Material
-		std::string MaterialName = "material_";
-		MaterialName.push_back(MatIndex + 48);
+		std::string MaterialName = "playerMat";
+		MaterialName.push_back(i + 48);
 
+		auto playerTexIndex = mTextures.GetTextureIndex(TextureName);
 		mMaterials.SetMaterial(
 			MaterialName,
 			MatIndex++,
@@ -1141,8 +1198,8 @@ void PortfolioGameApp::BuildFbxGeometry()
 		if (!outMaterial[i].Name.empty())
 		{
 			std::string TextureName;
-			TextureName = "monsterTex_";
-			TextureName.push_back(mTextures.GetSize() + 48);
+			TextureName = "monsterTex";
+			TextureName.push_back(i + 48);
 			std::wstring TextureFileName;
 			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
 
@@ -1151,8 +1208,8 @@ void PortfolioGameApp::BuildFbxGeometry()
 				TextureFileName);
 
 			// Load Material
-			std::string MaterialName = "monsterMat_";
-			MaterialName.push_back(MatIndex + 48);
+			std::string MaterialName = "monsterMat";
+			MaterialName.push_back(i + 48);
 
 			mMaterials.SetMaterial(
 				MaterialName,
@@ -1187,8 +1244,8 @@ void PortfolioGameApp::BuildFbxGeometry()
 		if (!outMaterial[i].Name.empty())
 		{
 			std::string TextureName;
-			TextureName = "archeTex_";
-			TextureName.push_back(mTextures.GetSize() + 48);
+			TextureName = "archeTex";
+			TextureName.push_back(i + 48);
 			std::wstring TextureFileName;
 			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
 
@@ -1197,8 +1254,8 @@ void PortfolioGameApp::BuildFbxGeometry()
 				TextureFileName);
 
 			// Load Material
-			std::string MaterialName = "archeMat_";
-			MaterialName.push_back(MatIndex + 48);
+			std::string MaterialName = "archeMat";
+			MaterialName.push_back(i + 48);
 
 			mMaterials.SetMaterial(
 				MaterialName,
@@ -1248,6 +1305,10 @@ void PortfolioGameApp::LoadTextures()
 	mTextures.SetTexture(
 		"redTex",
 		L"../Resource/Textures/red.jpg");
+
+	mTextures.SetTexture(
+		"skyCubeMap",
+		L"../Resource/Textures/snowcube1024.dds");
 
 	mTextures.End();
 }
@@ -1319,6 +1380,14 @@ void PortfolioGameApp::BuildMaterials()
 		XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f), 
 		XMFLOAT3(0.001f, 0.001f, 0.001f), 
 		0.0f);
+
+	mMaterials.SetMaterial(
+		"sky",
+		MatIndex++,
+		mTextureOffset,
+		XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f),
+		XMFLOAT3(0.001f, 0.001f, 0.001f),
+		0.0f);
 }
 
 void PortfolioGameApp::BuildRenderItems()
@@ -1326,8 +1395,8 @@ void PortfolioGameApp::BuildRenderItems()
 	UINT objCBIndex = 0;
 
 	auto gridRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&gridRitem->World, XMMatrixScaling(20.0f, 2.0f, 20.0f));
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(8.0f, 80.0f, 1.0f));
+	XMStoreFloat4x4(&gridRitem->World, XMMatrixTranslation(100.0f, 0.0f, 100.0f));
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(200.0f, 200.0f, 1.0f));
 	gridRitem->ObjCBIndex = objCBIndex++;
 	gridRitem->Mat = mMaterials.Get("grass0");
 	gridRitem->Geo = mGeometries["shapeGeo"].get();
@@ -1338,12 +1407,25 @@ void PortfolioGameApp::BuildRenderItems()
 	mRitems[(int)RenderLayer::Opaque].push_back(gridRitem.get());
 	mAllRitems.push_back(std::move(gridRitem));
 
+	auto skyRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&skyRitem->World, XMMatrixScaling(5000.0f, 5000.0f, 5000.0f));
+	skyRitem->TexTransform = MathHelper::Identity4x4();
+	skyRitem->ObjCBIndex = objCBIndex++;
+	skyRitem->Mat = mMaterials.Get("sky");
+	skyRitem->Geo = mGeometries["shapeGeo"].get();
+	skyRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	skyRitem->IndexCount = skyRitem->Geo->DrawArgs["sphere"].IndexCount;
+	skyRitem->StartIndexLocation = skyRitem->Geo->DrawArgs["sphere"].StartIndexLocation;
+	skyRitem->BaseVertexLocation = skyRitem->Geo->DrawArgs["sphere"].BaseVertexLocation;
+	mRitems[(int)RenderLayer::Sky].push_back(skyRitem.get());
+	mAllRitems.push_back(std::move(skyRitem));
 	
+	// Architecture
 	auto houseRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&houseRitem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-100.0f, 0.0f, 0.0f));
+	XMStoreFloat4x4(&houseRitem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-100.0f, 0.0f, -100.0f));
 	houseRitem->TexTransform = MathHelper::Identity4x4();
 	houseRitem->ObjCBIndex = objCBIndex++;
-	houseRitem->Mat = mMaterials.Get("archeMat_2");
+	houseRitem->Mat = mMaterials.Get("archeMat0");
 	houseRitem->Geo = mGeometries["Archetecture"].get();
 	houseRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	houseRitem->IndexCount = houseRitem->Geo->DrawArgs["house"].IndexCount;
@@ -1353,11 +1435,11 @@ void PortfolioGameApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(houseRitem));
 
 	// Player
-	mPlayer.BuildRenderItem(mMaterials, "material_0");
+	mPlayer.BuildRenderItem(mMaterials, "playerMat0");
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
 
 	// Monster
-	mMonster.BuildRenderItem(mMaterials, "monsterMat_1");
+	mMonster.BuildRenderItem(mMaterials, "monsterMat0");
 	mMonster.mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonster.GetNumberOfMonster());
 }
 
@@ -1374,18 +1456,23 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 		cmdList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
 		cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
 
-		// Offset to the CBV in the descriptor heap for this object and for this frame resource.
-		// ri->ObjCBIndex = object number 0, 1, 2, --- , n
+		const int texOffset = 1;
 		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		tex.Offset(ri->Mat->DiffuseSrvHeapIndex, mCbvSrvDescriptorSize);
 
+		cmdList->SetGraphicsRootDescriptorTable(0, tex);
+
+		if (ri->ObjCBIndex >= 0)
+		{
 		UINT cbvIndex = mObjCbvOffset + mCurrFrameResourceIndex * (UINT)mAllRitems.size() + ri->ObjCBIndex;
 		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		cbvHandle.Offset(cbvIndex, mCbvSrvDescriptorSize);
+			cmdList->SetGraphicsRootDescriptorTable(texOffset, cbvHandle);
+		}
 
 		UINT matCbvIndex = mMatCbvOffset + mCurrFrameResourceIndex * mMaterials.GetSize() + ri->Mat->MatCBIndex;
 		auto matCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-		matCbvHandle.Offset(matCbvIndex, mCbvSrvDescriptorSize);
+		matCbvHandle.Offset(mMatCbvOffset + mCurrFrameResourceIndex * mMaterials.GetSize() + ri->Mat->MatCBIndex, mCbvSrvDescriptorSize);
 
 		UINT skinnedIndex = mChaCbvOffset + mCurrFrameResourceIndex * mPlayer.GetAllRitemsSize() + ri->PlayerCBIndex;
 		auto skinCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
@@ -1403,18 +1490,18 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 		auto monsterUICbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		monsterUICbvHandle.Offset(monsterUIIndex, mCbvSrvDescriptorSize);
 
-		cmdList->SetGraphicsRootDescriptorTable(0, tex);
-		cmdList->SetGraphicsRootDescriptorTable(1, cbvHandle);
-		cmdList->SetGraphicsRootDescriptorTable(2, matCbvHandle);
-		cmdList->SetGraphicsRootDescriptorTable(6, uiCbvHandle);
-			cmdList->SetGraphicsRootDescriptorTable(7, monsterUICbvHandle);
+		
+		cmdList->SetGraphicsRootDescriptorTable(texOffset + 1, matCbvHandle);
+		cmdList->SetGraphicsRootDescriptorTable(texOffset + 5, uiCbvHandle);
+		cmdList->SetGraphicsRootDescriptorTable(texOffset + 6, monsterUICbvHandle);
+
 		if (ri->PlayerCBIndex >= 0)
 		{
-			cmdList->SetGraphicsRootDescriptorTable(4, skinCbvHandle);
+			cmdList->SetGraphicsRootDescriptorTable(texOffset + 3, skinCbvHandle);
 		}
 		else if (ri->MonsterCBIndex >= 0)
 		{
-			cmdList->SetGraphicsRootDescriptorTable(5, monsterCbvHandle);
+			cmdList->SetGraphicsRootDescriptorTable(texOffset + 4, monsterCbvHandle);
 		}
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);

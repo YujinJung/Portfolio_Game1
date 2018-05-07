@@ -18,10 +18,14 @@ UINT Textures::GetSize() const
 
 int Textures::GetTextureIndex(std::string Name) const
 {
+	if (Name == "skyCubdeMap") return mTextures.size();
+
 	int result = 0;
-	for (auto & e : mTextures)
+	for (auto & e : mOrderTexture)
 	{
-		if (e.second->Name == Name)
+		if (e->Name == "skyCubeMap")
+			continue;
+		if (e->Name == Name)
 			return result;
 		++result;
 	}
@@ -37,10 +41,24 @@ void Textures::SetTexture(
 	auto temp = std::make_unique<Texture>();
 	temp->Name = Name;
 	temp->Filename = szFileName;
-	ThrowIfFailed(DirectX::CreateImageDataTextureFromFile(mDevice,
-		mCommandList, temp->Filename.c_str(),
-		temp->Resource, temp->UploadHeap));
+	std::string format;
+	for (int i = szFileName.size() - 3; i < szFileName.size(); ++i)
+		format.push_back(szFileName[i]);
+		
+	if (format == "dds")
+	{
+		ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice,
+			mCommandList, temp->Filename.c_str(),
+			temp->Resource, temp->UploadHeap));
+	}
+	else
+	{
+		ThrowIfFailed(DirectX::CreateImageDataTextureFromFile(mDevice,
+			mCommandList, temp->Filename.c_str(),
+			temp->Resource, temp->UploadHeap));
+	}
 
+	mOrderTexture.push_back(temp.get());
 	mTextures[temp->Name] = std::move(temp);
 }
 
@@ -66,7 +84,7 @@ void Textures::End()
 	mInBeginEndPair = false;
 }
 
-void Textures::BuildConstantBufferViews()
+void Textures::BuildConstantBufferViews(int mTextureOffset)
 {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 	UINT mCbvSrvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
@@ -78,10 +96,11 @@ void Textures::BuildConstantBufferViews()
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
 	
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> vTex;
-	for (auto& e : mTextures)
+	for (auto& e : mOrderTexture)
 	{
-		Texture* tex = e.second.get();
-		vTex.push_back(tex->Resource);
+		if (e->Name == "skyCubeMap")
+			continue;
+		vTex.push_back(e->Resource);
 	}
 
 	for (auto &e : vTex)
@@ -92,4 +111,15 @@ void Textures::BuildConstantBufferViews()
 
 		hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	}
+
+	auto skyTex = mTextures["skyCubeMap"].get()->Resource;
+	hDescriptor = mCbvHeap->GetCPUDescriptorHandleForHeapStart();
+	hDescriptor.Offset(mTextureOffset, mCbvSrvDescriptorSize);
+
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
+	srvDesc.TextureCube.MostDetailedMip = 0;
+	srvDesc.TextureCube.MipLevels = skyTex->GetDesc().MipLevels;
+	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+	srvDesc.Format = skyTex->GetDesc().Format;
+	mDevice->CreateShaderResourceView(skyTex.Get(), &srvDesc, hDescriptor);
 }
