@@ -88,6 +88,7 @@ struct SkinnedModelInstance
 struct CharacterInfo
 {
 	ChracterMovement mMovement;
+	DirectX::BoundingBox mBoundingBox;
 	std::string mClipName;
 	int mHealth;
 	

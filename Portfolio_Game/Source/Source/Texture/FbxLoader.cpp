@@ -1381,7 +1381,7 @@ void FbxLoader::ExportFBX(
 	std::ofstream fileOut(fileName);
 
 	if (outVertexVector.empty() || outIndexVector.empty()
-		|| outMaterial.empty())
+		)
 		return;
 
 	if (fileOut)

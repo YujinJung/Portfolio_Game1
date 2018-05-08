@@ -1272,7 +1272,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 	std::vector<std::string> archName;
 	std::vector<Vertex> outVertices;
 
-	FileName = "../Resource/FBX/Architecture/house";
+	FileName = "../Resource/FBX/Architecture/houseA/house";
 	LoadFBXArchitecture(fbx, outVertices, outIndices, outMaterial, FileName, archName.size());
 	archVertex.push_back(outVertices);
 	archIndex.push_back(outIndices);
@@ -1282,11 +1282,11 @@ void PortfolioGameApp::BuildFbxGeometry()
 	outIndices.clear();
 	outMaterial.clear();
 
-	/*FileName = "../Resource/FBX/Architecture/deadtree";
+	/*FileName = "../Resource/FBX/Architecture/houseB/houseB";
 	LoadFBXArchitecture(fbx, outVertices, outIndices, outMaterial, FileName, archName.size());
 	archVertex.push_back(outVertices);
 	archIndex.push_back(outIndices);
-	archName.push_back("deadtree");*/
+	archName.push_back("houseB");*/
 
 	BuildArcheGeometry(archVertex, archIndex, archName);
 	
@@ -1542,6 +1542,7 @@ void PortfolioGameApp::BuildRenderItems()
 	mRitems[(int)RenderLayer::Opaque].push_back(house2Ritem.get());
 	mAllRitems.push_back(std::move(house2Ritem));
 
+	
 	/*auto roadRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&roadRitem->World, XMMatrixScaling(1.0f, 1.0f, 30.0f) * XMMatrixTranslation(-150.0f, 0.0f, -100.0f));
 	XMStoreFloat4x4(&roadRitem->TexTransform, XMMatrixScaling(10.0f, 100.0f, 1.0f));

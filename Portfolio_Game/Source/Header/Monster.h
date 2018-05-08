@@ -53,6 +53,7 @@ public:
 
 private:
 	std::vector<CharacterInfo> mMonsterInfo;
+	
 
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;

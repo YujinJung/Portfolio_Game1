@@ -180,6 +180,15 @@ void Monster::BuildGeometry(
 		SubmeshOffsetIndex += CurrSubmeshOffsetIndex;
 	}
 
+	BoundingBox box;
+	BoundingBox::CreateFromPoints(
+		box,
+		inVertices.size(),
+		&inVertices[0].Pos,
+		sizeof(Vertex));
+	// TODO: Instancing
+	mMonsterInfo[0].mBoundingBox = box;
+
 	mGeometry = std::move(geo);
 }
 void Monster::BuildConstantBufferViews(
@@ -237,8 +246,14 @@ void Monster::BuildRenderItem(
 		int x{ dis(engine) };
 		int z{ dis(engine) };
 
-		XMVECTOR V = XMVectorSet(static_cast<float>(x - MonsterAreaSize), 0.0f, static_cast<float>(z - MonsterAreaSize), 0.0f);
-		cInfo.mMovement.SetPlayerPosition(V);
+		XMVECTOR monsterPos = XMVectorSet(static_cast<float>(x - MonsterAreaSize), 0.0f, static_cast<float>(z - MonsterAreaSize), 0.0f);
+		cInfo.mMovement.SetPlayerPosition(monsterPos);
+
+		mMonsterInfo[cIndex].mBoundingBox = mMonsterInfo[0].mBoundingBox;
+		XMVECTOR monsterBoundingPos = XMLoadFloat3(&mMonsterInfo[cIndex].mBoundingBox.Center);
+		monsterBoundingPos = XMVectorAdd(monsterPos, monsterBoundingPos);
+
+		XMStoreFloat3(&mMonsterInfo[cIndex].mBoundingBox.Center, monsterBoundingPos);
 
 		// Character Mesh
 		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)
@@ -285,8 +300,6 @@ void Monster::UpdateCharacterCBs(
 	auto curMonsterCB = mCurrFrameResource->MonsterCB.get();
 	static float time = 0.0f;
 
-	UpdateCharacterShadows(mMainLight);
-
 	// Animation per 0.01s
 	if (gt.TotalTime() - time > 0.01f)
 	{
@@ -300,50 +313,69 @@ void Monster::UpdateCharacterCBs(
 	// Character Offset : mAllsize  / numOfcharacter
 	int j = 0;
 	int preMonsterIndex = -1;
-	int monsterOffset = mAllRitems.size() / numOfCharacter;
+	int monsterOffset = mRitems[(int)RenderLayer::Monster].size() / numOfCharacter;
 	std::vector<XMMATRIX> vWorld;
 	std::vector<XMVECTOR> vEyeLeft;
 
-	for (auto& e : mAllRitems)
+	for (auto& e : mRitems[(int)RenderLayer::Monster])
 	{
 		int monsterIndex = j / monsterOffset;
 
-		if (mTransformDirty)
+		MonsterContants monsterConstants;
+
+		std::copy(
+			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+			std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+			&monsterConstants.BoneTransforms[monsterIndex][0]);
+
+		// TODO : player constroller
+		XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix(monsterIndex);
+		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
+		monsterConstants.monsterIndex = monsterIndex;
+
+		XMStoreFloat4x4(&monsterConstants.World[monsterIndex], XMMatrixTranspose(world));
+		XMStoreFloat4x4(&monsterConstants.TexTransform[monsterIndex], XMMatrixTranspose(texTransform));
+
+		curMonsterCB->CopyData(e->MonsterCBIndex, monsterConstants);
+
+		if (preMonsterIndex != monsterIndex)
 		{
-			e->NumFramesDirty = gNumFrameResources;
+			preMonsterIndex = monsterIndex;
+
+			mMonsterInfo[monsterIndex].mMovement.UpdateTransformationMatrix();
+			vWorld.push_back(world);
+			vEyeLeft.push_back(-mMonsterInfo[monsterIndex].mMovement.GetPlayerRight());
 		}
-		if (e->NumFramesDirty > 0)
-		{
-			MonsterContants monsterConstants;
 
-			std::copy(
-				std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
-				std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
-				&monsterConstants.BoneTransforms[monsterIndex][0]);
-
-			// TODO : player constroller
-			XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix(monsterIndex);
-			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
-			monsterConstants.monsterIndex = monsterIndex;
-
-			XMStoreFloat4x4(&monsterConstants.World[monsterIndex], XMMatrixTranspose(world));
-			XMStoreFloat4x4(&monsterConstants.TexTransform[monsterIndex], XMMatrixTranspose(texTransform));
-
-			curMonsterCB->CopyData(e->MonsterCBIndex, monsterConstants);
-
-			if (preMonsterIndex != monsterIndex)
-			{
-				preMonsterIndex = monsterIndex;
-
-				mMonsterInfo[monsterIndex].mMovement.UpdateTransformationMatrix();
-				vWorld.push_back(world);
-				vEyeLeft.push_back(-mMonsterInfo[monsterIndex].mMovement.GetPlayerRight());
-			}
-
-			e->NumFramesDirty--;
-		}
 		++j;
 	}
+
+	UpdateCharacterShadows(mMainLight);
+	j = 0;
+	for (auto& e : mRitems[(int)RenderLayer::Shadow])
+	{
+		int monsterIndex = j / monsterOffset;
+
+		MonsterContants monsterConstants;
+
+		std::copy(
+			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+			std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+			&monsterConstants.BoneTransforms[monsterIndex][0]);
+
+		// TODO : player constroller
+		XMMATRIX world = XMLoadFloat4x4(&e->World);
+		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
+		monsterConstants.monsterIndex = monsterIndex;
+
+		XMStoreFloat4x4(&monsterConstants.World[monsterIndex], XMMatrixTranspose(world));
+		XMStoreFloat4x4(&monsterConstants.TexTransform[monsterIndex], XMMatrixTranspose(texTransform));
+
+		curMonsterCB->CopyData(e->MonsterCBIndex, monsterConstants);
+
+		++j;
+	}
+
 
 	//UI
 	auto curUICB = mCurrFrameResource->MonsterUICB.get();
@@ -353,11 +385,15 @@ void Monster::UpdateCharacterCBs(
 void Monster::UpdateCharacterShadows(const Light& mMainLight)
 {
 	int i = 0;
+	int monsterOffset = mRitems[(int)RenderLayer::Shadow].size() / numOfCharacter;
+
 	for (auto& e : mRitems[(int)RenderLayer::Shadow])
 	{
+		int monsterIndex = i / monsterOffset;
+
 		// Load the object world
 		auto& o = mRitems[(int)RenderLayer::Monster][i];
-		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World);
+		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World) * GetWorldTransformMatrix(monsterIndex);
 
 		XMVECTOR shadowPlane = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 		XMVECTOR toMainLight = -XMLoadFloat3(&mMainLight.Direction);
@@ -376,7 +412,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 	// m.. - monster
 	XMVECTOR E = XMVectorSet(0.0f, 0.0f, 1.0f, 0.0f);
 	XMVECTOR pPosition = Player.GetCharacterInfo().mMovement.GetPlayerPosition();
-	static std::vector<std::pair<float, bool>> HitTime(numOfCharacter);
+	static std::vector<std::pair<float, bool>> HitTime(numOfCharacter, std::make_pair(gt.TotalTime(), false));
 
 	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{

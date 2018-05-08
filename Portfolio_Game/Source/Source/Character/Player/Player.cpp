@@ -34,7 +34,6 @@ void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 
 	if (MathHelper::getDistance(mP, P) > 10.0f)
 		return;
-
 	if (mPlayerInfo.mHealth >= 0)
 	{
 		mSkinnedModelInst->TimePos = 0.0f;
@@ -80,6 +79,7 @@ XMMATRIX Player::GetWorldTransformMatrix() const
 
 	return  S * R * P;
 }
+
 
 UINT Player::GetAllRitemsSize() const
 {
@@ -166,6 +166,14 @@ void Player::BuildGeometry(
 		SubmeshOffsetIndex += CurrSubmeshOffsetIndex;
 	}
 
+	BoundingBox box;
+	BoundingBox::CreateFromPoints(
+		box,
+		inVertices.size(),
+		&inVertices[0].Pos,
+		sizeof(Vertex));
+	mPlayerInfo.mBoundingBox = box;
+
 	mGeometry = std::move(geo);
 }
 void Player::BuildConstantBufferViews(
@@ -210,6 +218,12 @@ void Player::BuildRenderItem(
 	int boneCount = (UINT)mSkinnedInfo.BoneCount();
 	auto vBoneName = mSkinnedInfo.GetBoneName();
 
+	XMVECTOR playerPos = mPlayerInfo.mMovement.GetPlayerPosition();
+	XMVECTOR playerBoundingPos = XMLoadFloat3(&mPlayerInfo.mBoundingBox.Center);
+	playerBoundingPos = XMVectorAdd(playerPos, playerBoundingPos);
+
+	XMStoreFloat3(&mPlayerInfo.mBoundingBox.Center, playerBoundingPos);
+
 	// Character Mesh
 	for (int submeshIndex = 0; submeshIndex < boneCount - 1; ++submeshIndex)
 	{
@@ -227,6 +241,7 @@ void Player::BuildRenderItem(
 		PlayerRitem->IndexCount = PlayerRitem->Geo->DrawArgs[SubmeshName].IndexCount;
 		PlayerRitem->SkinnedModelInst = mSkinnedModelInst.get();
 		PlayerRitem->PlayerCBIndex = playerIndex++;
+
 
 		auto ShadowedRitem = std::make_unique<RenderItem>();
 		*ShadowedRitem = *PlayerRitem;
@@ -252,31 +267,46 @@ void Player::UpdateCharacterCBs(
 		SetClipName("Death");
 		mSkinnedModelInst->TimePos = 0.0f;
 	}
+	mSkinnedModelInst->UpdateSkinnedAnimation(mPlayerInfo.mClipName, gt.DeltaTime());
 
 	auto currPlayerCB = mCurrFrameResource->PlayerCB.get();
-	UpdateCharacterShadows(mMainLight);
-
-	mSkinnedModelInst->UpdateSkinnedAnimation(mPlayerInfo.mClipName, gt.DeltaTime());
-	for (auto& e : mAllRitems)
+	for (auto& e : mRitems[(int)RenderLayer::Character])
 	{
-		if (mTransformDirty) { e->NumFramesDirty = gNumFrameResources; }
-		if (e->NumFramesDirty > 0)
-		{
-			SkinnedConstants skinnedConstants;
 
-			std::copy(
-				std::begin(mSkinnedModelInst->FinalTransforms),
-				std::end(mSkinnedModelInst->FinalTransforms),
-				&skinnedConstants.BoneTransforms[0]);
+		SkinnedConstants skinnedConstants;
 
-			XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix();
-			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
+		std::copy(
+			std::begin(mSkinnedModelInst->FinalTransforms),
+			std::end(mSkinnedModelInst->FinalTransforms),
+			&skinnedConstants.BoneTransforms[0]);
 
-			XMStoreFloat4x4(&skinnedConstants.World, XMMatrixTranspose(world));
-			XMStoreFloat4x4(&skinnedConstants.TexTransform, XMMatrixTranspose(texTransform));
+		XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix();
+		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
-			currPlayerCB->CopyData(e->PlayerCBIndex, skinnedConstants);
-		}
+		XMStoreFloat4x4(&skinnedConstants.World, XMMatrixTranspose(world));
+		XMStoreFloat4x4(&skinnedConstants.TexTransform, XMMatrixTranspose(texTransform));
+
+		currPlayerCB->CopyData(e->PlayerCBIndex, skinnedConstants);
+	}
+
+	UpdateCharacterShadows(mMainLight);
+	for (auto& e : mRitems[(int)RenderLayer::Shadow])
+	{
+
+		SkinnedConstants skinnedConstants;
+
+		std::copy(
+			std::begin(mSkinnedModelInst->FinalTransforms),
+			std::end(mSkinnedModelInst->FinalTransforms),
+			&skinnedConstants.BoneTransforms[0]);
+
+		XMMATRIX world = XMLoadFloat4x4(&e->World);
+		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
+
+		XMStoreFloat4x4(&skinnedConstants.World, XMMatrixTranspose(world));
+		XMStoreFloat4x4(&skinnedConstants.TexTransform, XMMatrixTranspose(texTransform));
+
+		currPlayerCB->CopyData(e->PlayerCBIndex, skinnedConstants);
 	}
 
 	mCamera.UpdateViewMatrix();
@@ -300,13 +330,12 @@ void Player::UpdateCharacterShadows(const Light& mMainLight)
 		// Load the object world
 		auto& o = mRitems[(int)RenderLayer::Character][i];
 
-		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World);
-		XMVECTOR shadowPlane = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
+		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World) * GetWorldTransformMatrix();
+		XMVECTOR shadowPlane = XMVectorSet(0.0f, 0.1f, 0.0f, 0.0f);
 		XMVECTOR toMainLight = -XMLoadFloat3(&mMainLight.Direction);
 		XMMATRIX S = XMMatrixShadow(shadowPlane, toMainLight);
 		XMMATRIX shadowOffsetY = XMMatrixTranslation(0.0f, 0.001f, 0.0f);
 		XMStoreFloat4x4(&e->World, shadowWorld * S * shadowOffsetY);
-		e->NumFramesDirty = gNumFrameResources;
 
 		++i;
 	}
