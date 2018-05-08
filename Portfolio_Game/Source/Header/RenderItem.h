@@ -39,8 +39,7 @@ struct SkinnedModelInstance
 	SkinnedData* SkinnedInfo = nullptr;
 	std::vector<DirectX::XMFLOAT4X4> FinalTransforms;
 	float TimePos = 0.0f;
-	bool ClipEnd;
-	eClipList state;
+	eClipList mState;
 	
 	// Called every frame and increments the time position, interpolates the 
 	// animations for each bone based on the current animation clip, and 
@@ -53,23 +52,21 @@ struct SkinnedModelInstance
 		// Loop animation
 		if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
 		{
-			if (ClipName == "Idle" || ClipName == "Walking")
+			if (ClipName == "Idle" || ClipName == "Walking" || ClipName == "run")
 			{
 				TimePos = 0.0f;
 			}
-			ClipEnd = true;
 		}
 		//else if (ClipName == "")
 
-		ClipEnd = false;
+		eClipList state = eClipList::Idle;
 		if (ClipName == "Idle")
 		{
 			state = eClipList::Idle;
-			ClipEnd = true;
 		}
 		else if (ClipName == "StartWalking")
 			state = eClipList::StartWalking;
-		else if (ClipName == "Walking" || ClipName == "WalkingBackward" || ClipName == "playerWalking")
+		else if (ClipName == "Walking" || ClipName == "WalkingBackward" || ClipName == "run" || ClipName == "playerWalking")
 			state = eClipList::Walking;
 		else if (ClipName == "StopWalking")
 			state = eClipList::StopWalking;
@@ -77,6 +74,12 @@ struct SkinnedModelInstance
 			state = eClipList::Kick;
 		else if (ClipName == "FlyingKick")
 			state = eClipList::FlyingKick;
+
+		if (state != mState)
+		{
+			TimePos = 0.0f;
+			mState = state;
+		}
 
 		// Compute the final transforms for this time position.
 		SkinnedInfo->GetFinalTransforms(ClipName, TimePos, FinalTransforms);

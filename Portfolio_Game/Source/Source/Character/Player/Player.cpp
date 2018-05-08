@@ -10,7 +10,7 @@ Player::Player()
 	mFullHealth(100),
 	mDamage(10)
 {
-	XMVECTOR P = XMVectorSet(-150.0f, 0.0f, -200.0f, 0.0f);
+	XMVECTOR P = XMVectorSet(-0.0f, 0.0f, -0.0f, 0.0f);
 	mPlayerInfo.mMovement.SetPlayerPosition(P);
 }
 
@@ -62,13 +62,15 @@ void Player::Attack(Character & inMonster, std::string clipName)
 
 bool Player::isClipEnd()
 {
-	if (mSkinnedInfo.GetAnimation(mPlayerInfo.mClipName).GetClipEndTime() - mSkinnedModelInst->TimePos < 0.001f)
+	auto clipEndTime = mSkinnedInfo.GetAnimation(mPlayerInfo.mClipName).GetClipEndTime();
+	auto curTimePos = mSkinnedModelInst->TimePos;
+	if (clipEndTime - curTimePos < 0.1f)
 		return true;
 	return false;
 }
 eClipList Player::GetCurrentClip() const
 {
-	return mSkinnedModelInst->state;
+	return mSkinnedModelInst->mState;
 }
 XMMATRIX Player::GetWorldTransformMatrix() const
 {
@@ -171,7 +173,7 @@ void Player::BuildGeometry(
 		box,
 		inVertices.size(),
 		&inVertices[0].Pos,
-		sizeof(Vertex));
+		sizeof(SkinnedVertex));
 	mPlayerInfo.mBoundingBox = box;
 
 	mGeometry = std::move(geo);

@@ -306,8 +306,25 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	{
 		if (!mCameraDetach)
 		{
-			mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 5.0f * dt);
+			mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 7.0f * dt);
 			mPlayer.SetClipName("playerWalking");
+			if (mPlayer.GetCurrentClip() == eClipList::Walking)
+			{
+				if (mPlayer.isClipEnd())
+					mPlayer.SetClipTime(0.0f);
+			}
+		}
+		else
+		{
+			mPlayer.mCamera.Walk(10.0f * dt);
+		}
+	}
+	if (GetAsyncKeyState('F') & 0x8000)
+	{
+		if (!mCameraDetach)
+		{
+			mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 18.0f * dt);
+			mPlayer.SetClipName("run");
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
 				if (mPlayer.isClipEnd())
@@ -1145,6 +1162,9 @@ void PortfolioGameApp::BuildFbxGeometry()
 
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "playerWalking", FileName);
+
+	FileName = "../Resource/FBX/Character/";
+	fbx.LoadFBX(outSkinnedInfo, "run", FileName);
 
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "Kick", FileName);

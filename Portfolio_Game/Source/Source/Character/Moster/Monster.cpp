@@ -9,7 +9,7 @@ Monster::Monster()
 	: numOfCharacter(10),
 	mDamage(0),
 	mFullHealth(100),
-	MonsterAreaSize(100)
+	MonsterAreaSize(20)
 {
 	for (UINT i = 0; i < numOfCharacter; ++i)
 	{
@@ -185,7 +185,7 @@ void Monster::BuildGeometry(
 		box,
 		inVertices.size(),
 		&inVertices[0].Pos,
-		sizeof(Vertex));
+		sizeof(SkinnedVertex));
 	// TODO: Instancing
 	mMonsterInfo[0].mBoundingBox = box;
 
@@ -462,6 +462,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 
 		float distance = MathHelper::getDistance(pPosition, mPosition);
 
+
 		if (distance < 3.0f)
 		{
 			// Move Back
@@ -504,18 +505,18 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 				if (MathHelper::getDistance(MnthPos, mPosition) < 5.0f)
 				{
 					XMVECTOR Md = XMVectorSubtract(MnthPos, mPosition);
-					mPosition = XMVectorSubtract(mPosition, 0.2f * Md);
+					mPosition = XMVectorSubtract(mPosition, 0.01f * Md);
 
 					// Rotate opposite direction
 					if (res > 0)
-						R = R * XMMatrixRotationY(0.5f * theta);
+						R = R * XMMatrixRotationY(0.1f * theta);
 					else
-						R = R * XMMatrixRotationY(0.5f * -theta);
+						R = R * XMMatrixRotationY(0.1f * -theta);
 				}
 			}
 
 			// Move to player
-			mPosition = XMVectorAdd(mPosition, 0.1f * mLook);
+			mPosition = XMVectorAdd(mPosition, 0.15f * mLook);
 
 			SetClipName("Walking", cIndex);
 			mTransformDirty = true;
