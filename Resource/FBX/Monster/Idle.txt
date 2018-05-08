@@ -63079,7 +63079,7 @@ Animation
 1 1 1
 -0.0526416 -0.0291694 0.0978027 0.993384
 Material 
-Name C:\Users\Yujin\Dev\Developing\DirectX\Portfolio_Game\Resource\FBX\Monster\Idle.fbm/Mutant_diffuse.png
+Name ..\Resource\FBX\Monster\Idle.fbm/Mutant_diffuse.png
 Ambient 0.2 0.2 0.2
 Diffuse 1 1 1 1
 Fresnel 0 0 0

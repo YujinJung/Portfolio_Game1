@@ -67,4 +67,3 @@ private:
 	UINT numOfCharacter;
 	int MonsterAreaSize;
 };
-

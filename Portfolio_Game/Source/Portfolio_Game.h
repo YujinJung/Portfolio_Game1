@@ -47,8 +47,17 @@ private:
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();
 	void BuildShapeGeometry();
-	void BuildArcheGeometry(std::vector<Vertex> outVertices, std::vector<std::uint32_t> outIndices, std::string geoName);
+	void BuildArcheGeometry(
+		const std::vector<std::vector<Vertex>>& outVertices,
+		const std::vector<std::vector<std::uint32_t>>& outIndices,
+		const std::vector<std::string>& geoName);
 	void BuildFbxGeometry();
+	void LoadFBXArchitecture(
+		FbxLoader &fbx,
+		std::vector<Vertex> &outVertices,
+		std::vector<unsigned int> &outIndices,
+		std::vector<Material> &outMaterial,
+		std::string &FileName, const int& archIndex);
 	void BuildMaterials();
 	void BuildPSOs();
 	void BuildFrameResources();

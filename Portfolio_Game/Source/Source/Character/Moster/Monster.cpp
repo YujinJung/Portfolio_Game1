@@ -9,7 +9,7 @@ Monster::Monster()
 	: numOfCharacter(10),
 	mDamage(0),
 	mFullHealth(100),
-	MonsterAreaSize(20)
+	MonsterAreaSize(100)
 {
 	for (UINT i = 0; i < numOfCharacter; ++i)
 	{
@@ -436,7 +436,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		{
 			float pHealth = static_cast<float>(Player.GetCharacterInfo().mHealth);
 
-			if (curDeltaTime > 5.0f && pHealth > 0) // Hit per 5 seconds
+			if (curDeltaTime > 10.0f && pHealth > 0) // Hit per 5 seconds
 			{
 				HitTime[cIndex].first = gt.TotalTime();
 				SetClipName("MAttack1", cIndex);

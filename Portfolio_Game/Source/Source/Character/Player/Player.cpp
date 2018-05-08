@@ -10,6 +10,8 @@ Player::Player()
 	mFullHealth(100),
 	mDamage(10)
 {
+	XMVECTOR P = XMVectorSet(-150.0f, 0.0f, -200.0f, 0.0f);
+	mPlayerInfo.mMovement.SetPlayerPosition(P);
 }
 
 Player::~Player()
@@ -48,9 +50,9 @@ void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 
 	mUI.SetDamageScale(static_cast<float>(mPlayerInfo.mHealth) / static_cast<float>(mFullHealth));
 }
-void Player::Attack(Character & inMonster)
+void Player::Attack(Character & inMonster, std::string clipName)
 {
-	SetClipName("FlyingKick");
+	SetClipName(clipName);
 	SetClipTime(0.0f);
 
 	inMonster.Damage(

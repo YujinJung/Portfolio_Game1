@@ -26,7 +26,7 @@ public:
 	virtual int GetHealth(int i = 0) const override;
 	virtual CharacterInfo& GetCharacterInfo(int cIndex = 0);
 	virtual void Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
-	void Attack(Character& inMonster);
+	void Attack(Character& inMonster, std::string clipName);
 
 public:
 	bool isClipEnd();

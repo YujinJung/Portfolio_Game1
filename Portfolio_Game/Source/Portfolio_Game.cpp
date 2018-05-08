@@ -338,10 +338,21 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	}
 	else if(GetAsyncKeyState('1') & 0x8000)
 	{
+		// Kick Delay, 5 seconds
+		if (gt.TotalTime() - curTime > 5.0f) 
+		{
+			mPlayer.SetClipTime(0.0f);
+			mPlayer.Attack(mMonster, "Kick");
+			curTime = gt.TotalTime();
+		}
+	}
+	else if (GetAsyncKeyState('2') & 0x8000)
+	{
+		// Hook Delay, 3 seconds
 		if (gt.TotalTime() - curTime > 3.0f)
 		{
 			mPlayer.SetClipTime(0.0f);
-			mPlayer.Attack(mMonster);
+			mPlayer.Attack(mMonster, "Hook");
 			curTime = gt.TotalTime();
 		}
 	}
@@ -910,7 +921,7 @@ void PortfolioGameApp::BuildShapeGeometry()
 
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
-	GeometryGenerator::MeshData grid = geoGen.CreateGrid(400.0f, 400.0f, 200, 200);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(600.0f, 600.0f, 200, 200);
 	GeometryGenerator::MeshData hpBar = geoGen.CreateGrid(20.0f, 20.0f, 20, 20);
 	GeometryGenerator::MeshData sphere = geoGen.CreateGeosphere(0.5f, 3);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
@@ -1051,46 +1062,71 @@ void PortfolioGameApp::BuildShapeGeometry()
 }
 
 void PortfolioGameApp::BuildArcheGeometry(
-	std::vector<Vertex> outVertices,
-	std::vector<std::uint32_t> outIndices,
-	std::string geoName)
+	const std::vector<std::vector<Vertex>>& outVertices,
+	const std::vector<std::vector<std::uint32_t>>& outIndices,
+	const std::vector<std::string>& geoName)
 {
-	if (outVertices.size() == 0)
+	
+	UINT vertexOffset = 0;
+	UINT indexOffset = 0;
+	std::vector<SubmeshGeometry> submesh(geoName.size());
+
+	for (int i = 0; i < geoName.size(); ++i)
 	{
-		MessageBox(0, L"Fbx not found", 0, 0);
-		return;
+		submesh[i].IndexCount = (UINT)outIndices[i].size();
+		submesh[i].StartIndexLocation = indexOffset;
+		submesh[i].BaseVertexLocation = vertexOffset;
+
+		vertexOffset += outVertices[i].size();
+		indexOffset += outIndices[i].size();
 	}
 
-	UINT vCount = 0, iCount = 0;
-	vCount = (UINT)outVertices.size();
-	iCount = (UINT)outIndices.size();
+	std::vector<Vertex> vertices(vertexOffset);
+	UINT k = 0;
+	for (int i = 0; i < geoName.size(); ++i)
+	{
+		for (int j = 0; j < outVertices[i].size(); ++j, ++k)
+		{
+			vertices[k].Pos = outVertices[i][j].Pos;
+			vertices[k].Normal = outVertices[i][j].Normal;
+			vertices[k].TexC = outVertices[i][j].TexC;
+		}
+	}
 
-	const UINT vbByteSize = vCount * sizeof(Vertex);
-	const UINT ibByteSize = iCount * sizeof(std::uint32_t);
+	std::vector<std::uint32_t> indices;
+	for (int i = 0; i < geoName.size(); ++i)
+	{
+		indices.insert(indices.end(), outIndices[i].begin(), outIndices[i].end());
+	}
+
+
+	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
+	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = "Archetecture";
+	geo->Name = "Architecture";
 
 	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), outVertices.data(), vbByteSize);
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
 
 	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), outIndices.data(), ibByteSize);
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
 
-	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), outVertices.data(), vbByteSize, geo->VertexBufferUploader);
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(), mCommandList.Get(), outIndices.data(), ibByteSize, geo->IndexBufferUploader);
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), vertices.data(), vbByteSize, geo->VertexBufferUploader);
+
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
+		mCommandList.Get(), indices.data(), ibByteSize, geo->IndexBufferUploader);
 
 	geo->VertexByteStride = sizeof(Vertex);
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
 
-	SubmeshGeometry houseSubmesh;
-	houseSubmesh.IndexCount = outIndices.size();
-	houseSubmesh.StartIndexLocation = 0;
-	houseSubmesh.BaseVertexLocation = 0;
-
-	geo->DrawArgs[geoName] = houseSubmesh;
+	for (int i = 0; i < geoName.size(); ++i)
+	{
+		geo->DrawArgs[geoName[i]] = submesh[i];
+	}
 
 	mGeometries[geo->Name] = std::move(geo);
 }
@@ -1115,6 +1151,9 @@ void PortfolioGameApp::BuildFbxGeometry()
 
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "FlyingKick", FileName);
+
+	FileName = "../Resource/FBX/Character/";
+	fbx.LoadFBX(outSkinnedInfo, "Hook", FileName);
 
 	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
@@ -1228,16 +1267,52 @@ void PortfolioGameApp::BuildFbxGeometry()
 	outSkinnedInfo.clear();
 
 	// Object FBX
+	std::vector<std::vector<Vertex>> archVertex;
+	std::vector<std::vector<uint32_t>> archIndex;
+	std::vector<std::string> archName;
 	std::vector<Vertex> outVertices;
+
 	FileName = "../Resource/FBX/Architecture/house";
+	LoadFBXArchitecture(fbx, outVertices, outIndices, outMaterial, FileName, archName.size());
+	archVertex.push_back(outVertices);
+	archIndex.push_back(outIndices);
+	archName.push_back("house");
+
+	outVertices.clear();
+	outIndices.clear();
+	outMaterial.clear();
+
+	/*FileName = "../Resource/FBX/Architecture/deadtree";
+	LoadFBXArchitecture(fbx, outVertices, outIndices, outMaterial, FileName, archName.size());
+	archVertex.push_back(outVertices);
+	archIndex.push_back(outIndices);
+	archName.push_back("deadtree");*/
+
+	BuildArcheGeometry(archVertex, archIndex, archName);
+	
+	outSkinnedVertices.clear();
+	outIndices.clear();
+	outMaterial.clear();
+	outSkinnedInfo.clear();
+}
+
+void PortfolioGameApp::LoadFBXArchitecture(
+	FbxLoader &fbx,
+	std::vector<Vertex> &outVertices, 
+	std::vector<unsigned int> &outIndices, 
+	std::vector<Material> &outMaterial,
+	std::string &FileName, const int& archIndex)
+{
+	outVertices.clear();
+	outIndices.clear();
+	outMaterial.clear();
+	
 	fbx.LoadFBX(outVertices, outIndices, outMaterial, FileName);
-
-	BuildArcheGeometry(outVertices, outIndices, "house");
-
+	
 	// Begin
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
 	// Load Texture and Material
-	MatIndex = mMaterials.GetSize();
+	int MatIndex = mMaterials.GetSize();
 	for (int i = 0; i < outMaterial.size(); ++i)
 	{
 		// Load Texture 
@@ -1245,7 +1320,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 		{
 			std::string TextureName;
 			TextureName = "archeTex";
-			TextureName.push_back(i + 48);
+			TextureName.push_back(archIndex + 48);
 			std::wstring TextureFileName;
 			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
 
@@ -1255,7 +1330,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 
 			// Load Material
 			std::string MaterialName = "archeMat";
-			MaterialName.push_back(i + 48);
+			MaterialName.push_back(archIndex + 48);
 
 			mMaterials.SetMaterial(
 				MaterialName,
@@ -1267,11 +1342,6 @@ void PortfolioGameApp::BuildFbxGeometry()
 		}
 	}
 	mTextures.End();
-
-	outSkinnedVertices.clear();
-	outIndices.clear();
-	outMaterial.clear();
-	outSkinnedInfo.clear();
 }
 
 void PortfolioGameApp::LoadTextures()
@@ -1297,6 +1367,10 @@ void PortfolioGameApp::LoadTextures()
 	mTextures.SetTexture(
 		"grassTex",
 		L"../Resource/Textures/grass.dds");
+
+	mTextures.SetTexture(
+		"tundraTex",
+		L"../Resource/Textures/tundra.jpg");
 
 	mTextures.SetTexture(
 		"iceTex",
@@ -1348,11 +1422,19 @@ void PortfolioGameApp::BuildMaterials()
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
 		XMFLOAT3(0.02f, 0.02f, 0.02f), 
 		0.2f);
-
+	
 	mMaterials.SetMaterial(
 		"grass0",
 		MatIndex++,
 		mTextures.GetTextureIndex("grassTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
+		XMFLOAT3(0.05f, 0.02f, 0.02f),
+		0.1f);
+
+	mMaterials.SetMaterial(
+		"tundra0",
+		MatIndex++,
+		mTextures.GetTextureIndex("tundraTex"),
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.05f, 0.02f, 0.02f),
 		0.1f);
@@ -1395,10 +1477,10 @@ void PortfolioGameApp::BuildRenderItems()
 	UINT objCBIndex = 0;
 
 	auto gridRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&gridRitem->World, XMMatrixTranslation(100.0f, 0.0f, 100.0f));
-	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(200.0f, 200.0f, 1.0f));
+	XMStoreFloat4x4(&gridRitem->World, XMMatrixTranslation(0.0f, -0.1f, 0.0f));
+	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(20.0f, 20.0f, 1.0f));
 	gridRitem->ObjCBIndex = objCBIndex++;
-	gridRitem->Mat = mMaterials.Get("grass0");
+	gridRitem->Mat = mMaterials.Get("tundra0");
 	gridRitem->Geo = mGeometries["shapeGeo"].get();
 	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	gridRitem->IndexCount = gridRitem->Geo->DrawArgs["grid"].IndexCount;
@@ -1422,17 +1504,56 @@ void PortfolioGameApp::BuildRenderItems()
 	
 	// Architecture
 	auto houseRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&houseRitem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-100.0f, 0.0f, -100.0f));
+	XMStoreFloat4x4(&houseRitem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-200.0f, 0.0f, -200.0f));
 	houseRitem->TexTransform = MathHelper::Identity4x4();
 	houseRitem->ObjCBIndex = objCBIndex++;
 	houseRitem->Mat = mMaterials.Get("archeMat0");
-	houseRitem->Geo = mGeometries["Archetecture"].get();
+	houseRitem->Geo = mGeometries["Architecture"].get();
 	houseRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 	houseRitem->IndexCount = houseRitem->Geo->DrawArgs["house"].IndexCount;
 	houseRitem->StartIndexLocation = houseRitem->Geo->DrawArgs["house"].StartIndexLocation;
 	houseRitem->BaseVertexLocation = houseRitem->Geo->DrawArgs["house"].BaseVertexLocation;
 	mRitems[(int)RenderLayer::Opaque].push_back(houseRitem.get());
 	mAllRitems.push_back(std::move(houseRitem));
+
+	auto house1Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&house1Ritem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-200.0f, 0.0f, -150.0f));
+	house1Ritem->TexTransform = MathHelper::Identity4x4();
+	house1Ritem->ObjCBIndex = objCBIndex++;
+	house1Ritem->Mat = mMaterials.Get("archeMat0");
+	house1Ritem->Geo = mGeometries["Architecture"].get();
+	house1Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	house1Ritem->IndexCount = house1Ritem->Geo->DrawArgs["house"].IndexCount;
+	house1Ritem->StartIndexLocation = house1Ritem->Geo->DrawArgs["house"].StartIndexLocation;
+	house1Ritem->BaseVertexLocation = house1Ritem->Geo->DrawArgs["house"].BaseVertexLocation;
+	mRitems[(int)RenderLayer::Opaque].push_back(house1Ritem.get());
+	mAllRitems.push_back(std::move(house1Ritem));
+
+	auto house2Ritem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&house2Ritem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-200.0f, 0.0f, -100.0f));
+	house2Ritem->TexTransform = MathHelper::Identity4x4();
+	house2Ritem->ObjCBIndex = objCBIndex++;
+	house2Ritem->Mat = mMaterials.Get("archeMat0");
+	house2Ritem->Geo = mGeometries["Architecture"].get();
+	house2Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	house2Ritem->IndexCount = house2Ritem->Geo->DrawArgs["house"].IndexCount;
+	house2Ritem->StartIndexLocation = house2Ritem->Geo->DrawArgs["house"].StartIndexLocation;
+	house2Ritem->BaseVertexLocation = house2Ritem->Geo->DrawArgs["house"].BaseVertexLocation;
+	mRitems[(int)RenderLayer::Opaque].push_back(house2Ritem.get());
+	mAllRitems.push_back(std::move(house2Ritem));
+
+	/*auto roadRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&roadRitem->World, XMMatrixScaling(1.0f, 1.0f, 30.0f) * XMMatrixTranslation(-150.0f, 0.0f, -100.0f));
+	XMStoreFloat4x4(&roadRitem->TexTransform, XMMatrixScaling(10.0f, 100.0f, 1.0f));
+	roadRitem->ObjCBIndex = objCBIndex++;
+	roadRitem->Mat = mMaterials.Get("bricks0");
+	roadRitem->Geo = mGeometries["shapeGeo"].get();
+	roadRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	roadRitem->IndexCount = roadRitem->Geo->DrawArgs["hpBar"].IndexCount;
+	roadRitem->StartIndexLocation = roadRitem->Geo->DrawArgs["hpBar"].StartIndexLocation;
+	roadRitem->BaseVertexLocation = roadRitem->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+	mRitems[(int)RenderLayer::Opaque].push_back(roadRitem.get());
+	mAllRitems.push_back(std::move(roadRitem));*/
 
 	// Player
 	mPlayer.BuildRenderItem(mMaterials, "playerMat0");

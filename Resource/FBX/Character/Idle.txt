@@ -66378,7 +66378,7 @@ Animation
 1 1 1
 0.01382 -0.566981 -0.0202871 0.823365
 Material 
-Name C:\Users\Yujin\Dev\Developing\DirectX\Portfolio_Game\Resource\FBX\Character\Idle.fbm/Kachujin_diffuse.png
+Name ..\Resource\FBX\Character\Idle.fbm/Kachujin_diffuse.png
 Ambient 0 0 0
 Diffuse 1 1 1 1
 Fresnel 0 0 0
