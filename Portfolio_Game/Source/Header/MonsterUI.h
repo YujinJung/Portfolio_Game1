@@ -1,7 +1,7 @@
 #pragma once
-#include "DXUI.h"
+#include "PlayerUI.h"
 
-class MonsterUI : public DXUI
+class MonsterUI : public PlayerUI
 {
 public:
 	MonsterUI();
@@ -12,15 +12,15 @@ public:
 
 	void SetDamageScale(int cIndex, float inScale);
 
-	void BuildRenderItem(
-		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
-		Materials & mMaterials, 
-		UINT numOfMonster);
 	void BuildConstantBufferViews(
 		ID3D12Device * device,
 		ID3D12DescriptorHeap * mCbvHeap,
 		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
 		int mMonsterUICbvOffset);
+	void BuildRenderItem(
+		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
+		Materials & mMaterials,
+		UINT numOfMonster);
 
 	void UpdateUICBs(
 		UploadBuffer<UIConstants>* currUICB,

@@ -191,6 +191,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	// UI
 	mCommandList->SetPipelineState(mPSOs["UI"].Get());
 	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::Rect));
+	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::I_Kick));
 	mCommandList->SetPipelineState(mPSOs["MonsterUI"].Get());
 	DrawRenderItems(mCommandList.Get(), mMonster.mMonsterUI.GetRenderItem(eUIList::Rect));
 
@@ -446,6 +447,11 @@ void PortfolioGameApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
 	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
+	mMainPassCB.FogColor = { 0.8f, 0.8f, 0.8f, 0.8f };
+	mMainPassCB.FogRange = 115.0f;
+	mMainPassCB.FogStart = 50.0f;
+
+
 	mMainPassCB.Lights[0].Direction = mMainLight.Direction;
 	mMainPassCB.Lights[0].Strength = mMainLight.Strength;
 	mMainPassCB.Lights[1].Direction = { -0.57735f, -0.57735f, 0.57735f };
@@ -1225,6 +1231,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 	outIndices.clear();
 	outMaterial.clear();
 	outSkinnedInfo.clear();
+	fbx.clear();
 
 	// Monster FBX
 	FileName = "../Resource/FBX/Monster/";
@@ -1285,6 +1292,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 	outIndices.clear();
 	outMaterial.clear();
 	outSkinnedInfo.clear();
+	fbx.clear();
 
 	// Object FBX
 	std::vector<std::vector<Vertex>> archVertex;
@@ -1298,15 +1306,16 @@ void PortfolioGameApp::BuildFbxGeometry()
 	archIndex.push_back(outIndices);
 	archName.push_back("house");
 
-	outVertices.clear();
+	/*outVertices.clear();
 	outIndices.clear();
 	outMaterial.clear();
+	fbx.clear();
 
-	/*FileName = "../Resource/FBX/Architecture/houseB/houseB";
+	FileName = "../Resource/FBX/Architecture/houseB/WoodCabinDif";
 	LoadFBXArchitecture(fbx, outVertices, outIndices, outMaterial, FileName, archName.size());
 	archVertex.push_back(outVertices);
 	archIndex.push_back(outIndices);
-	archName.push_back("houseB");*/
+	archName.push_back("WoodCabinDif");*/
 
 	BuildArcheGeometry(archVertex, archIndex, archName);
 	
@@ -1401,6 +1410,15 @@ void PortfolioGameApp::LoadTextures()
 		L"../Resource/Textures/red.jpg");
 
 	mTextures.SetTexture(
+		"iconKickTex",
+		L"../Resource/Icon/iconKick.png");
+
+	mTextures.SetTexture(
+		"iconDelayTex",
+		L"../Resource/Icon/iconDelay.png");
+
+	// Cube Map,
+	mTextures.SetTexture(
 		"skyCubeMap",
 		L"../Resource/Textures/snowcube1024.dds");
 
@@ -1484,12 +1502,29 @@ void PortfolioGameApp::BuildMaterials()
 		0.0f);
 
 	mMaterials.SetMaterial(
+		"iconKick",
+		MatIndex++,
+		mTextures.GetTextureIndex("iconKickTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
+		XMFLOAT3(0.05f, 0.02f, 0.02f),
+		0.0f);
+
+	mMaterials.SetMaterial(
+		"iconDelay",
+		MatIndex++,
+		mTextures.GetTextureIndex("iconDelayTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+		XMFLOAT3(0.001f, 0.001f, 0.001f),
+		0.0f);
+
+	mMaterials.SetMaterial(
 		"sky",
 		MatIndex++,
 		mTextureOffset,
 		XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f),
 		XMFLOAT3(0.001f, 0.001f, 0.001f),
 		0.0f);
+	
 }
 
 void PortfolioGameApp::BuildRenderItems()

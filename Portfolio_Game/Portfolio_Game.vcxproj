@@ -167,14 +167,14 @@
     <ClCompile Include="Source\Source\Texture\FbxLoader.cpp" />
     <ClCompile Include="Source\Source\Texture\TextureLoader.cpp" />
     <ClCompile Include="Source\Source\Texture\Textures.cpp" />
-    <ClCompile Include="Source\Source\UI\DXUI.cpp" />
+    <ClCompile Include="Source\Source\UI\PlayerUI.cpp" />
     <ClCompile Include="Source\Source\UI\MonsterUI.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Source\Header\Camera.h" />
     <ClInclude Include="Source\Header\Character.h" />
     <ClInclude Include="Source\Header\DDSTextureLoader.h" />
-    <ClInclude Include="Source\Header\DXUI.h" />
+    <ClInclude Include="Source\Header\PlayerUI.h" />
     <ClInclude Include="Source\Header\FbxLoader.h" />
     <ClInclude Include="Source\Header\FrameResource.h" />
     <ClInclude Include="Source\Header\GeometryGenerator.h" />

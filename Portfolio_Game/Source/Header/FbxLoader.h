@@ -135,6 +135,8 @@ public:
 		std::string fileName, 
 		const std::string& clipName);
 
+	void clear();
+
 private:
 	std::unordered_map<unsigned int, CtrlPoint*> mControlPoints;
 	std::vector<std::string> mBoneName;

@@ -11,6 +11,7 @@ FbxLoader::FbxLoader()
 
 FbxLoader::~FbxLoader()
 {
+	
 }
 
 FbxManager * gFbxManager = nullptr;
@@ -986,7 +987,7 @@ void FbxLoader::GetVerticesAndIndice(
 	std::vector<uint32_t> & outIndexVector)
 {
 	// Vertex and Index
-	std::unordered_map<Vertex, uint16_t> IndexMapping;
+	std::unordered_map<Vertex, uint32_t> IndexMapping;
 	uint32_t VertexIndex = 0;
 
 	// Material
@@ -1428,4 +1429,13 @@ void FbxLoader::ExportFBX(
 			fileOut << "\n";
 		}
 	}
+}
+
+void FbxLoader::clear()
+{
+	mControlPoints.clear();
+	mBoneName.clear();
+	mBoneHierarchy.clear();
+	mBoneOffsets.clear();
+	mAnimations.clear();
 }

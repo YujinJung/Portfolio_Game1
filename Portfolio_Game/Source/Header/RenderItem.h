@@ -3,7 +3,7 @@
 #include "SkinnedData.h"
 #include "CharacterMovement.h"
 
-enum eClipList
+enum class eClipList
 {
 	Idle,
 	StartWalking,
@@ -13,10 +13,12 @@ enum eClipList
 	FlyingKick
 };
 
-enum eUIList : int
+enum class eUIList : int
 {
 	Rect,
 	Background,
+	I_Kick,
+	I_Punch,
 	Count
 };
 

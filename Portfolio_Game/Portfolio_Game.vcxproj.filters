@@ -52,9 +52,6 @@
     <ClCompile Include="Source\Source\Texture\DDSTextureLoader.cpp">
       <Filter>Loader</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\UI\DXUI.cpp">
-      <Filter>UI</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Portfolio_Game.cpp">
       <Filter>Main</Filter>
     </ClCompile>
@@ -66,6 +63,9 @@
     </ClCompile>
     <ClCompile Include="Source\Source\Character\Player\CharacterMovement.cpp">
       <Filter>Character</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Source\UI\PlayerUI.cpp">
+      <Filter>UI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -97,9 +97,6 @@
       <Filter>Common\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Header\DDSTextureLoader.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\DXUI.h">
       <Filter>Common\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Header\FbxLoader.h">
@@ -143,6 +140,9 @@
     </ClInclude>
     <ClInclude Include="Source\Header\Character.h">
       <Filter>Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\PlayerUI.h">
+      <Filter>Common\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

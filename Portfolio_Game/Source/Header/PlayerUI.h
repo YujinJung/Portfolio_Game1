@@ -1,15 +1,14 @@
 #pragma once
 
-#include "SkinnedData.h"
 #include "FrameResource.h"
 #include "RenderItem.h"
 
 class Materials;
-class DXUI
+class PlayerUI
 {
 public:
-	DXUI();
-	~DXUI();
+	PlayerUI();
+	~PlayerUI();
 
 	virtual UINT GetSize() const;
 	const std::vector<RenderItem*> GetRenderItem(eUIList Type);
@@ -23,8 +22,7 @@ public:
 		const std::vector<std::unique_ptr<FrameResource>> &mFrameResources,
 		int mUICbvOffset);
 	void BuildRenderItem(
-		std::unordered_map<std::string,
-		std::unique_ptr<MeshGeometry>>& mGeometries,
+		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
 		Materials & mMaterials);
 
 	void UpdateUICBs(

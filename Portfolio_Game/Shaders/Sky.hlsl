@@ -39,6 +39,14 @@ VertexOut VS(VertexIn vin)
 
 float4 PS(VertexOut pin) : SV_Target
 {
-	return gCubeMap.Sample(gsamLinearWrap, pin.PosL);
+	float4 litColor = gCubeMap.Sample(gsamLinearWrap, pin.PosL);
+
+	// TODO: fix
+	float distanceToEye = 150.0f;
+	float fogAmount = saturate((distanceToEye - gFogStart) / gFogRange);
+	litColor = lerp(litColor, gFogColor, fogAmount);
+
+
+	return litColor;
 }
 

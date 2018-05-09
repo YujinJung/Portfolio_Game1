@@ -2,7 +2,7 @@
 
 #include "Character.h"
 #include "PlayerCamera.h"
-#include "DXUI.h"
+#include "PlayerUI.h"
 
 enum PlayerMoveList
 {
@@ -19,7 +19,7 @@ public:
 	Player();
 	~Player();
 
-	DXUI mUI;
+	PlayerUI mUI;
 	PlayerCamera mCamera;
 
 public:
