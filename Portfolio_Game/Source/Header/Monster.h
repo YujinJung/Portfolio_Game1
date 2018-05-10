@@ -26,6 +26,7 @@ public:
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
 
 	void SetClipName(const std::string & inClipName, int cIndex);
+	void SetMaterialName(const std::string& inMaterialName);
 
 public:
 	virtual void BuildGeometry(
@@ -41,7 +42,7 @@ public:
 		int mChaCbvOffset) override;
 	virtual void BuildRenderItem(
 		Materials & mMaterials,
-		std::string matrialPrefix) override;
+		std::string matrialPrefix = "") override;
 
 	
 	void UpdateCharacterCBs(
@@ -53,7 +54,6 @@ public:
 
 private:
 	std::vector<CharacterInfo> mMonsterInfo;
-	
 
 	SkinnedData mSkinnedInfo;
 	std::unique_ptr<MeshGeometry> mGeometry;
@@ -63,6 +63,8 @@ private:
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 
 private:
+	std::string MaterialName;
+
 	UINT mDamage;
 	UINT mFullHealth;
 	UINT numOfCharacter;

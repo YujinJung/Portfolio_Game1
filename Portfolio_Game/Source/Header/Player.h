@@ -24,13 +24,17 @@ public:
 
 public:
 	virtual int GetHealth(int i = 0) const override;
+
 	virtual CharacterInfo& GetCharacterInfo(int cIndex = 0);
+
 	virtual void Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
-	void Attack(Character& inMonster, std::string clipName);
+
+	void Attack(Character* inMonster, std::string clipName);
 
 public:
 	bool isClipEnd();
 	eClipList GetCurrentClip() const;
+
 	DirectX::XMMATRIX GetWorldTransformMatrix() const;
 
 	UINT GetAllRitemsSize() const;
@@ -46,22 +50,28 @@ public:
 		const std::vector<SkinnedVertex>& inVertices,
 		const std::vector<std::uint32_t>& inIndices,
 		const SkinnedData & inSkinInfo, std::string geoName) override;
+
 	virtual void BuildConstantBufferViews(
 		ID3D12Device * device,
 		ID3D12DescriptorHeap * mCbvHeap,
 		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
 		int mPlayerCbvOffset) override;
+
 	virtual void BuildRenderItem(
 		Materials & mMaterials,
 		std::string matrialPrefix) override;
+
 
 	void UpdateCharacterCBs(
 		FrameResource* mCurrFrameResource,
 		const Light& mMainLight,
 		std::vector<float> Delay,
 		const GameTimer & gt);
+
 	virtual void UpdateCharacterShadows(const Light & mMainLight);
+
 	void UpdatePlayerPosition(PlayerMoveList move, float velocity);
+
 	void UpdateTransformationMatrix();
 	
 private:

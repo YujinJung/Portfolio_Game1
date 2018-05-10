@@ -9,7 +9,8 @@ Monster::Monster()
 	: numOfCharacter(10),
 	mDamage(0),
 	mFullHealth(100),
-	MonsterAreaSize(20)
+	MonsterAreaSize(20),
+	MaterialName("")
 {
 	for (UINT i = 0; i < numOfCharacter; ++i)
 	{
@@ -114,6 +115,11 @@ void Monster::SetClipName(const std::string& inClipName, int cIndex)
 			mMonsterInfo[cIndex].mHealth = 0.0f;
 		}
 	}
+}
+
+void Monster::SetMaterialName(const std::string & inMaterialName)
+{
+	MaterialName = inMaterialName;
 }
 
 void Monster::BuildGeometry(
@@ -221,6 +227,7 @@ void Monster::BuildConstantBufferViews(
 		}
 	}
 }
+
 void Monster::BuildRenderItem(
 	Materials& mMaterials,
 	std::string matrialPrefix)
@@ -249,7 +256,6 @@ void Monster::BuildRenderItem(
 		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)
 		{
 			std::string SubmeshName = boneName[submeshIndex];
-			std::string MaterialName = matrialPrefix; // TODO : Setting the Name
 
 			auto MonsterRitem = std::make_unique<RenderItem>();
 			XMStoreFloat4x4(&MonsterRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));

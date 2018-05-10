@@ -49,7 +49,7 @@ void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 
 	mUI.SetDamageScale(static_cast<float>(mPlayerInfo.mHealth) / static_cast<float>(mFullHealth));
 }
-void Player::Attack(Character & inMonster, std::string clipName)
+void Player::Attack(Character * inMonster, std::string clipName)
 {
 	SetClipName(clipName);
 	SetClipTime(0.0f);
@@ -59,7 +59,7 @@ void Player::Attack(Character & inMonster, std::string clipName)
 	else if (clipName == "Hook")
 		mDamage = 10;
 
-	inMonster.Damage(
+	inMonster->Damage(
 		mDamage,
 		mPlayerInfo.mMovement.GetPlayerPosition(),
 		mPlayerInfo.mMovement.GetPlayerLook());

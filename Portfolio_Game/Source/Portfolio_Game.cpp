@@ -198,7 +198,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::I_Kick));
 	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::I_Punch));
 	mCommandList->SetPipelineState(mPSOs["MonsterUI"].Get());
-	DrawRenderItems(mCommandList.Get(), mMonster.mMonsterUI.GetRenderItem(eUIList::Rect));
+	DrawRenderItems(mCommandList.Get(), mMonster->mMonsterUI.GetRenderItem(eUIList::Rect));
 
 	// Character
 	if (!mFbxWireframe)
@@ -213,7 +213,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 
 	// Monster
 	mCommandList->SetPipelineState(mPSOs["Monster"].Get());
-	DrawRenderItems(mCommandList.Get(), mMonster.GetRenderItem(RenderLayer::Monster));
+	DrawRenderItems(mCommandList.Get(), mMonster->GetRenderItem(RenderLayer::Monster));
 
 	// Shadow
 	mCommandList->OMSetStencilRef(0);
@@ -221,7 +221,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	DrawRenderItems(mCommandList.Get(), mPlayer.GetRenderItem(RenderLayer::Shadow));
 
 	mCommandList->SetPipelineState(mPSOs["Monster_shadow"].Get());
-	DrawRenderItems(mCommandList.Get(), mMonster.GetRenderItem(RenderLayer::Shadow));
+	DrawRenderItems(mCommandList.Get(), mMonster->GetRenderItem(RenderLayer::Shadow));
 
 	// Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -547,10 +547,10 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 	static float lastTime = gt.TotalTime();
 	if (gt.TotalTime() - lastTime > 0.04f)
 	{
-		mMonster.UpdateMonsterPosition(mPlayer, gt);
+		mMonster->UpdateMonsterPosition(mPlayer, gt);
 		lastTime = gt.TotalTime();
 	}
-	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
+	mMonster->UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, DelayTime, gt);
 	
 	
@@ -569,10 +569,10 @@ void PortfolioGameApp::BuildDescriptorHeaps()
 	mObjCbvOffset = mTextures.GetSize();
 	UINT objCount = (UINT)mAllRitems.size();
 	UINT chaCount = mPlayer.GetAllRitemsSize();
-	UINT monsterCount = mMonster.GetAllRitemsSize();
+	UINT monsterCount = mMonster->GetAllRitemsSize();
 	UINT matCount = mMaterials.GetSize();
 	UINT uiCount = mPlayer.mUI.GetSize();
-	UINT monsterUICount = mMonster.GetUISize();
+	UINT monsterUICount = mMonster->GetUISize();
 
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
@@ -670,7 +670,7 @@ void PortfolioGameApp::BuildConstantBufferViews()
 		mFrameResources,
 		mChaCbvOffset);
 
-	mMonster.BuildConstantBufferViews(
+	mMonster->BuildConstantBufferViews(
 		md3dDevice.Get(),
 		mCbvHeap.Get(),
 		mFrameResources,
@@ -683,7 +683,7 @@ void PortfolioGameApp::BuildConstantBufferViews()
 		mFrameResources,
 		mUICbvOffset);
 
-	mMonster.mMonsterUI.BuildConstantBufferViews(
+	mMonster->mMonsterUI.BuildConstantBufferViews(
 		md3dDevice.Get(),
 		mCbvHeap.Get(),
 		mFrameResources,
@@ -754,9 +754,9 @@ void PortfolioGameApp::BuildFrameResources()
 			1, (UINT)mAllRitems.size(),
 			mMaterials.GetSize(),
 			mPlayer.GetAllRitemsSize(),
-			mMonster.GetAllRitemsSize(),
+			mMonster->GetAllRitemsSize(),
 			mPlayer.mUI.GetSize(),
-			mMonster.GetUISize()));
+			mMonster->GetUISize()));
 	}
 }
 
@@ -1171,6 +1171,159 @@ void PortfolioGameApp::BuildShapeGeometry()
 	);
 }
 
+void PortfolioGameApp::BuildFbxGeometry()
+{
+	LoadFBXPlayer();
+
+	LoadFBXMonster();
+
+	LoadFBXArchitecture();
+}
+
+void PortfolioGameApp::BuildFBXTexture(
+	std::vector<Material> &outMaterial,
+	std::string inTextureName, std::string inMaterialName)
+{
+	// Begin
+	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+	// Load Texture and Material
+	int MatIndex = mMaterials.GetSize();
+	for (int i = 0; i < outMaterial.size(); ++i)
+	{
+		std::string TextureName;
+		// Load Texture 
+		if (!outMaterial[i].Name.empty())
+		{
+			TextureName = inTextureName;
+			TextureName.push_back(i + 48);
+			std::wstring TextureFileName;
+			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
+
+			mTextures.SetTexture(
+				TextureName,
+				TextureFileName);
+		}
+
+		// Load Material
+		std::string MaterialName = inMaterialName;
+		MaterialName.push_back(i + 48);
+
+		auto playerTexIndex = mTextures.GetTextureIndex(TextureName);
+		mMaterials.SetMaterial(
+			MaterialName,
+			MatIndex++,
+			mTextures.GetTextureIndex(TextureName),
+			outMaterial[i].DiffuseAlbedo,
+			outMaterial[i].FresnelR0,
+			outMaterial[i].Roughness);
+	}
+	mTextures.End();
+}
+
+void PortfolioGameApp::LoadFBXPlayer()
+{
+	FbxLoader fbx;
+	std::vector<SkinnedVertex> outSkinnedVertices;
+	std::vector<std::uint32_t> outIndices;
+	std::vector<Material> outMaterial;
+	SkinnedData outSkinnedInfo;
+
+	// Player
+	std::string FileName = "../Resource/FBX/Character/";
+	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
+
+	fbx.LoadFBX(outSkinnedInfo, "playerWalking", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "run", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "Kick", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "FlyingKick", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "Hook", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "WalkingBackward", FileName);
+
+	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "playerGeo");
+
+	BuildFBXTexture(outMaterial, "playerTex", "playerMat");
+}
+
+void PortfolioGameApp::LoadFBXMonster()
+{
+	std::vector<Material> outMaterial;
+	std::string matName = "monsterMat0";
+	std::string FileName = "../Resource/FBX/Monster/Monster1/";
+
+	LoadFBXSubMonster(outMaterial, matName, FileName);
+
+	matName = "monsterMat1";
+	FileName = "../Resource/FBX/Monster/Monster2/";
+	LoadFBXSubMonster(outMaterial, matName, FileName);
+
+	BuildFBXTexture(outMaterial, "monsterTex", "monsterMat");
+
+	// Initialize Monster in 0 zone
+	mMonster = mMonstersByZone[1].get();
+}
+
+void PortfolioGameApp::LoadFBXSubMonster(std::vector<Material> &outMaterial, std::string& inMaterialName, std::string &FileName)
+{
+	FbxLoader fbx;
+	std::vector<SkinnedVertex> outSkinnedVertices;
+	std::vector<std::uint32_t> outIndices;
+	SkinnedData outSkinnedInfo;
+
+	// Monster FBX
+	// Monster1
+	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
+
+	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "MAttack1", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "MAttack2", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
+
+	std::unique_ptr<Monster> tempMonster = std::make_unique<Monster>();
+	tempMonster->BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "MonsterGeo");
+	tempMonster->SetMaterialName(inMaterialName);
+	mMonstersByZone.push_back(std::move(tempMonster));
+}
+
+void PortfolioGameApp::LoadFBXArchitecture()
+{
+	// Architecture FBX
+	FbxLoader fbx;
+	std::vector<Vertex> outVertices;
+	std::vector<std::uint32_t> outIndices;
+	std::vector<Material> outMaterial;
+	std::string FileName;
+
+	std::vector<std::vector<Vertex>> archVertex;
+	std::vector<std::vector<uint32_t>> archIndex;
+	std::vector<std::string> archName;
+
+	FileName = "../Resource/FBX/Architecture/houseA/house";
+	fbx.LoadFBX(outVertices, outIndices, outMaterial, FileName);
+	archVertex.push_back(outVertices);
+	archIndex.push_back(outIndices);
+	archName.push_back("house");
+
+	outVertices.clear();
+	outIndices.clear();
+	fbx.clear();
+
+	FileName = "../Resource/FBX/Architecture/Rocks/RockCluster";
+	fbx.LoadFBX(outVertices, outIndices, outMaterial, FileName);
+	archVertex.push_back(outVertices);
+	archIndex.push_back(outIndices);
+	archName.push_back("RockCluster");
+
+	BuildArcheGeometry(archVertex, archIndex, archName);
+	BuildFBXTexture(outMaterial, "archiTex", "archiMat");
+
+	outVertices.clear();
+	outIndices.clear();
+	outMaterial.clear();
+}
+
 void PortfolioGameApp::BuildArcheGeometry(
 	const std::vector<std::vector<Vertex>>& outVertices,
 	const std::vector<std::vector<std::uint32_t>>& outIndices,
@@ -1247,200 +1400,6 @@ void PortfolioGameApp::BuildArcheGeometry(
 	}
 
 	mGeometries[geo->Name] = std::move(geo);
-}
-
-void PortfolioGameApp::BuildFbxGeometry()
-{
-	FbxLoader fbx;
-	std::vector<SkinnedVertex> outSkinnedVertices;
-	std::vector<std::uint32_t> outIndices;
-	std::vector<Material> outMaterial;
-	SkinnedData outSkinnedInfo;
-
-	// Player
-	std::string FileName = "../Resource/FBX/Character/";
-	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
-
-	fbx.LoadFBX(outSkinnedInfo, "playerWalking", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "run", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "Kick", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "FlyingKick", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "Hook", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "WalkingBackward", FileName);
-
-	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "playerGeo");
-
-	// Begin
-	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
-	// Load Texture and Material
-	int MatIndex = mMaterials.GetSize();
-	for (int i = 0; i < outMaterial.size(); ++i)
-	{
-		std::string TextureName;
-		// Load Texture 
-		if (!outMaterial[i].Name.empty())
-		{
-			TextureName = "playerTex";
-			TextureName.push_back(i +48);
-			std::wstring TextureFileName;
-			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
-
-			mTextures.SetTexture(
-				TextureName,
-				TextureFileName);
-		}
-
-		// Load Material
-		std::string MaterialName = "playerMat";
-		MaterialName.push_back(i + 48);
-
-		auto playerTexIndex = mTextures.GetTextureIndex(TextureName);
-		mMaterials.SetMaterial(
-			MaterialName,
-			MatIndex++,
-			mTextures.GetTextureIndex(TextureName),
-			outMaterial[i].DiffuseAlbedo,
-			outMaterial[i].FresnelR0,
-			outMaterial[i].Roughness);
-	}
-	mTextures.End();
-
-	outSkinnedVertices.clear();
-	outIndices.clear();
-	outMaterial.clear();
-	outSkinnedInfo.clear();
-	fbx.clear();
-
-	// Monster FBX
-	FileName = "../Resource/FBX/Monster/Monster1/";
-	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
-
-	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "MAttack1", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "MAttack2", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
-
-	mMonster.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "MonsterGeo");
-	// Begin
-	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
-	// Load Texture and Material
-	MatIndex = mMaterials.GetSize();
-	for (int i = 0; i < outMaterial.size(); ++i)
-	{
-		// Load Texture 
-		if (!outMaterial[i].Name.empty())
-		{
-			std::string TextureName;
-			TextureName = "monsterTex";
-			TextureName.push_back(i + 48);
-			std::wstring TextureFileName;
-			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
-
-			mTextures.SetTexture(
-				TextureName,
-				TextureFileName);
-
-			// Load Material
-			std::string MaterialName = "monsterMat";
-			MaterialName.push_back(i + 48);
-
-			mMaterials.SetMaterial(
-				MaterialName,
-				MatIndex++,
-				mTextures.GetTextureIndex(TextureName),
-				outMaterial[i].DiffuseAlbedo,
-				outMaterial[i].FresnelR0,
-				outMaterial[i].Roughness);
-		}
-	}
-	mTextures.End();
-
-	outSkinnedVertices.clear();
-	outIndices.clear();
-	outMaterial.clear();
-	outSkinnedInfo.clear();
-	fbx.clear();
-
-	// Object FBX
-	std::vector<std::vector<Vertex>> archVertex;
-	std::vector<std::vector<uint32_t>> archIndex;
-	std::vector<std::string> archName;
-	std::vector<Vertex> outVertices;
-
-	FileName = "../Resource/FBX/Architecture/houseA/house";
-	LoadFBXArchitecture(fbx, outVertices, outIndices, outMaterial, FileName, archName.size());
-	archVertex.push_back(outVertices);
-	archIndex.push_back(outIndices);
-	archName.push_back("house");
-
-	outVertices.clear();
-	outIndices.clear();
-	outMaterial.clear();
-	fbx.clear();
-
-	FileName = "../Resource/FBX/Architecture/Rocks/RockCluster";
-	LoadFBXArchitecture(fbx, outVertices, outIndices, outMaterial, FileName, archName.size());
-	archVertex.push_back(outVertices);
-	archIndex.push_back(outIndices);
-	archName.push_back("RockCluster");
-
-	BuildArcheGeometry(archVertex, archIndex, archName);
-	
-	outSkinnedVertices.clear();
-	outIndices.clear();
-	outMaterial.clear();
-	outSkinnedInfo.clear();
-}
-
-void PortfolioGameApp::LoadFBXArchitecture(
-	FbxLoader &fbx,
-	std::vector<Vertex> &outVertices, 
-	std::vector<unsigned int> &outIndices, 
-	std::vector<Material> &outMaterial,
-	std::string &FileName, const int& archIndex)
-{
-	outVertices.clear();
-	outIndices.clear();
-	outMaterial.clear();
-	
-	fbx.LoadFBX(outVertices, outIndices, outMaterial, FileName);
-	
-	// Begin
-	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
-	// Load Texture and Material
-	int MatIndex = mMaterials.GetSize();
-	for (int i = 0; i < outMaterial.size(); ++i)
-	{
-		// Load Texture 
-		if (!outMaterial[i].Name.empty())
-		{
-			std::string TextureName;
-			TextureName = "archiTex";
-			TextureName.push_back(archIndex + 48);
-			std::wstring TextureFileName;
-			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
-
-			mTextures.SetTexture(
-				TextureName,
-				TextureFileName);
-
-			// Load Material
-			std::string MaterialName = "archiMat";
-			MaterialName.push_back(archIndex + 48);
-
-			mMaterials.SetMaterial(
-				MaterialName,
-				MatIndex++,
-				mTextures.GetTextureIndex(TextureName),
-				outMaterial[i].DiffuseAlbedo,
-				outMaterial[i].FresnelR0,
-				outMaterial[i].Roughness);
-		}
-	}
-	mTextures.End();
 }
 
 void PortfolioGameApp::LoadTextures()
@@ -1688,8 +1647,8 @@ void PortfolioGameApp::BuildRenderItems()
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
 
 	// Monster
-	mMonster.BuildRenderItem(mMaterials, "monsterMat0");
-	mMonster.mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonster.GetNumberOfMonster());
+	mMonster->BuildRenderItem(mMaterials, "monsterMat0");
+	mMonster->mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonster->GetNumberOfMonster());
 }
 
 void PortfolioGameApp::BuildArchitecture(
@@ -1748,7 +1707,7 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 		auto skinCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		skinCbvHandle.Offset(skinnedIndex, mCbvSrvDescriptorSize);
 
-		UINT monsterIndex = mMonsterCbvOffset + mCurrFrameResourceIndex * mMonster.GetAllRitemsSize() + ri->MonsterCBIndex;
+		UINT monsterIndex = mMonsterCbvOffset + mCurrFrameResourceIndex * mMonster->GetAllRitemsSize() + ri->MonsterCBIndex;
 		auto monsterCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		monsterCbvHandle.Offset(monsterIndex, mCbvSrvDescriptorSize);
 
@@ -1756,7 +1715,7 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 		auto uiCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		uiCbvHandle.Offset(uiIndex, mCbvSrvDescriptorSize);
 
-		UINT monsterUIIndex = mMonsterUICbvOffset + mCurrFrameResourceIndex * mMonster.mMonsterUI.GetSize() + ri->ObjCBIndex;
+		UINT monsterUIIndex = mMonsterUICbvOffset + mCurrFrameResourceIndex * mMonster->mMonsterUI.GetSize() + ri->ObjCBIndex;
 		auto monsterUICbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		monsterUICbvHandle.Offset(monsterUIIndex, mCbvSrvDescriptorSize);
 

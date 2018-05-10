@@ -51,13 +51,14 @@ private:
 		const std::vector<std::vector<Vertex>>& outVertices,
 		const std::vector<std::vector<std::uint32_t>>& outIndices,
 		const std::vector<std::string>& geoName);
+
 	void BuildFbxGeometry();
-	void LoadFBXArchitecture(
-		FbxLoader &fbx,
-		std::vector<Vertex> &outVertices,
-		std::vector<unsigned int> &outIndices,
-		std::vector<Material> &outMaterial,
-		std::string &FileName, const int& archIndex);
+	void LoadFBXPlayer();
+	void BuildFBXTexture(std::vector<Material> &outMaterial, std::string inTextureName, std::string inMaterialName);
+	void LoadFBXMonster();
+	void LoadFBXSubMonster(std::vector<Material> &outMaterial, std::string& inMaterialName, std::string &FileName);
+	void LoadFBXArchitecture();
+
 	void BuildMaterials();
 	void BuildPSOs();
 	void BuildFrameResources();
@@ -118,8 +119,8 @@ private:
 	POINT mLastMousePos;
 
 	Player mPlayer;
-	Monster mMonster;
-	std::vector<Monster> mMonstersByZone;
+	Monster* mMonster;
+	std::vector<std::unique_ptr<Monster>> mMonstersByZone;
 	Textures mTextures;
 	Materials mMaterials;
 };
