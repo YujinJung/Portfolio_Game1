@@ -77,6 +77,8 @@ private:
 private:
 	UINT mDamage;
 	UINT mFullHealth;
+	DirectX::BoundingBox mInitBoundsBox;
+
 	bool DeathCamFinished = false;
 };
 

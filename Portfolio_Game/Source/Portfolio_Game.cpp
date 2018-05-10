@@ -184,6 +184,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	skyTexDescriptor.Offset(mTextureOffset, mCbvSrvDescriptorSize);
 	mCommandList->SetGraphicsRootDescriptorTable(8, skyTexDescriptor);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Opaque]);
+	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Architecture]);
 	mCommandList->SetPipelineState(mPSOs["sky"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Sky]);
 
@@ -291,8 +292,29 @@ void PortfolioGameApp::OnMouseMove(WPARAM btnState, int x, int y)
 void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
-	//static float curTime = gt.TotalTime();
-	
+	bool isForward = true;
+	bool isBackward = true;
+
+	XMVECTOR Look = mPlayer.GetCharacterInfo().mMovement.GetPlayerLook();
+	auto playerBoundForward = mPlayer.GetCharacterInfo().mBoundingBox;
+	auto playerBoundBackward = playerBoundForward;
+
+	playerBoundForward.Center.x += Look.m128_f32[0];
+	playerBoundForward.Center.y += Look.m128_f32[1];
+	playerBoundForward.Center.z += Look.m128_f32[2];
+
+	playerBoundBackward.Center.x -= Look.m128_f32[0];
+	playerBoundBackward.Center.y -= Look.m128_f32[1];
+	playerBoundBackward.Center.z -= Look.m128_f32[2];
+
+	// Architecture
+	for (auto&e : mRitems[(int)RenderLayer::Architecture])
+	{
+		if (playerBoundForward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
+			isForward = false;
+		if (playerBoundBackward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
+			isBackward = false;
+	}
 
 	if (GetAsyncKeyState('7') & 0x8000)
 		mIsWireframe = true;
@@ -312,8 +334,12 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	{
 		if (!mCameraDetach)
 		{
-			mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 7.0f * dt);
 			mPlayer.SetClipName("playerWalking");
+
+			if(isForward)
+				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 7.0f * dt);
+			isForward = true;
+
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
 				if (mPlayer.isClipEnd())
@@ -325,12 +351,16 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 			mPlayer.mCamera.Walk(10.0f * dt);
 		}
 	}
-	if (GetAsyncKeyState('F') & 0x8000)
+	else if (GetAsyncKeyState('F') & 0x8000)
 	{
 		if (!mCameraDetach)
 		{
-			mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 18.0f * dt);
 			mPlayer.SetClipName("run");
+
+			if(isForward)
+				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 15.0f * dt);
+			isForward = true;
+
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
 				if (mPlayer.isClipEnd())
@@ -346,8 +376,12 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	{
 		if (!mCameraDetach)
 		{
-			mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, -5.0f * dt);
 			mPlayer.SetClipName("WalkingBackward");
+
+			if(isBackward)
+				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, -5.0f * dt);
+			isBackward = true;
+
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
 				if (mPlayer.isClipEnd())
@@ -418,11 +452,22 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 void PortfolioGameApp::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
+	auto playerBounds = mPlayer.GetCharacterInfo().mBoundingBox;
+	XMVECTOR playerPos = mPlayer.GetCharacterInfo().mMovement.GetPlayerPosition();
+	static int i = 0;
 
 	for (auto& e : mAllRitems)
 	{
-		// Only update the cbuffer data if the constants have changed.  
-		// This needs to be tracked per frame resource.
+		//auto contain = playerBounds.Contains(e->Bounds);
+		//if (contain == ContainmentType::INTERSECTS)
+		//{
+		//	// player - pass = pass -> player
+		//	XMVECTOR objectPos = XMLoadFloat3(&e->Bounds.Center);
+		//	objectPos.m128_f32[1] = 0.0f;
+		//	XMVECTOR D = XMVector3Normalize(playerPos - objectPos);
+		//	mPlayer.GetCharacterInfo().mMovement.SetPlayerPosition(XMVectorAdd(playerPos, D));
+		//}
+
 		if (e->NumFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
@@ -467,7 +512,6 @@ void PortfolioGameApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.FogColor = { 0.8f, 0.8f, 0.8f, 0.5f };
 	mMainPassCB.FogRange = 200.0f;
 	mMainPassCB.FogStart = 20.0f;
-
 
 	mMainPassCB.Lights[0].Direction = mMainLight.Direction;
 	mMainPassCB.Lights[0].Strength = mMainLight.Strength;
@@ -1140,13 +1184,20 @@ void PortfolioGameApp::BuildArcheGeometry(
 	const std::vector<std::vector<std::uint32_t>>& outIndices,
 	const std::vector<std::string>& geoName)
 {
-	
 	UINT vertexOffset = 0;
 	UINT indexOffset = 0;
 	std::vector<SubmeshGeometry> submesh(geoName.size());
 
+	// Submesh
 	for (int i = 0; i < geoName.size(); ++i)
 	{
+		BoundingBox box;
+		BoundingBox::CreateFromPoints(
+			box,
+			outVertices[i].size(),
+			&outVertices[i][0].Pos,
+			sizeof(Vertex));
+		submesh[i].Bounds = box;
 		submesh[i].IndexCount = (UINT)outIndices[i].size();
 		submesh[i].StartIndexLocation = indexOffset;
 		submesh[i].BaseVertexLocation = vertexOffset;
@@ -1155,6 +1206,7 @@ void PortfolioGameApp::BuildArcheGeometry(
 		indexOffset += outIndices[i].size();
 	}
 
+	// vertex
 	std::vector<Vertex> vertices(vertexOffset);
 	UINT k = 0;
 	for (int i = 0; i < geoName.size(); ++i)
@@ -1167,12 +1219,12 @@ void PortfolioGameApp::BuildArcheGeometry(
 		}
 	}
 
+	// index
 	std::vector<std::uint32_t> indices;
 	for (int i = 0; i < geoName.size(); ++i)
 	{
 		indices.insert(indices.end(), outIndices[i].begin(), outIndices[i].end());
 	}
-
 
 	const UINT vbByteSize = (UINT)vertices.size() * sizeof(Vertex);
 	const UINT ibByteSize = (UINT)indices.size() * sizeof(std::uint32_t);
@@ -1217,28 +1269,13 @@ void PortfolioGameApp::BuildFbxGeometry()
 	std::string FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
-	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "playerWalking", FileName);
-
-	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "run", FileName);
-
-	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "Kick", FileName);
-
-	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "FlyingKick", FileName);
-
-	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "Hook", FileName);
-
-	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
-
-	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
-	
-	FileName = "../Resource/FBX/Character/";
 	fbx.LoadFBX(outSkinnedInfo, "WalkingBackward", FileName);
 
 	mPlayer.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "playerGeo");
@@ -1288,19 +1325,10 @@ void PortfolioGameApp::BuildFbxGeometry()
 	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
-	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
-
-	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outSkinnedInfo, "MAttack1", FileName);
-
-	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outSkinnedInfo, "MAttack2", FileName);
-
-	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
-
-	FileName = "../Resource/FBX/Monster/";
 	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
 
 	mMonster.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "MonsterGeo");
@@ -1619,7 +1647,8 @@ void PortfolioGameApp::BuildRenderItems()
 	houseRitem->IndexCount = houseRitem->Geo->DrawArgs["house"].IndexCount;
 	houseRitem->StartIndexLocation = houseRitem->Geo->DrawArgs["house"].StartIndexLocation;
 	houseRitem->BaseVertexLocation = houseRitem->Geo->DrawArgs["house"].BaseVertexLocation;
-	mRitems[(int)RenderLayer::Opaque].push_back(houseRitem.get());
+	houseRitem->Geo->DrawArgs["house"].Bounds.Transform(houseRitem->Bounds, XMLoadFloat4x4(&houseRitem->World));
+	mRitems[(int)RenderLayer::Architecture].push_back(houseRitem.get());
 	mAllRitems.push_back(std::move(houseRitem));
 
 	auto house1Ritem = std::make_unique<RenderItem>();
@@ -1632,7 +1661,8 @@ void PortfolioGameApp::BuildRenderItems()
 	house1Ritem->IndexCount = house1Ritem->Geo->DrawArgs["house"].IndexCount;
 	house1Ritem->StartIndexLocation = house1Ritem->Geo->DrawArgs["house"].StartIndexLocation;
 	house1Ritem->BaseVertexLocation = house1Ritem->Geo->DrawArgs["house"].BaseVertexLocation;
-	mRitems[(int)RenderLayer::Opaque].push_back(house1Ritem.get());
+	house1Ritem->Geo->DrawArgs["house"].Bounds.Transform(house1Ritem->Bounds, XMLoadFloat4x4(&house1Ritem->World));
+	mRitems[(int)RenderLayer::Architecture].push_back(house1Ritem.get());
 	mAllRitems.push_back(std::move(house1Ritem));
 
 	auto house2Ritem = std::make_unique<RenderItem>();
@@ -1645,7 +1675,8 @@ void PortfolioGameApp::BuildRenderItems()
 	house2Ritem->IndexCount = house2Ritem->Geo->DrawArgs["house"].IndexCount;
 	house2Ritem->StartIndexLocation = house2Ritem->Geo->DrawArgs["house"].StartIndexLocation;
 	house2Ritem->BaseVertexLocation = house2Ritem->Geo->DrawArgs["house"].BaseVertexLocation;
-	mRitems[(int)RenderLayer::Opaque].push_back(house2Ritem.get());
+	house2Ritem->Geo->DrawArgs["house"].Bounds.Transform(house2Ritem->Bounds, XMLoadFloat4x4(&house2Ritem->World));
+	mRitems[(int)RenderLayer::Architecture].push_back(house2Ritem.get());
 	mAllRitems.push_back(std::move(house2Ritem));
 
 	

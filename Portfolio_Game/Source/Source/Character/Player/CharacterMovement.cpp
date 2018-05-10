@@ -16,6 +16,10 @@ XMVECTOR ChracterMovement::GetPlayerPosition() const
 {
 	return XMLoadFloat3(&mCharacterWorldInfo.Position);
 }
+XMFLOAT3 ChracterMovement::GetPlayerPosition3f() const
+{
+	return mCharacterWorldInfo.Position;
+}
 XMVECTOR ChracterMovement::GetPlayerScale() const
 {
 	return XMLoadFloat3(&mCharacterWorldInfo.Scale);

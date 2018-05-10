@@ -34,10 +34,12 @@ class ChracterMovement
 public:
 	ChracterMovement();
 	~ChracterMovement();
-
+	
+public:
 	// Get Member variable
 	DirectX::XMVECTOR GetPlayerScale() const;
 	DirectX::XMVECTOR GetPlayerPosition() const;
+	DirectX::XMFLOAT3 GetPlayerPosition3f() const;
 	DirectX::XMMATRIX GetPlayerRotation() const;
 	DirectX::XMVECTOR GetPlayerUp() const;
 	DirectX::XMVECTOR GetPlayerLook() const;

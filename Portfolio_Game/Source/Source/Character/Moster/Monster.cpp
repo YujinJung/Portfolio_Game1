@@ -185,15 +185,6 @@ void Monster::BuildGeometry(
 		SubmeshOffsetIndex += CurrSubmeshOffsetIndex;
 	}
 
-	BoundingBox box;
-	BoundingBox::CreateFromPoints(
-		box,
-		inVertices.size(),
-		&inVertices[0].Pos,
-		sizeof(SkinnedVertex));
-	// TODO: Instancing
-	mMonsterInfo[0].mBoundingBox = box;
-
 	mGeometry = std::move(geo);
 }
 void Monster::BuildConstantBufferViews(
@@ -253,12 +244,6 @@ void Monster::BuildRenderItem(
 
 		XMVECTOR monsterPos = XMVectorSet(static_cast<float>(x - MonsterAreaSize), 0.0f, static_cast<float>(z - MonsterAreaSize), 0.0f);
 		cInfo.mMovement.SetPlayerPosition(monsterPos);
-
-		mMonsterInfo[cIndex].mBoundingBox = mMonsterInfo[0].mBoundingBox;
-		XMVECTOR monsterBoundingPos = XMLoadFloat3(&mMonsterInfo[cIndex].mBoundingBox.Center);
-		monsterBoundingPos = XMVectorAdd(monsterPos, monsterBoundingPos);
-
-		XMStoreFloat3(&mMonsterInfo[cIndex].mBoundingBox.Center, monsterBoundingPos);
 
 		// Character Mesh
 		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)

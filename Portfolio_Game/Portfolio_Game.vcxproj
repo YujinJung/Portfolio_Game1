@@ -173,6 +173,7 @@
   <ItemGroup>
     <ClInclude Include="Source\Header\Camera.h" />
     <ClInclude Include="Source\Header\Character.h" />
+    <ClInclude Include="Source\Header\CharacterMovement.h" />
     <ClInclude Include="Source\Header\DDSTextureLoader.h" />
     <ClInclude Include="Source\Header\PlayerUI.h" />
     <ClInclude Include="Source\Header\FbxLoader.h" />
@@ -183,7 +184,6 @@
     <ClInclude Include="Source\Header\Player.h" />
     <ClInclude Include="Source\Header\PlayerCamera.h" />
     <ClInclude Include="Source\Header\PlayerController.h" />
-    <ClInclude Include="Source\Header\PlayerMovement.h" />
     <ClInclude Include="Source\Header\RenderItem.h" />
     <ClInclude Include="Source\Header\SkinnedData.h" />
     <ClInclude Include="Source\Header\TextureLoader.h" />

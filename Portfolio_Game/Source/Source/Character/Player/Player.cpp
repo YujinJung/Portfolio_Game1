@@ -157,6 +157,7 @@ void Player::BuildGeometry(
 	auto vSubmeshOffset = mSkinnedInfo.GetSubmeshOffset();
 	auto vBoneName = mSkinnedInfo.GetBoneName();
 
+
 	UINT SubmeshOffsetIndex = 0;
 	for (int i = 0; i < vSubmeshOffset.size(); ++i)
 	{
@@ -179,6 +180,10 @@ void Player::BuildGeometry(
 		inVertices.size(),
 		&inVertices[0].Pos,
 		sizeof(SkinnedVertex));
+	box.Extents = { 3.0f, 1.0f, 3.0f };
+	box.Center.y = 3.0f;
+
+	mInitBoundsBox = box;
 	mPlayerInfo.mBoundingBox = box;
 
 	mGeometry = std::move(geo);
@@ -225,12 +230,6 @@ void Player::BuildRenderItem(
 	int boneCount = (UINT)mSkinnedInfo.BoneCount();
 	auto vBoneName = mSkinnedInfo.GetBoneName();
 
-	XMVECTOR playerPos = mPlayerInfo.mMovement.GetPlayerPosition();
-	XMVECTOR playerBoundingPos = XMLoadFloat3(&mPlayerInfo.mBoundingBox.Center);
-	playerBoundingPos = XMVectorAdd(playerPos, playerBoundingPos);
-
-	XMStoreFloat3(&mPlayerInfo.mBoundingBox.Center, playerBoundingPos);
-
 	// Character Mesh
 	for (int submeshIndex = 0; submeshIndex < boneCount - 1; ++submeshIndex)
 	{
@@ -248,7 +247,6 @@ void Player::BuildRenderItem(
 		PlayerRitem->IndexCount = PlayerRitem->Geo->DrawArgs[SubmeshName].IndexCount;
 		PlayerRitem->SkinnedModelInst = mSkinnedModelInst.get();
 		PlayerRitem->PlayerCBIndex = playerIndex++;
-
 
 		auto ShadowedRitem = std::make_unique<RenderItem>();
 		*ShadowedRitem = *PlayerRitem;
@@ -296,6 +294,8 @@ void Player::UpdateCharacterCBs(
 
 		currPlayerCB->CopyData(e->PlayerCBIndex, skinnedConstants);
 	}
+
+	mInitBoundsBox.Transform(mPlayerInfo.mBoundingBox, GetWorldTransformMatrix());
 
 	UpdateCharacterShadows(mMainLight);
 	for (auto& e : mRitems[(int)RenderLayer::Shadow])
@@ -351,6 +351,7 @@ void Player::UpdateCharacterShadows(const Light& mMainLight)
 }
 void Player::UpdatePlayerPosition(PlayerMoveList moveName, float velocity)
 {
+
 	switch (moveName)
 	{
 	case PlayerMoveList::Walk:

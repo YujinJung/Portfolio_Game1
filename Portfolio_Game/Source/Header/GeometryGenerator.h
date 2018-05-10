@@ -19,7 +19,7 @@
 #include "FrameResource.h"
 #include <vector>
 
-class UIVertex;
+struct UIVertex;
 class GeometryGenerator
 {
 public:

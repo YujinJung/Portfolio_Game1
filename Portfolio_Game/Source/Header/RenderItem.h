@@ -29,6 +29,7 @@ enum class RenderLayer : int
 	Reflected,
 	Transparent,
 	Sky,
+	Architecture,
 	Character,
 	Monster,
 	Shadow,
@@ -43,10 +44,6 @@ struct SkinnedModelInstance
 	float TimePos = 0.0f;
 	eClipList mState;
 	
-	// Called every frame and increments the time position, interpolates the 
-	// animations for each bone based on the current animation clip, and 
-	// generates the final transforms which are ultimately set to the effect
-	// for processing in the vertex shader.
 	void UpdateSkinnedAnimation(std::string ClipName, float dt)
 	{
 		TimePos += dt;
@@ -59,7 +56,6 @@ struct SkinnedModelInstance
 				TimePos = 0.0f;
 			}
 		}
-		//else if (ClipName == "")
 
 		eClipList state = eClipList::Idle;
 		if (ClipName == "Idle")
@@ -94,6 +90,7 @@ struct CharacterInfo
 {
 	ChracterMovement mMovement;
 	DirectX::BoundingBox mBoundingBox;
+	
 	std::string mClipName;
 	int mHealth;
 	
@@ -120,6 +117,7 @@ struct RenderItem
 	Material* Mat = nullptr;
 	MeshGeometry* Geo = nullptr;
 	SkinnedModelInstance* SkinnedModelInst = nullptr;
+	DirectX::BoundingBox Bounds;
 
 	// Primitive topology.
 	D3D12_PRIMITIVE_TOPOLOGY PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
