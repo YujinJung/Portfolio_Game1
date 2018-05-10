@@ -116,7 +116,7 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	// place over the head
 	auto frontHealthBar = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&frontHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.0021f) * XMMatrixRotationX(-atan(3.0f / 2.0f)) * XMMatrixTranslation(0.0f, 0.795f, 0.0f));
+	XMStoreFloat4x4(&frontHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.0021f) * XMMatrixRotationX(-atan(3.0f / 2.0f)) * XMMatrixTranslation(0.0f, 0.895f, 0.0f));
 	frontHealthBar->TexTransform = MathHelper::Identity4x4();
 	frontHealthBar->Mat = mMaterials.Get("ice0");
 	frontHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -130,7 +130,7 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 
 	auto bgHealthBar = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&bgHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.002f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.0f, 0.79f, 0.05f));
+	XMStoreFloat4x4(&bgHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.002f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.0f, 0.89f, 0.05f));
 	bgHealthBar->TexTransform = MathHelper::Identity4x4();
 	bgHealthBar->Mat = mMaterials.Get("bricks0");
 	bgHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -143,10 +143,25 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	mAllRitems.push_back(std::move(bgHealthBar));
 
 	// Skill Icon
+	auto iconDelayKick = std::make_unique<RenderItem>();
+
+	XMStoreFloat4x4(&iconDelayKick->World, XMMatrixScaling(0.01f, 1.0f, 0.01f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(-0.05f, -0.1f, 0.0f));
+	iconDelayKick->TexTransform = MathHelper::Identity4x4();
+	iconDelayKick->Mat = mMaterials.Get("iconPunch");
+	iconDelayKick->Geo = mGeometry.get();
+	iconDelayKick->ObjCBIndex = UIIndex++;
+	iconDelayKick->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	iconDelayKick->StartIndexLocation = iconDelayKick->Geo->DrawArgs["SkillUI"].StartIndexLocation;
+	iconDelayKick->BaseVertexLocation = iconDelayKick->Geo->DrawArgs["SkillUI"].BaseVertexLocation;
+	iconDelayKick->IndexCount = iconDelayKick->Geo->DrawArgs["SkillUI"].IndexCount;
+	mRitems[(int)eUIList::I_Punch].push_back(iconDelayKick.get());
+	mAllRitems.push_back(std::move(iconDelayKick));
+	skillFullTime.push_back(3.0f);
+
+
 	auto iconKick = std::make_unique<RenderItem>();
 
-	XMStoreFloat4x4(&iconKick->World, XMMatrixScaling(0.01f, 1.0f, 0.01f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.0f, -0.1f, 0.0f));
-	//XMStoreFloat4x4(&iconKick->TexTransform, XMMatrixScaling(10.1f, 11.0f, 10.21f));
+	XMStoreFloat4x4(&iconKick->World, XMMatrixScaling(0.01f, 1.0f, 0.01f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.05f, -0.1f, 0.0f));
 	iconKick->TexTransform = MathHelper::Identity4x4();
 	iconKick->Mat = mMaterials.Get("iconKick");
 	iconKick->Geo = mGeometry.get();
@@ -158,21 +173,6 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	mRitems[(int)eUIList::I_Kick].push_back(iconKick.get());
 	mAllRitems.push_back(std::move(iconKick));
 	skillFullTime.push_back(5.0f);
-
-	//auto iconDelayKick = std::make_unique<RenderItem>();
-
-	//XMStoreFloat4x4(&iconDelayKick->World, XMMatrixScaling(0.01f, 1.0f, 0.01f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.0f, -0.095f, -0.01f));
-	////XMStoreFloat4x4(&iconKick->TexTransform, XMMatrixScaling(10.1f, 11.0f, 10.21f));
-	//iconDelayKick->TexTransform = MathHelper::Identity4x4();
-	//iconDelayKick->Mat = mMaterials.Get("iconDelay");
-	//iconDelayKick->Geo = mGeometries["shapeGeo"].get();
-	//iconDelayKick->ObjCBIndex = UIIndex++;
-	//iconDelayKick->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	//iconDelayKick->StartIndexLocation = iconDelayKick->Geo->DrawArgs["hpBar"].StartIndexLocation;
-	//iconDelayKick->BaseVertexLocation = iconDelayKick->Geo->DrawArgs["hpBar"].BaseVertexLocation;
-	//iconDelayKick->IndexCount = iconDelayKick->Geo->DrawArgs["hpBar"].IndexCount;
-	//mRitems[(int)eUIList::I_Kick].push_back(iconDelayKick.get());
-	//mAllRitems.push_back(std::move(iconDelayKick));
 
 }
 

@@ -195,6 +195,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	mCommandList->SetPipelineState(mPSOs["UI"].Get());
 	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::Rect));
 	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::I_Kick));
+	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::I_Punch));
 	mCommandList->SetPipelineState(mPSOs["MonsterUI"].Get());
 	DrawRenderItems(mCommandList.Get(), mMonster.mMonsterUI.GetRenderItem(eUIList::Rect));
 
@@ -403,7 +404,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 
 	// Update Remaining Time
 	float totalTime = gt.TotalTime();
-	for (int i = (int)eUIList::I_Kick; i < (int)eUIList::Count; ++i)
+	for (int i = (int)eUIList::I_Punch; i < (int)eUIList::Count; ++i)
 	{
 		// 10.0 is max delay time
 		float Delay = totalTime - HitTime[i];
@@ -1464,8 +1465,8 @@ void PortfolioGameApp::LoadTextures()
 		L"../Resource/Icon/iconKick.png");
 
 	mTextures.SetTexture(
-		"iconDelayTex",
-		L"../Resource/Icon/iconDelay.png");
+		"iconPunchTex",
+		L"../Resource/Icon/iconPunch.png");
 
 	// Cube Map,
 	mTextures.SetTexture(
@@ -1560,9 +1561,9 @@ void PortfolioGameApp::BuildMaterials()
 		0.0f);
 
 	mMaterials.SetMaterial(
-		"iconDelay",
+		"iconPunch",
 		MatIndex++,
-		mTextures.GetTextureIndex("iconDelayTex"),
+		mTextures.GetTextureIndex("iconPunchTex"),
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
 		XMFLOAT3(0.001f, 0.001f, 0.001f),
 		0.0f);

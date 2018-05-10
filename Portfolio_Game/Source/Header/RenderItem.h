@@ -17,8 +17,8 @@ enum class eUIList : int
 {
 	Rect,
 	Background,
-	I_Kick,
 	I_Punch,
+	I_Kick,
 	Count
 };
 
