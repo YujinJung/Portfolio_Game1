@@ -362,21 +362,21 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	else if(GetAsyncKeyState('1') & 0x8000)
 	{
 		// Kick Delay, 5 seconds
-		if (gt.TotalTime() - HitTime[(int)eUIList::I_Kick] > 5.0f) 
+		if (gt.TotalTime() - HitTime[(int)eUIList::I_Punch] > 5.0f)
 		{
 			mPlayer.SetClipTime(0.0f);
-			mPlayer.Attack(mMonster, "Kick");
-			HitTime[(int)eUIList::I_Kick] = gt.TotalTime();
+			mPlayer.Attack(mMonster, "Hook");
+			HitTime[(int)eUIList::I_Punch] = gt.TotalTime();
 		}
 	}
 	else if (GetAsyncKeyState('2') & 0x8000)
 	{
 		// Hook Delay, 3 seconds
-		if (gt.TotalTime() - HitTime[(int)eUIList::I_Punch] > 3.0f)
+		if (gt.TotalTime() - HitTime[(int)eUIList::I_Kick] > 3.0f)
 		{
 			mPlayer.SetClipTime(0.0f);
-			mPlayer.Attack(mMonster, "Hook");
-			HitTime[(int)eUIList::I_Punch] = gt.TotalTime();
+			mPlayer.Attack(mMonster, "Kick"); 
+			HitTime[(int)eUIList::I_Kick] = gt.TotalTime();
 		}
 	}
 	else

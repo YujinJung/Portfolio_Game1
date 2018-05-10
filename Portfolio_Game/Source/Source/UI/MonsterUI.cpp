@@ -139,10 +139,7 @@ void MonsterUI::UpdateUICBs(
 	// need to check c Indexcheck
 	for (auto& e : mAllRitems)
 	{
-		if (mTransformDirty)
-		{
-			e->NumFramesDirty = gNumFrameResources;
-		}
+		if (mTransformDirty) { e->NumFramesDirty = gNumFrameResources;	}
 		if (mIndex != uIndex / mOffset)
 		{
 			mIndex = uIndex / mOffset;

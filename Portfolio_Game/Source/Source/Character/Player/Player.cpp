@@ -54,6 +54,11 @@ void Player::Attack(Character & inMonster, std::string clipName)
 	SetClipName(clipName);
 	SetClipTime(0.0f);
 
+	if (clipName == "Kick")
+		mDamage = 30;
+	else if (clipName == "Hook")
+		mDamage = 10;
+
 	inMonster.Damage(
 		mDamage,
 		mPlayerInfo.mMovement.GetPlayerPosition(),

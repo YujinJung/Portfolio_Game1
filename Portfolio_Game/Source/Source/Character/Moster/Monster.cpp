@@ -59,6 +59,8 @@ void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 			SetClipName("HitReaction", cIndex);
 			mMonsterInfo[cIndex].mHealth -= damage;
 		}
+		if (mMonsterInfo[cIndex].mHealth < 0)
+			mMonsterInfo[cIndex].mHealth = 0;
 		mMonsterUI.SetDamageScale(cIndex, static_cast<float>(mMonsterInfo[cIndex].mHealth) / static_cast<float>(mFullHealth));
 	}
 }
@@ -107,7 +109,10 @@ void Monster::SetClipName(const std::string& inClipName, int cIndex)
 	{
 		mMonsterInfo[cIndex].mClipName = inClipName;
 		if (inClipName == "Death")
+		{
 			mSkinnedModelInst[cIndex]->TimePos = 0.0f;
+			mMonsterInfo[cIndex].mHealth = 0.0f;
+		}
 	}
 }
 
@@ -317,6 +322,7 @@ void Monster::UpdateCharacterCBs(
 	std::vector<XMMATRIX> vWorld;
 	std::vector<XMVECTOR> vEyeLeft;
 
+	// Monster
 	for (auto& e : mRitems[(int)RenderLayer::Monster])
 	{
 		int monsterIndex = j / monsterOffset;
@@ -350,6 +356,8 @@ void Monster::UpdateCharacterCBs(
 		++j;
 	}
 
+
+	// Shadow
 	UpdateCharacterShadows(mMainLight);
 	j = 0;
 	for (auto& e : mRitems[(int)RenderLayer::Shadow])
