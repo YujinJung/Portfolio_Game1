@@ -295,19 +295,20 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	bool isForward = true;
 	bool isBackward = true;
 
+	// Architecture
+	// Collision Chk
 	XMVECTOR Look = mPlayer.GetCharacterInfo().mMovement.GetPlayerLook();
 	auto playerBoundForward = mPlayer.GetCharacterInfo().mBoundingBox;
 	auto playerBoundBackward = playerBoundForward;
 
-	playerBoundForward.Center.x += Look.m128_f32[0];
-	playerBoundForward.Center.y += Look.m128_f32[1];
-	playerBoundForward.Center.z += Look.m128_f32[2];
+	playerBoundForward.Center.x += 2 * Look.m128_f32[0];
+	playerBoundForward.Center.y += 2 * Look.m128_f32[1];
+	playerBoundForward.Center.z += 2 * Look.m128_f32[2];
 
-	playerBoundBackward.Center.x -= Look.m128_f32[0];
-	playerBoundBackward.Center.y -= Look.m128_f32[1];
-	playerBoundBackward.Center.z -= Look.m128_f32[2];
+	playerBoundBackward.Center.x -= 2 * Look.m128_f32[0];
+	playerBoundBackward.Center.y -= 2 * Look.m128_f32[1];
+	playerBoundBackward.Center.z -= 2 * Look.m128_f32[2];
 
-	// Architecture
 	for (auto&e : mRitems[(int)RenderLayer::Architecture])
 	{
 		if (playerBoundForward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
@@ -316,6 +317,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 			isBackward = false;
 	}
 
+	// Input
 	if (GetAsyncKeyState('7') & 0x8000)
 		mIsWireframe = true;
 	else if (GetAsyncKeyState('8') & 0x8000)
@@ -358,7 +360,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 			mPlayer.SetClipName("run");
 
 			if(isForward)
-				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 15.0f * dt);
+				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 18.0f * dt);
 			isForward = true;
 
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
@@ -396,7 +398,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	else if(GetAsyncKeyState('1') & 0x8000)
 	{
 		// Kick Delay, 5 seconds
-		if (gt.TotalTime() - HitTime[(int)eUIList::I_Punch] > 5.0f)
+		if (gt.TotalTime() - HitTime[(int)eUIList::I_Punch] > 3.0f)
 		{
 			mPlayer.SetClipTime(0.0f);
 			mPlayer.Attack(mMonster, "Hook");
@@ -406,7 +408,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	else if (GetAsyncKeyState('2') & 0x8000)
 	{
 		// Hook Delay, 3 seconds
-		if (gt.TotalTime() - HitTime[(int)eUIList::I_Kick] > 3.0f)
+		if (gt.TotalTime() - HitTime[(int)eUIList::I_Kick] > 5.0f)
 		{
 			mPlayer.SetClipTime(0.0f);
 			mPlayer.Attack(mMonster, "Kick"); 
@@ -458,16 +460,6 @@ void PortfolioGameApp::UpdateObjectCBs(const GameTimer& gt)
 
 	for (auto& e : mAllRitems)
 	{
-		//auto contain = playerBounds.Contains(e->Bounds);
-		//if (contain == ContainmentType::INTERSECTS)
-		//{
-		//	// player - pass = pass -> player
-		//	XMVECTOR objectPos = XMLoadFloat3(&e->Bounds.Center);
-		//	objectPos.m128_f32[1] = 0.0f;
-		//	XMVECTOR D = XMVector3Normalize(playerPos - objectPos);
-		//	mPlayer.GetCharacterInfo().mMovement.SetPlayerPosition(XMVectorAdd(playerPos, D));
-		//}
-
 		if (e->NumFramesDirty > 0)
 		{
 			XMMATRIX world = XMLoadFloat4x4(&e->World);
@@ -1322,7 +1314,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 	fbx.clear();
 
 	// Monster FBX
-	FileName = "../Resource/FBX/Monster/";
+	FileName = "../Resource/FBX/Monster/Monster1/";
 	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
 	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
@@ -1332,7 +1324,6 @@ void PortfolioGameApp::BuildFbxGeometry()
 	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
 
 	mMonster.BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "MonsterGeo");
-
 	// Begin
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
 	// Load Texture and Material
@@ -1385,16 +1376,16 @@ void PortfolioGameApp::BuildFbxGeometry()
 	archIndex.push_back(outIndices);
 	archName.push_back("house");
 
-	/*outVertices.clear();
+	outVertices.clear();
 	outIndices.clear();
 	outMaterial.clear();
 	fbx.clear();
 
-	FileName = "../Resource/FBX/Architecture/houseB/WoodCabinDif";
+	FileName = "../Resource/FBX/Architecture/Rocks/RockCluster";
 	LoadFBXArchitecture(fbx, outVertices, outIndices, outMaterial, FileName, archName.size());
 	archVertex.push_back(outVertices);
 	archIndex.push_back(outIndices);
-	archName.push_back("WoodCabinDif");*/
+	archName.push_back("RockCluster");
 
 	BuildArcheGeometry(archVertex, archIndex, archName);
 	
@@ -1427,7 +1418,7 @@ void PortfolioGameApp::LoadFBXArchitecture(
 		if (!outMaterial[i].Name.empty())
 		{
 			std::string TextureName;
-			TextureName = "archeTex";
+			TextureName = "archiTex";
 			TextureName.push_back(archIndex + 48);
 			std::wstring TextureFileName;
 			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
@@ -1437,7 +1428,7 @@ void PortfolioGameApp::LoadFBXArchitecture(
 				TextureFileName);
 
 			// Load Material
-			std::string MaterialName = "archeMat";
+			std::string MaterialName = "archiMat";
 			MaterialName.push_back(archIndex + 48);
 
 			mMaterials.SetMaterial(
@@ -1608,12 +1599,12 @@ void PortfolioGameApp::BuildMaterials()
 
 void PortfolioGameApp::BuildRenderItems()
 {
-	UINT objCBIndex = 0;
+	UINT objCBIndex = -1;
 
 	auto gridRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&gridRitem->World, XMMatrixTranslation(0.0f, -0.1f, 0.0f));
 	XMStoreFloat4x4(&gridRitem->TexTransform, XMMatrixScaling(20.0f, 20.0f, 1.0f));
-	gridRitem->ObjCBIndex = objCBIndex++;
+	gridRitem->ObjCBIndex = ++objCBIndex;
 	gridRitem->Mat = mMaterials.Get("tundra0");
 	gridRitem->Geo = mGeometries["shapeGeo"].get();
 	gridRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -1626,7 +1617,7 @@ void PortfolioGameApp::BuildRenderItems()
 	auto skyRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&skyRitem->World, XMMatrixScaling(5000.0f, 5000.0f, 5000.0f));
 	skyRitem->TexTransform = MathHelper::Identity4x4();
-	skyRitem->ObjCBIndex = objCBIndex++;
+	skyRitem->ObjCBIndex = ++objCBIndex;
 	skyRitem->Mat = mMaterials.Get("sky");
 	skyRitem->Geo = mGeometries["shapeGeo"].get();
 	skyRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -1637,48 +1628,47 @@ void PortfolioGameApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(skyRitem));
 	
 	// Architecture
-	auto houseRitem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&houseRitem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-200.0f, 0.0f, -200.0f));
-	houseRitem->TexTransform = MathHelper::Identity4x4();
-	houseRitem->ObjCBIndex = objCBIndex++;
-	houseRitem->Mat = mMaterials.Get("archeMat0");
-	houseRitem->Geo = mGeometries["Architecture"].get();
-	houseRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	houseRitem->IndexCount = houseRitem->Geo->DrawArgs["house"].IndexCount;
-	houseRitem->StartIndexLocation = houseRitem->Geo->DrawArgs["house"].StartIndexLocation;
-	houseRitem->BaseVertexLocation = houseRitem->Geo->DrawArgs["house"].BaseVertexLocation;
-	houseRitem->Geo->DrawArgs["house"].Bounds.Transform(houseRitem->Bounds, XMLoadFloat4x4(&houseRitem->World));
-	mRitems[(int)RenderLayer::Architecture].push_back(houseRitem.get());
-	mAllRitems.push_back(std::move(houseRitem));
+	XMMATRIX worldSR = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f);
+	BuildArchitecture(
+		worldSR * XMMatrixTranslation(-200.0f, 0.0f, -200.0f),
+		"archiMat0",
+		"house",
+		++objCBIndex);
 
-	auto house1Ritem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&house1Ritem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-200.0f, 0.0f, -150.0f));
-	house1Ritem->TexTransform = MathHelper::Identity4x4();
-	house1Ritem->ObjCBIndex = objCBIndex++;
-	house1Ritem->Mat = mMaterials.Get("archeMat0");
-	house1Ritem->Geo = mGeometries["Architecture"].get();
-	house1Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	house1Ritem->IndexCount = house1Ritem->Geo->DrawArgs["house"].IndexCount;
-	house1Ritem->StartIndexLocation = house1Ritem->Geo->DrawArgs["house"].StartIndexLocation;
-	house1Ritem->BaseVertexLocation = house1Ritem->Geo->DrawArgs["house"].BaseVertexLocation;
-	house1Ritem->Geo->DrawArgs["house"].Bounds.Transform(house1Ritem->Bounds, XMLoadFloat4x4(&house1Ritem->World));
-	mRitems[(int)RenderLayer::Architecture].push_back(house1Ritem.get());
-	mAllRitems.push_back(std::move(house1Ritem));
+	BuildArchitecture(
+		worldSR * XMMatrixTranslation(-200.0f, 0.0f, -150.0f),
+		"archiMat0",
+		"house",
+		++objCBIndex);
 
-	auto house2Ritem = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&house2Ritem->World, XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f) * XMMatrixTranslation(-200.0f, 0.0f, -100.0f));
-	house2Ritem->TexTransform = MathHelper::Identity4x4();
-	house2Ritem->ObjCBIndex = objCBIndex++;
-	house2Ritem->Mat = mMaterials.Get("archeMat0");
-	house2Ritem->Geo = mGeometries["Architecture"].get();
-	house2Ritem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	house2Ritem->IndexCount = house2Ritem->Geo->DrawArgs["house"].IndexCount;
-	house2Ritem->StartIndexLocation = house2Ritem->Geo->DrawArgs["house"].StartIndexLocation;
-	house2Ritem->BaseVertexLocation = house2Ritem->Geo->DrawArgs["house"].BaseVertexLocation;
-	house2Ritem->Geo->DrawArgs["house"].Bounds.Transform(house2Ritem->Bounds, XMLoadFloat4x4(&house2Ritem->World));
-	mRitems[(int)RenderLayer::Architecture].push_back(house2Ritem.get());
-	mAllRitems.push_back(std::move(house2Ritem));
+	BuildArchitecture(
+		worldSR * XMMatrixTranslation(-200.0f, 0.0f, -100.0f),
+		"archiMat0",
+		"house",
+		++objCBIndex);
 
+	BuildArchitecture(
+		worldSR * XMMatrixTranslation(-200.0f, 0.0f, 0.0f),
+		"archiMat0",
+		"house",
+		++objCBIndex);
+
+	// Rocks
+	BuildArchitecture(
+		XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f) * XMMatrixTranslation(-100.0f, 3.0f, -200.0f),
+		"archiMat1",
+		"RockCluster",
+		++objCBIndex);
+	BuildArchitecture(
+		XMMatrixScaling(20.0f, 20.0f, 20.0f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, -XM_PI) * XMMatrixTranslation(-110.0f, 6.0f, -270.0f),
+		"archiMat1",
+		"RockCluster",
+		++objCBIndex);
+	BuildArchitecture(
+		XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-170.0f, 3.0f, -250.0f),
+		"archiMat1",
+		"RockCluster",
+		++objCBIndex);
 	
 	/*auto roadRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&roadRitem->World, XMMatrixScaling(1.0f, 1.0f, 30.0f) * XMMatrixTranslation(-150.0f, 0.0f, -100.0f));
@@ -1700,6 +1690,27 @@ void PortfolioGameApp::BuildRenderItems()
 	// Monster
 	mMonster.BuildRenderItem(mMaterials, "monsterMat0");
 	mMonster.mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonster.GetNumberOfMonster());
+}
+
+void PortfolioGameApp::BuildArchitecture(
+	const FXMMATRIX& world, 
+	std::string matName, 
+	std::string architectureName,
+	UINT &objCBIndex)
+{
+	auto houseRitem = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&houseRitem->World, world);
+	houseRitem->TexTransform = MathHelper::Identity4x4();
+	houseRitem->ObjCBIndex = objCBIndex;
+	houseRitem->Mat = mMaterials.Get(matName);
+	houseRitem->Geo = mGeometries["Architecture"].get();
+	houseRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	houseRitem->IndexCount = houseRitem->Geo->DrawArgs[architectureName].IndexCount;
+	houseRitem->StartIndexLocation = houseRitem->Geo->DrawArgs[architectureName].StartIndexLocation;
+	houseRitem->BaseVertexLocation = houseRitem->Geo->DrawArgs[architectureName].BaseVertexLocation;
+	houseRitem->Geo->DrawArgs[architectureName].Bounds.Transform(houseRitem->Bounds, XMLoadFloat4x4(&houseRitem->World));
+	mRitems[(int)RenderLayer::Architecture].push_back(houseRitem.get());
+	mAllRitems.push_back(std::move(houseRitem));
 }
 
 

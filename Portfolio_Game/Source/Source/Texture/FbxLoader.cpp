@@ -159,8 +159,9 @@ HRESULT FbxLoader::LoadFBX(
 		{
 			FbxNode* pFbxChildNode = pFbxRootNode->GetChild(i);
 			FbxMesh* pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute();
+			if (!pMesh) { continue; }
 			FbxNodeAttribute::EType AttributeType = pMesh->GetAttributeType();
-			if (!pMesh || !AttributeType) { continue; }
+			if (!AttributeType) { continue; }
 
 			if (AttributeType == FbxNodeAttribute::eMesh)
 			{

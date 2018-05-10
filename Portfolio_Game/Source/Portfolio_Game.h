@@ -62,6 +62,11 @@ private:
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildRenderItems();
+	void BuildArchitecture(
+		const FXMMATRIX& world,
+		std::string matName,
+		std::string architectureName,
+		UINT &objCBIndex);
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
@@ -114,6 +119,7 @@ private:
 
 	Player mPlayer;
 	Monster mMonster;
+	std::vector<Monster> mMonstersByZone;
 	Textures mTextures;
 	Materials mMaterials;
 };

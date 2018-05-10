@@ -21,6 +21,8 @@
 ---
 
 # 참고 
-- Character Mesh and Animation Data
+- 3D Models and Animation Data
     - [Mixamo](https://www.mixamo.com/#/)
     - [Turbosquid](https://www.turbosquid.com)
+        - [House](https://www.turbosquid.com/FullPreview/Index.cfm/ID/689373)
+        - [Rocks](https://www.turbosquid.com/FullPreview/Index.cfm/ID/1074560)
