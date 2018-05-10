@@ -614,6 +614,66 @@ GeometryGenerator::MeshData GeometryGenerator::CreateGrid(float width, float dep
 	return meshData;
 }
 
+void GeometryGenerator::CreateGrid(
+	std::vector<UIVertex>& outVertices, 
+	std::vector<uint32_t>& outIndices,  
+	float width, float depth, uint32 m, uint32 n)
+{
+	//
+	// Create the vertices.
+	//
+
+	float halfWidth = 0.5f*width;
+	float halfDepth = 0.5f*depth;
+
+	float dx = width / (n - 1);
+	float dz = depth / (m - 1);
+
+	float du = 1.0f / (n - 1);
+	float dv = 1.0f / (m - 1);
+
+	for (uint32 i = 0; i < m; ++i)
+	{
+		float z = halfDepth - i * dz;
+		for (uint32 j = 0; j < n; ++j)
+		{
+			float x = -halfWidth + j * dx;
+
+			UIVertex U;
+			U.Pos = XMFLOAT3(x, 0.0f, z);
+			U.Normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
+			U.Row = i; // row index
+
+			U.TexC.x = j * du;
+			U.TexC.y = i * dv;
+
+			outVertices.push_back(U);
+		}
+	}
+
+	//
+	// Create the indices.
+	//
+
+	 // Iterate over each quad and compute indices.
+	uint32 k = 0;
+	for (uint32 i = 0; i < m - 1; ++i)
+	{
+		for (uint32 j = 0; j < n - 1; ++j)
+		{
+			outIndices.push_back(i * n + j);
+			outIndices.push_back(i * n + j + 1);
+			outIndices.push_back((i + 1)*n + j);
+			outIndices.push_back((i + 1)*n + j);
+			outIndices.push_back(i * n + j + 1);
+			outIndices.push_back((i + 1)*n + j + 1);
+
+			k += 6; // next quad
+		}
+	}
+
+}
+
 GeometryGenerator::MeshData GeometryGenerator::CreateQuad(float x, float y, float w, float h, float depth)
 {
 	MeshData meshData;

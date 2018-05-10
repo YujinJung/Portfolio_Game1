@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Character.h"
 #include "PlayerCamera.h"
 #include "PlayerUI.h"
+#include "Character.h"
 
 enum PlayerMoveList
 {
@@ -55,9 +55,10 @@ public:
 		Materials & mMaterials,
 		std::string matrialPrefix) override;
 
-	virtual void UpdateCharacterCBs(
+	void UpdateCharacterCBs(
 		FrameResource* mCurrFrameResource,
 		const Light& mMainLight,
+		std::vector<float> Delay,
 		const GameTimer & gt);
 	virtual void UpdateCharacterShadows(const Light & mMainLight);
 	void UpdatePlayerPosition(PlayerMoveList move, float velocity);

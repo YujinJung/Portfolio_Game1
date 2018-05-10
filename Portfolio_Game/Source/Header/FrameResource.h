@@ -49,6 +49,7 @@ struct MonsterContants
 	DirectX::XMFLOAT4X4 World[10];
 	DirectX::XMFLOAT4X4 TexTransform[10];
 	int monsterIndex;
+	DirectX::XMFLOAT3 cbPerMonsterPad1 = { 0.0f, 0.0f, 0.0f };
 
 	MonsterContants()
 	{
@@ -64,6 +65,8 @@ struct UIConstants
 {
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
+	float Scale = 0.0f;
+	DirectX::XMFLOAT3 cbPerUIPad1 = { 0.0f, 0.0f, 0.0f };
 };
 
 struct Vertex
@@ -96,6 +99,14 @@ struct SkinnedVertex
 	BYTE BoneIndices[4];
 	
 	uint16_t MaterialIndex;
+};
+
+struct UIVertex
+{
+	DirectX::XMFLOAT3 Pos;
+	DirectX::XMFLOAT3 Normal;
+	DirectX::XMFLOAT2 TexC;
+	float Row;
 };
 
 // Stores the resources needed for the CPU to build the command lists

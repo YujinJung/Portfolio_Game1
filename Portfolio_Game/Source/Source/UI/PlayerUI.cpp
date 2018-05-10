@@ -67,6 +67,47 @@ void PlayerUI::BuildConstantBufferViews(
 	}
 }
 
+void PlayerUI::BuildGeometry(
+	ID3D12Device * device,
+	ID3D12GraphicsCommandList* cmdList,
+	const std::vector<UIVertex>& inVertices,
+	const std::vector<std::uint32_t>& inIndices,
+	std::string geoName)
+{
+	UINT vCount = 0, iCount = 0;
+	vCount = inVertices.size();
+	iCount = inIndices.size();
+
+	const UINT vbByteSize = (UINT)inVertices.size() * sizeof(UIVertex);
+	const UINT ibByteSize = (UINT)inIndices.size() * sizeof(std::uint32_t);
+
+	auto geo = std::make_unique<MeshGeometry>();
+	geo->Name = geoName;
+
+	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
+	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), inVertices.data(), vbByteSize);
+
+	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
+	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), inIndices.data(), ibByteSize);
+
+	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inVertices.data(), vbByteSize, geo->VertexBufferUploader);
+	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inIndices.data(), ibByteSize, geo->IndexBufferUploader);
+
+	geo->VertexByteStride = sizeof(UIVertex);
+	geo->VertexBufferByteSize = vbByteSize;
+	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
+	geo->IndexBufferByteSize = ibByteSize;
+
+	SubmeshGeometry UISubmesh;
+	UISubmesh.IndexCount = (UINT)inIndices.size();
+	UISubmesh.StartIndexLocation = 0;
+	UISubmesh.BaseVertexLocation = 0;
+
+	geo->DrawArgs["SkillUI"] = UISubmesh;
+
+	mGeometry = std::move(geo);
+}
+
 void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries, Materials & mMaterials)
 {
 	int UIIndex = 0;
@@ -108,29 +149,30 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	//XMStoreFloat4x4(&iconKick->TexTransform, XMMatrixScaling(10.1f, 11.0f, 10.21f));
 	iconKick->TexTransform = MathHelper::Identity4x4();
 	iconKick->Mat = mMaterials.Get("iconKick");
-	iconKick->Geo = mGeometries["shapeGeo"].get();
+	iconKick->Geo = mGeometry.get();
 	iconKick->ObjCBIndex = UIIndex++;
 	iconKick->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	iconKick->StartIndexLocation = iconKick->Geo->DrawArgs["hpBar"].StartIndexLocation;
-	iconKick->BaseVertexLocation= iconKick->Geo->DrawArgs["hpBar"].BaseVertexLocation;
-	iconKick->IndexCount = iconKick->Geo->DrawArgs["hpBar"].IndexCount;
-	mRitems[(int)eUIList::Rect].push_back(iconKick.get());
+	iconKick->StartIndexLocation = iconKick->Geo->DrawArgs["SkillUI"].StartIndexLocation;
+	iconKick->BaseVertexLocation= iconKick->Geo->DrawArgs["SkillUI"].BaseVertexLocation;
+	iconKick->IndexCount = iconKick->Geo->DrawArgs["SkillUI"].IndexCount;
+	mRitems[(int)eUIList::I_Kick].push_back(iconKick.get());
 	mAllRitems.push_back(std::move(iconKick));
+	skillFullTime.push_back(5.0f);
 
-	/*auto iconDelayKick = std::make_unique<RenderItem>();
+	//auto iconDelayKick = std::make_unique<RenderItem>();
 
-	XMStoreFloat4x4(&iconKick->World, XMMatrixScaling(0.01f, 1.0f, 0.01f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.0f, -0.105f, 0.0f));
-	iconDelayKick->TexTransform = MathHelper::Identity4x4();
-
-	iconDelayKick->Mat = mMaterials.Get("iconDelay");
-	iconDelayKick->Geo = mGeometries["shapeGeo"].get();
-	iconDelayKick->ObjCBIndex = UIIndex++;
-	iconDelayKick->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-	iconDelayKick->StartIndexLocation = iconDelayKick->Geo->DrawArgs["hpBar"].StartIndexLocation;
-	iconDelayKick->BaseVertexLocation = iconDelayKick->Geo->DrawArgs["hpBar"].BaseVertexLocation;
-	iconDelayKick->IndexCount = iconDelayKick->Geo->DrawArgs["hpBar"].IndexCount;
-	mRitems[(int)eUIList::Kick].push_back(iconDelayKick.get());
-	mAllRitems.push_back(std::move(iconDelayKick));*/
+	//XMStoreFloat4x4(&iconDelayKick->World, XMMatrixScaling(0.01f, 1.0f, 0.01f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.0f, -0.095f, -0.01f));
+	////XMStoreFloat4x4(&iconKick->TexTransform, XMMatrixScaling(10.1f, 11.0f, 10.21f));
+	//iconDelayKick->TexTransform = MathHelper::Identity4x4();
+	//iconDelayKick->Mat = mMaterials.Get("iconDelay");
+	//iconDelayKick->Geo = mGeometries["shapeGeo"].get();
+	//iconDelayKick->ObjCBIndex = UIIndex++;
+	//iconDelayKick->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	//iconDelayKick->StartIndexLocation = iconDelayKick->Geo->DrawArgs["hpBar"].StartIndexLocation;
+	//iconDelayKick->BaseVertexLocation = iconDelayKick->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+	//iconDelayKick->IndexCount = iconDelayKick->Geo->DrawArgs["hpBar"].IndexCount;
+	//mRitems[(int)eUIList::I_Kick].push_back(iconDelayKick.get());
+	//mAllRitems.push_back(std::move(iconDelayKick));
 
 }
 
@@ -138,8 +180,10 @@ void PlayerUI::UpdateUICBs(
 	UploadBuffer<UIConstants>* curUICB,
 	XMMATRIX playerWorld,
 	XMVECTOR inEyeLeft,
+	std::vector<float> Delay,
 	bool mTransformDirty)
 {
+	int iconIndex = 0;
 	for (auto& e : mAllRitems)
 	{
 		// if Transform then Reset the Dirty flag
@@ -151,36 +195,44 @@ void PlayerUI::UpdateUICBs(
 			XMVECTOR UIoffset = (1.0f- mWorldTransform.Scale.x) * inEyeLeft * 0.1f;
 
 			XMMATRIX T = XMMatrixTranslation(
-				mWorldTransform.Position.x + UIoffset.m128_f32[0],
-				mWorldTransform.Position.y + UIoffset.m128_f32[1],
-				mWorldTransform.Position.z + UIoffset.m128_f32[2]);
-			XMMATRIX S = XMMatrixScaling(
-				mWorldTransform.Scale.x, 
-				mWorldTransform.Scale.y, 
-				mWorldTransform.Scale.z);
-
+				mWorldTransform.Position.x,
+				mWorldTransform.Position.y,
+				mWorldTransform.Position.z);
+			XMMATRIX S = XMMatrixIdentity();
 			// Background Health Bar
-			if (e->ObjCBIndex % 2 == 1)
+			if (e->ObjCBIndex < 0)
 			{
 				T = XMMatrixTranslation(
-					mWorldTransform.Position.x, 
-					mWorldTransform.Position.y, 
-					mWorldTransform.Position.z);
-				S = XMMatrixIdentity();
+					mWorldTransform.Position.x + UIoffset.m128_f32[0],
+					mWorldTransform.Position.y + UIoffset.m128_f32[1],
+					mWorldTransform.Position.z + UIoffset.m128_f32[2]);
+				S = XMMatrixScaling(
+					mWorldTransform.Scale.x,
+					mWorldTransform.Scale.y,
+					mWorldTransform.Scale.z);
 			}
 
 			XMMATRIX world = XMLoadFloat4x4(&e->World) * playerWorld * T;
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
-
 			UIConstants uiConstants;
 			XMStoreFloat4x4(&uiConstants.World, XMMatrixTranspose(world) * S);
 			XMStoreFloat4x4(&uiConstants.TexTransform, XMMatrixTranspose(texTransform));
+
+			float remainingTime;
+			if (iconIndex > 1)
+			{
+				// iconIndex - 2 -> health Bar and bg bar
+				remainingTime = skillFullTime[iconIndex - 2] - Delay[iconIndex];
+				if (remainingTime < 0.0f) remainingTime = 0.0f;
+				uiConstants.Scale = remainingTime / skillFullTime[iconIndex - 2];
+			}
 
 			curUICB->CopyData(e->ObjCBIndex, uiConstants);
 
 			// Next FrameResource need to be updated too.
 			e->NumFramesDirty--;
 		}
+		iconIndex++;
 	}
 }
 

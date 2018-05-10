@@ -8,10 +8,10 @@ using namespace DirectX::PackedVector;
 
 const int gNumFrameResources = 3;
 
-class Player;
-class Monster;
 class Textures;
 class Materials;
+class Player;
+class Monster;
 
 class PortfolioGameApp : public D3DApp
 {
@@ -80,7 +80,8 @@ private:
 
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 	std::vector<D3D12_INPUT_ELEMENT_DESC> mSkinnedInputLayout;
-
+	std::vector<D3D12_INPUT_ELEMENT_DESC> mUIInputLayout;
+	
 	// Pass
 	PassConstants mMainPassCB;
 
@@ -89,6 +90,8 @@ private:
 
 	// Render items divided by PSO.
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
+	std::vector<float> HitTime;
+	std::vector<float> DelayTime;
 
 	UINT mObjCbvOffset = 0;
 	UINT mChaCbvOffset = 0;

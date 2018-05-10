@@ -21,6 +21,7 @@ public:
 		ID3D12DescriptorHeap* mCbvHeap,
 		const std::vector<std::unique_ptr<FrameResource>> &mFrameResources,
 		int mUICbvOffset);
+	void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList * cmdList, const std::vector<UIVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, std::string geoName);
 	void BuildRenderItem(
 		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
 		Materials & mMaterials);
@@ -29,12 +30,15 @@ public:
 		UploadBuffer<UIConstants>* currUICB,
 		DirectX::XMMATRIX playerWorld,
 		DirectX::XMVECTOR inEyeLeft,
+		std::vector<float> Delay,
 		bool mTransformDirty);
 
 private:
+	std::unique_ptr<MeshGeometry> mGeometry;
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
 	std::vector<RenderItem*> mRitems[(int)eUIList::Count];
 
+	std::vector<float> skillFullTime;
 	WorldTransform mWorldTransform;
 };
 

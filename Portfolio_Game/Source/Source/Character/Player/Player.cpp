@@ -262,6 +262,7 @@ void Player::BuildRenderItem(
 void Player::UpdateCharacterCBs(
 	FrameResource* mCurrFrameResource,
 	const Light& mMainLight,
+	std::vector<float> Delay,
 	const GameTimer & gt)
 {
 	if (mPlayerInfo.mHealth <= 0 && mPlayerInfo.mClipName != "Death")
@@ -322,6 +323,7 @@ void Player::UpdateCharacterCBs(
 		curUICB,
 		GetWorldTransformMatrix(),
 		-mPlayerInfo.mMovement.GetPlayerRight(),
+		Delay,
 		mTransformDirty);
 }
 void Player::UpdateCharacterShadows(const Light& mMainLight)

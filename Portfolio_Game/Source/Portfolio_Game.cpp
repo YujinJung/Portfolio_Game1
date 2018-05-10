@@ -50,8 +50,11 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 }
 
 PortfolioGameApp::PortfolioGameApp(HINSTANCE hInstance)
-	: D3DApp(hInstance)
+	: D3DApp(hInstance),
+	HitTime((int)eUIList::Count, 0.0f),
+	DelayTime((int)eUIList::Count, 0.0f)
 {
+	
 }
 
 PortfolioGameApp::~PortfolioGameApp()
@@ -287,7 +290,8 @@ void PortfolioGameApp::OnMouseMove(WPARAM btnState, int x, int y)
 void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 {
 	const float dt = gt.DeltaTime();
-	static float curTime = gt.TotalTime();
+	//static float curTime = gt.TotalTime();
+	
 
 	if (GetAsyncKeyState('7') & 0x8000)
 		mIsWireframe = true;
@@ -357,21 +361,21 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	else if(GetAsyncKeyState('1') & 0x8000)
 	{
 		// Kick Delay, 5 seconds
-		if (gt.TotalTime() - curTime > 5.0f) 
+		if (gt.TotalTime() - HitTime[(int)eUIList::I_Kick] > 5.0f) 
 		{
 			mPlayer.SetClipTime(0.0f);
 			mPlayer.Attack(mMonster, "Kick");
-			curTime = gt.TotalTime();
+			HitTime[(int)eUIList::I_Kick] = gt.TotalTime();
 		}
 	}
 	else if (GetAsyncKeyState('2') & 0x8000)
 	{
 		// Hook Delay, 3 seconds
-		if (gt.TotalTime() - curTime > 3.0f)
+		if (gt.TotalTime() - HitTime[(int)eUIList::I_Punch] > 3.0f)
 		{
 			mPlayer.SetClipTime(0.0f);
 			mPlayer.Attack(mMonster, "Hook");
-			curTime = gt.TotalTime();
+			HitTime[(int)eUIList::I_Punch] = gt.TotalTime();
 		}
 	}
 	else
@@ -396,6 +400,18 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	}
 
 	mPlayer.UpdateTransformationMatrix();
+
+	// Update Remaining Time
+	float totalTime = gt.TotalTime();
+	for (int i = (int)eUIList::I_Kick; i < (int)eUIList::Count; ++i)
+	{
+		// 10.0 is max delay time
+		float Delay = totalTime - HitTime[i];
+		if (Delay > 10.0f)
+			continue;
+
+		DelayTime[i] = totalTime - HitTime[i];
+	}
 }
 
 void PortfolioGameApp::UpdateObjectCBs(const GameTimer& gt)
@@ -447,9 +463,9 @@ void PortfolioGameApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.TotalTime = gt.TotalTime();
 	mMainPassCB.DeltaTime = gt.DeltaTime();
 	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
-	mMainPassCB.FogColor = { 0.8f, 0.8f, 0.8f, 0.8f };
-	mMainPassCB.FogRange = 115.0f;
-	mMainPassCB.FogStart = 50.0f;
+	mMainPassCB.FogColor = { 0.8f, 0.8f, 0.8f, 0.5f };
+	mMainPassCB.FogRange = 200.0f;
+	mMainPassCB.FogStart = 20.0f;
 
 
 	mMainPassCB.Lights[0].Direction = mMainLight.Direction;
@@ -498,7 +514,9 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 		lastTime = gt.TotalTime();
 	}
 	mMonster.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
-	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
+	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, DelayTime, gt);
+	
+	
 }
 
 void PortfolioGameApp::UpdateObjectShadows(const GameTimer& gt)
@@ -712,23 +730,29 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 		"SKINNED", "1",
 		NULL, NULL
 	};
+
+	const D3D_SHADER_MACRO playerUIDefines[] =
+	{
+		"PLAYER", "1",
+		NULL, NULL
+	};
 	const D3D_SHADER_MACRO monsterUIDefines[] =
 	{
-		"MONSTER", "1",
+		"MONSTER", "2",
 		NULL, NULL
 	};
 
 	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["skinnedVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "VS", "vs_5_1");
 	mShaders["monsterVS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["uiVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["uiVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", playerUIDefines, "VS", "vs_5_1");
 	mShaders["monsterUIVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", monsterUIDefines, "VS", "vs_5_1");
 	mShaders["skyVS"] = d3dUtil::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "VS", "vs_5_1");
 
 	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["skinnedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "PS", "ps_5_1");
 	mShaders["monsterPS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "PS", "ps_5_1");
-	mShaders["uiPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["uiPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", playerUIDefines, "PS", "ps_5_1");
 	mShaders["skyPS"] = d3dUtil::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "PS", "ps_5_1");
 
 	mInputLayout =
@@ -745,6 +769,14 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+	};
+
+	mUIInputLayout =
+	{
+		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "ROW", 0, DXGI_FORMAT_R32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 }
 
@@ -781,8 +813,41 @@ void PortfolioGameApp::BuildPSOs()
 	opaquePsoDesc.DSVFormat = mDepthStencilFormat;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaquePsoDesc, IID_PPV_ARGS(&mPSOs["opaque"])));
 
+	// PSO for Player 
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC PlayerPsoDesc = opaquePsoDesc;
+	PlayerPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+	PlayerPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["skinnedVS"]->GetBufferPointer()),
+		mShaders["skinnedVS"]->GetBufferSize()
+	};
+	PlayerPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["skinnedPS"]->GetBufferPointer()),
+		mShaders["skinnedPS"]->GetBufferSize()
+	};
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerPsoDesc, IID_PPV_ARGS(&mPSOs["Player"])));
+
+	// PSO for Monster
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC MonsterPsoDesc = PlayerPsoDesc;
+	MonsterPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
+	MonsterPsoDesc.VS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["monsterVS"]->GetBufferPointer()),
+		mShaders["monsterVS"]->GetBufferSize()
+	};
+	MonsterPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["monsterPS"]->GetBufferPointer()),
+		mShaders["monsterPS"]->GetBufferSize()
+	};
+	
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&MonsterPsoDesc, IID_PPV_ARGS(&mPSOs["Monster"])));
+
+
 	// PSO for ui
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC UIPsoDesc = opaquePsoDesc;
+	UIPsoDesc.InputLayout = { mUIInputLayout.data(), (UINT)mUIInputLayout.size() };
 	UIPsoDesc.VS =
 	{
 		reinterpret_cast<BYTE*>(mShaders["uiVS"]->GetBufferPointer()),
@@ -803,20 +868,18 @@ void PortfolioGameApp::BuildPSOs()
 	};
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&MonsterUIPsoDesc, IID_PPV_ARGS(&mPSOs["MonsterUI"])));
 
-	// PSO for Player 
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC PlayerPsoDesc = opaquePsoDesc;
-	PlayerPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
-	PlayerPsoDesc.VS =
-	{
-		reinterpret_cast<BYTE*>(mShaders["skinnedVS"]->GetBufferPointer()),
-		mShaders["skinnedVS"]->GetBufferSize()
-	};
-	PlayerPsoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(mShaders["skinnedPS"]->GetBufferPointer()),
-		mShaders["skinnedPS"]->GetBufferSize()
-	};
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerPsoDesc, IID_PPV_ARGS(&mPSOs["Player"])));
+
+	// PSO for skinned wireframe objects.
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC PlayerWireframePsoDesc = PlayerPsoDesc;
+	PlayerWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerWireframePsoDesc, IID_PPV_ARGS(&mPSOs["Player_wireframe"])));
+
+	// PSO for opaque wireframe objects.
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
+	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
+	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["opaque_wireframe"])));
+
 
 	// PSO for sky.
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC skyPsoDesc = opaquePsoDesc;
@@ -839,35 +902,6 @@ void PortfolioGameApp::BuildPSOs()
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&skyPsoDesc, IID_PPV_ARGS(&mPSOs["sky"])));
 
 
-	// PSO for Monster
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC MonsterPsoDesc = PlayerPsoDesc;
-	MonsterPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
-	MonsterPsoDesc.VS =
-	{
-		reinterpret_cast<BYTE*>(mShaders["monsterVS"]->GetBufferPointer()),
-		mShaders["monsterVS"]->GetBufferSize()
-	};
-	MonsterPsoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(mShaders["monsterPS"]->GetBufferPointer()),
-		mShaders["monsterPS"]->GetBufferSize()
-	};
-	
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&MonsterPsoDesc, IID_PPV_ARGS(&mPSOs["Monster"])));
-
-	//
-	// PSO for skinned wireframe objects.
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC PlayerWireframePsoDesc = PlayerPsoDesc;
-	PlayerWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerWireframePsoDesc, IID_PPV_ARGS(&mPSOs["Player_wireframe"])));
-
-
-	//
-	// PSO for opaque wireframe objects.
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC opaqueWireframePsoDesc = opaquePsoDesc;
-	opaqueWireframePsoDesc.RasterizerState.FillMode = D3D12_FILL_MODE_WIREFRAME;
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&opaqueWireframePsoDesc, IID_PPV_ARGS(&mPSOs["opaque_wireframe"])));
 
 	//
 	// PSO for Shadow
@@ -944,7 +978,7 @@ void PortfolioGameApp::BuildShapeGeometry()
 
 	GeometryGenerator geoGen;
 	GeometryGenerator::MeshData box = geoGen.CreateBox(1.5f, 0.5f, 1.5f, 3);
-	GeometryGenerator::MeshData grid = geoGen.CreateGrid(600.0f, 600.0f, 200, 200);
+	GeometryGenerator::MeshData grid = geoGen.CreateGrid(1000.0f, 1000.0f, 200, 200);
 	GeometryGenerator::MeshData hpBar = geoGen.CreateGrid(20.0f, 20.0f, 20, 20);
 	GeometryGenerator::MeshData sphere = geoGen.CreateGeosphere(0.5f, 3);
 	GeometryGenerator::MeshData cylinder = geoGen.CreateCylinder(0.5f, 0.3f, 3.0f, 20, 20);
@@ -1082,6 +1116,22 @@ void PortfolioGameApp::BuildShapeGeometry()
 	geo->DrawArgs["cylinder"] = cylinderSubmesh;
 
 	mGeometries[geo->Name] = std::move(geo);
+
+
+	// UI
+	std::vector<UIVertex> outUIVertices;
+	std::vector<uint32_t> outUIIndices;
+
+	GeometryGenerator::CreateGrid(
+		outUIVertices, outUIIndices, 
+		10.0f, 10.0f, 10, 10);
+	mPlayer.mUI.BuildGeometry(
+		md3dDevice.Get(),
+		mCommandList.Get(),
+		outUIVertices,
+		outUIIndices,
+		"SkillUI"
+	);
 }
 
 void PortfolioGameApp::BuildArcheGeometry(

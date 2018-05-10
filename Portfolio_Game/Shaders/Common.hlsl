@@ -84,12 +84,15 @@ cbuffer cbMonster : register(b4)
 	float4x4 gMonsterWorld[10];
 	float4x4 gMonsterTexTransform[10];
 	int monsterIndex;
+	float3 cbPerMonsterPad1;
 };
 
 cbuffer cbUI : register(b5)
 {
 	float4x4 gUIWorld;
 	float4x4 gUITexTransform;
+	float gScale;
+	float3 cbPerUIPad1;
 };
 
 cbuffer cbMonsterUI : register(b6)

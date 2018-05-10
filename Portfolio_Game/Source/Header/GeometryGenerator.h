@@ -16,8 +16,10 @@
 
 #include <cstdint>
 #include <DirectXMath.h>
+#include "FrameResource.h"
 #include <vector>
 
+class UIVertex;
 class GeometryGenerator
 {
 public:
@@ -104,6 +106,8 @@ public:
 	/// at the origin with the specified width and depth.
 	///</summary>
     MeshData CreateGrid(float width, float depth, uint32 m, uint32 n);
+
+	static void CreateGrid(std::vector<UIVertex>& outVertices, std::vector<uint32_t>& outIndices, float width, float depth, uint32 m, uint32 n);
 
 	///<summary>
 	/// Creates a quad aligned with the screen.  This is useful for postprocessing and screen effects.

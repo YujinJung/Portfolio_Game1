@@ -44,7 +44,7 @@ public:
 		std::string matrialPrefix) override;
 
 	
-	virtual void UpdateCharacterCBs(
+	void UpdateCharacterCBs(
 		FrameResource* mCurrFrameResource,
 		const Light& mMainLight,
 		const GameTimer & gt);
