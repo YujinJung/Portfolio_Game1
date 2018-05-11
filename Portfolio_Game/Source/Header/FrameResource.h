@@ -46,20 +46,8 @@ struct SkinnedConstants
 struct MonsterContants
 {
 	DirectX::XMFLOAT4X4 BoneTransforms[96];
-	DirectX::XMFLOAT4X4 World;
-	DirectX::XMFLOAT4X4 TexTransform;
-	int monsterIndex;
-	DirectX::XMFLOAT3 cbPerMonsterPad1 = { 0.0f, 0.0f, 0.0f };
-
-	MonsterContants()
-	{
-		/*for (int i = 0; i < 10; ++i)
-		{
-			World[i] = MathHelper::Identity4x4();
-			TexTransform[i] = MathHelper::Identity4x4();
-		}*/
-
-	}
+	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
+	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
 };
 
 struct UIConstants
