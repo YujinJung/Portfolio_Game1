@@ -642,7 +642,7 @@ void GeometryGenerator::CreateGrid(
 			UIVertex U;
 			U.Pos = XMFLOAT3(x, 0.0f, z);
 			U.Normal = XMFLOAT3(0.0f, 1.0f, 0.0f);
-			U.Row = i; // row index
+			U.Row = static_cast<float>(i); // row index
 
 			U.TexC.x = j * du;
 			U.TexC.y = i * dv;

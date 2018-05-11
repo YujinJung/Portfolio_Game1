@@ -430,7 +430,6 @@ bool FbxLoader::LoadTXT(
 		for (uint32_t i = 0; i < vertexSize; ++i)
 		{
 			Vertex vertex;
-			int temp[4];
 			fileIn >> ignore >> vertex.Pos.x >> vertex.Pos.y >> vertex.Pos.z;
 			fileIn >> ignore >> vertex.Normal.x >> vertex.Normal.y >> vertex.Normal.z;
 			fileIn >> ignore >> vertex.TexC.x >> vertex.TexC.y;

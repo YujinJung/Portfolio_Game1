@@ -112,7 +112,7 @@ void Monster::SetClipName(const std::string& inClipName, int cIndex)
 		if (inClipName == "Death")
 		{
 			mSkinnedModelInst[cIndex]->TimePos = 0.0f;
-			mMonsterInfo[cIndex].mHealth = 0.0f;
+			mMonsterInfo[cIndex].mHealth = 0;
 		}
 	}
 }
@@ -316,8 +316,8 @@ void Monster::BuildRenderItem(
 	}
 
 	// Boss
-	mMonsterInfo[0].mHealth = 200.0f;
-	mMonsterInfo[0].mFullHealth = 200.0f;
+	mMonsterInfo[0].mHealth = 200;
+	mMonsterInfo[0].mFullHealth = 200;
 }
 
 

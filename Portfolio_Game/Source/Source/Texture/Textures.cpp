@@ -29,6 +29,7 @@ int Textures::GetTextureIndex(std::string Name) const
 			return result;
 		++result;
 	}
+	return result;
 }
 
 void Textures::SetTexture(

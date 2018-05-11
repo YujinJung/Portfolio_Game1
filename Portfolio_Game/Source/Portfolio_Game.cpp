@@ -527,8 +527,8 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 	static bool playerDeathCamFinished = false;
 	XMVECTOR PlayerPos = mPlayer.GetCharacterInfo().mMovement.GetPlayerPosition();
 	
-	int playerPosX = PlayerPos.m128_f32[0];
-	int playerPosZ = PlayerPos.m128_f32[2];
+	int playerPosX = PlayerPos.m128_i32[0];
+	int playerPosZ = PlayerPos.m128_i32[2];
 
 	if (playerPosX < 0 && playerPosZ < 0)
 	{
