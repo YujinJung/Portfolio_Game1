@@ -182,7 +182,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	mCommandList->SetGraphicsRootDescriptorTable(3, passCbvHandle);
 	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 	skyTexDescriptor.Offset(mTextureOffset, mCbvSrvDescriptorSize);
-	mCommandList->SetGraphicsRootDescriptorTable(8, skyTexDescriptor);
+	mCommandList->SetGraphicsRootDescriptorTable(7, skyTexDescriptor);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Opaque]);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Architecture]);
 	mCommandList->SetPipelineState(mPSOs["sky"].Get());
@@ -570,7 +570,7 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 		mMonster->UpdateMonsterPosition(mPlayer, gt);
 		lastTime = gt.TotalTime();
 	}
-	mMonster->UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
+	mMonster->UpdateCharacterCBs(mCurrFrameResource, mPlayer.GetAllRitemsSize(), mMainLight, gt);
 	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, DelayTime, gt);
 	
 }
@@ -682,7 +682,7 @@ void PortfolioGameApp::BuildConstantBufferViews()
 	}
 
 	// Character
-	mPlayer.BuildConstantBufferViews(
+	/*mPlayer.BuildConstantBufferViews(
 		md3dDevice.Get(),
 		mCbvHeap.Get(),
 		mFrameResources,
@@ -692,7 +692,35 @@ void PortfolioGameApp::BuildConstantBufferViews()
 		md3dDevice.Get(),
 		mCbvHeap.Get(),
 		mFrameResources,
-		mMonsterCbvOffset);
+		mMonsterCbvOffset);*/
+
+	UINT playerCount= mPlayer.GetAllRitemsSize();
+	UINT monsterCount = mMonster->GetAllRitemsSize();
+	UINT characterCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(SkinnedConstants));
+
+	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
+	{
+		auto characterCB = mFrameResources[frameIndex]->PlayerCB->Resource();
+
+		for (UINT i = 0; i < playerCount + monsterCount; ++i)
+		{
+			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = characterCB->GetGPUVirtualAddress();
+
+			// Offset to the ith object constant buffer in the buffer.
+			cbAddress += i * characterCBByteSize;
+
+			// Offset to the object cbv in the descriptor heap.
+			int heapIndex = mChaCbvOffset + frameIndex * (playerCount + monsterCount) + i;
+			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
+
+			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
+			cbvDesc.BufferLocation = cbAddress;
+			cbvDesc.SizeInBytes = characterCBByteSize;
+
+			md3dDevice->CreateConstantBufferView(&cbvDesc, handle);
+		}
+	}
 
 	// UI
 	mPlayer.mUI.BuildConstantBufferViews(
@@ -711,7 +739,7 @@ void PortfolioGameApp::BuildConstantBufferViews()
 void PortfolioGameApp::BuildRootSignature()
 {
 	const int texTableNumber = 2;
-	const int cbvTableNumber = 7;
+	const int cbvTableNumber = 6;
 	const int tableNumber = texTableNumber + cbvTableNumber;
 
 	CD3DX12_DESCRIPTOR_RANGE cbvTable[cbvTableNumber];
@@ -1712,6 +1740,8 @@ void PortfolioGameApp::BuildArchitecture(
 ///
 void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems)
 {
+	int playerRCount = mPlayer.GetAllRitemsSize();
+
 	// For each render item...
 	for (size_t i = 0; i < ritems.size(); ++i)
 	{
@@ -1739,13 +1769,8 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 		auto matCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		matCbvHandle.Offset(mMatCbvOffset + mCurrFrameResourceIndex * mMaterials.GetSize() + ri->Mat->MatCBIndex, mCbvSrvDescriptorSize);
 
-		UINT skinnedIndex = mChaCbvOffset + mCurrFrameResourceIndex * mPlayer.GetAllRitemsSize() + ri->PlayerCBIndex;
-		auto skinCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-		skinCbvHandle.Offset(skinnedIndex, mCbvSrvDescriptorSize);
-
-		UINT monsterIndex = mMonsterCbvOffset + mCurrFrameResourceIndex * mMonster->GetAllRitemsSize() + ri->MonsterCBIndex;
-		auto monsterCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-		monsterCbvHandle.Offset(monsterIndex, mCbvSrvDescriptorSize);
+		UINT characterIndex = mChaCbvOffset + mCurrFrameResourceIndex * (mPlayer.GetAllRitemsSize() + mMonster->GetAllRitemsSize());
+		auto characterCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 
 		UINT uiIndex = mUICbvOffset + mCurrFrameResourceIndex * mPlayer.mUI.GetSize() + ri->ObjCBIndex;
 		auto uiCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
@@ -1757,16 +1782,22 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 
 		
 		cmdList->SetGraphicsRootDescriptorTable(texOffset + 1, matCbvHandle);
-		cmdList->SetGraphicsRootDescriptorTable(texOffset + 5, uiCbvHandle);
-		cmdList->SetGraphicsRootDescriptorTable(texOffset + 6, monsterUICbvHandle);
+		cmdList->SetGraphicsRootDescriptorTable(texOffset + 4, uiCbvHandle);
+		cmdList->SetGraphicsRootDescriptorTable(texOffset + 5, monsterUICbvHandle);
 
 		if (ri->PlayerCBIndex >= 0)
 		{
-			cmdList->SetGraphicsRootDescriptorTable(texOffset + 3, skinCbvHandle);
+			characterIndex += ri->PlayerCBIndex;;
+			characterCbvHandle.Offset(characterIndex, mCbvSrvDescriptorSize);
+
+			cmdList->SetGraphicsRootDescriptorTable(texOffset + 3, characterCbvHandle);
 		}
 		else if (ri->MonsterCBIndex >= 0)
 		{
-			cmdList->SetGraphicsRootDescriptorTable(texOffset + 4, monsterCbvHandle);
+			characterIndex = ri->MonsterCBIndex + playerRCount;
+			characterCbvHandle.Offset(characterIndex, mCbvSrvDescriptorSize);
+
+			cmdList->SetGraphicsRootDescriptorTable(texOffset + 3, characterCbvHandle);
 		}
 
 		cmdList->DrawIndexedInstanced(ri->IndexCount, 1, ri->StartIndexLocation, ri->BaseVertexLocation, 0);

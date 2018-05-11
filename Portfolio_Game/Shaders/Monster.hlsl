@@ -36,8 +36,8 @@ VertexOut VS(VertexIn vin)
 	float3 normalL = float3(0.0f, 0.0f, 0.0f);
 	for (int i = 0; i < 4; ++i)
 	{
-		posL += weights[i] * mul(float4(vin.PosL, 1.0f), gMonsterBoneTransforms[vin.BoneIndices[i]]).xyz;
-		normalL += weights[i] * mul(vin.NormalL, (float3x3)gMonsterBoneTransforms[vin.BoneIndices[i]]);
+		posL += weights[i] * mul(float4(vin.PosL, 1.0f), gBoneTransforms[vin.BoneIndices[i]]).xyz;
+		normalL += weights[i] * mul(vin.NormalL, (float3x3)gBoneTransforms[vin.BoneIndices[i]]);
 	}
 
 	vin.PosL = posL;
@@ -45,12 +45,12 @@ VertexOut VS(VertexIn vin)
 
 	vout.BoneIndices = vin.BoneIndices;
 
-	float4 posW = mul(float4(vin.PosL, 1.0f), gMonsterWorld);
+	float4 posW = mul(float4(vin.PosL, 1.0f), gChaWorld);
 	vout.PosW = posW.xyz;
 
-	vout.NormalW = mul(vin.NormalL, (float3x3)gMonsterWorld);
+	vout.NormalW = mul(vin.NormalL, (float3x3)gChaWorld);
 
-	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gMonsterTexTransform);
+	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gChaTexTransform);
 
 	vout.TexC = mul(texC, gMatTransform).xy;
 	// Transform to homogeneous clip space.

@@ -48,6 +48,7 @@ public:
 	
 	void UpdateCharacterCBs(
 		FrameResource* mCurrFrameResource,
+		UINT monsterCBOffset,
 		const Light& mMainLight,
 		const GameTimer & gt);
 	virtual void UpdateCharacterShadows(const Light & mMainLight);

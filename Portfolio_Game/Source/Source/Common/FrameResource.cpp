@@ -9,8 +9,8 @@ FrameResource::FrameResource(ID3D12Device * device, UINT passCount, UINT objectC
 	PassCB = std::make_unique<UploadBuffer<PassConstants>>(device, passCount, true);
 	MaterialCB = std::make_unique<UploadBuffer<MaterialConstants>>(device, materialCount, true);
 	ObjectCB = std::make_unique<UploadBuffer<ObjectConstants>>(device, objectCount, true);
-	PlayerCB = std::make_unique<UploadBuffer<SkinnedConstants>>(device, PlayerCount, true);
-	MonsterCB = std::make_unique<UploadBuffer<MonsterContants>>(device, MonsterCount, true);
+	PlayerCB = std::make_unique<UploadBuffer<SkinnedConstants>>(device, PlayerCount + MonsterCount, true);
+	//MonsterCB = std::make_unique<UploadBuffer<SkinnedConstants>>(device, MonsterCount, true);
 	UICB = std::make_unique<UploadBuffer<UIConstants>>(device, UICount, true);
 	MonsterUICB = std::make_unique<UploadBuffer<UIConstants>>(device, MonsterUICount, true);
 }

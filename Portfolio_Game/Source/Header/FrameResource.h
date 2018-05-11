@@ -43,12 +43,12 @@ struct SkinnedConstants
 	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
 };
 
-struct MonsterContants
-{
-	DirectX::XMFLOAT4X4 BoneTransforms[96];
-	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
-};
+//struct SkinnedConstants
+//{
+//	DirectX::XMFLOAT4X4 BoneTransforms[96];
+//	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
+//	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
+//};
 
 struct UIConstants
 {
@@ -117,7 +117,7 @@ public:
     // that reference it.  So each frame needs their own cbuffers.
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
 	std::unique_ptr<UploadBuffer<SkinnedConstants>> PlayerCB = nullptr;
-	std::unique_ptr<UploadBuffer<MonsterContants>> MonsterCB = nullptr;
+	//std::unique_ptr<UploadBuffer<SkinnedConstants>> MonsterCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialConstants>>  MaterialCB = nullptr;
     std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
     std::unique_ptr<UploadBuffer<UIConstants>> UICB = nullptr;
