@@ -1434,6 +1434,7 @@ void PortfolioGameApp::BuildArcheGeometry(
 	mGeometries[geo->Name] = std::move(geo);
 }
 
+
 void PortfolioGameApp::LoadTextures()
 {
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());

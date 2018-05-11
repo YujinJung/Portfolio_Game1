@@ -218,6 +218,7 @@ int DirectX::LoadImageDataFromFile(BYTE** imageData, D3D12_RESOURCE_DESC& textur
 	return imageSize;
 }
 
+///
 HRESULT DirectX::CreateImageDataTextureFromFile(ID3D12Device* device,
 	ID3D12GraphicsCommandList* cmdList,
 	const wchar_t* szFileName,
@@ -280,6 +281,8 @@ HRESULT DirectX::CreateImageDataTextureFromFile(ID3D12Device* device,
 
 	// Now we copy the upload buffer contents to the default heap
 	UpdateSubresources(cmdList, texture.Get(), textureUploadHeap.Get(), 0, 0, 1, &textureData);
+
+	free(imageData);
 
 	return hr;
 }

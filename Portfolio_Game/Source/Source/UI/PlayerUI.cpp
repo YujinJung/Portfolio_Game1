@@ -111,12 +111,11 @@ void PlayerUI::BuildGeometry(
 void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries, Materials & mMaterials)
 {
 	int UIIndex = 0;
-	// TODO : Setting the Name
 
 	// place over the head
 	auto frontHealthBar = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&frontHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.0021f) * XMMatrixRotationX(-atan(3.0f / 2.0f)) * XMMatrixTranslation(0.0f, 0.895f, 0.0f));
+	XMStoreFloat4x4(&frontHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.0021f) * XMMatrixRotationX(-atan(3.0f / 2.0f)) * XMMatrixTranslation(0.0f, 0.901f, 0.0f));
 	frontHealthBar->TexTransform = MathHelper::Identity4x4();
 	frontHealthBar->Mat = mMaterials.Get("ice0");
 	frontHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -130,7 +129,7 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 
 	auto bgHealthBar = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&bgHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.002f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.0f, 0.89f, 0.05f));
+	XMStoreFloat4x4(&bgHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.002f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.0f, 0.9f, 0.001f));
 	bgHealthBar->TexTransform = MathHelper::Identity4x4();
 	bgHealthBar->Mat = mMaterials.Get("bricks0");
 	bgHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -143,9 +142,10 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	mAllRitems.push_back(std::move(bgHealthBar));
 
 	// Skill Icon
+	const float skillIconScale = 0.02f;
+	XMMATRIX skillIconWorldSRx = XMMatrixScaling(skillIconScale, 1.0f, skillIconScale) * XMMatrixRotationX(-atan(3.0f / 2.0f));
 	auto iconDelayKick = std::make_unique<RenderItem>();
-
-	XMStoreFloat4x4(&iconDelayKick->World, XMMatrixScaling(0.01f, 1.0f, 0.01f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(-0.05f, -0.1f, 0.0f));
+	XMStoreFloat4x4(&iconDelayKick->World, skillIconWorldSRx * XMMatrixTranslation(-skillIconScale * 5.0f, -1.0f, 0.0f));
 	iconDelayKick->TexTransform = MathHelper::Identity4x4();
 	iconDelayKick->Mat = mMaterials.Get("iconPunch");
 	iconDelayKick->Geo = mGeometry.get();
@@ -158,10 +158,8 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	mAllRitems.push_back(std::move(iconDelayKick));
 	skillFullTime.push_back(3.0f);
 
-
 	auto iconKick = std::make_unique<RenderItem>();
-
-	XMStoreFloat4x4(&iconKick->World, XMMatrixScaling(0.01f, 1.0f, 0.01f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.05f, -0.1f, 0.0f));
+	XMStoreFloat4x4(&iconKick->World, skillIconWorldSRx  * XMMatrixTranslation(skillIconScale * 5.0f, -1.0f, 0.0f));
 	iconKick->TexTransform = MathHelper::Identity4x4();
 	iconKick->Mat = mMaterials.Get("iconKick");
 	iconKick->Geo = mGeometry.get();
@@ -191,29 +189,28 @@ void PlayerUI::UpdateUICBs(
 
 		if (e->NumFramesDirty > 0)
 		{
-			// Health Bar move to left
-			XMVECTOR UIoffset = (1.0f- mWorldTransform.Scale.x) * inEyeLeft * 0.1f;
-
 			XMMATRIX T = XMMatrixTranslation(
 				mWorldTransform.Position.x,
 				mWorldTransform.Position.y,
 				mWorldTransform.Position.z);
 			XMMATRIX S = XMMatrixIdentity();
-			// Background Health Bar
-			if (e->ObjCBIndex < 0)
+
+			// Health Bar move to left
+			XMVECTOR UIoffset = XMVectorZero();
+			if (e->ObjCBIndex == 0)
 			{
-				T = XMMatrixTranslation(
-					mWorldTransform.Position.x + UIoffset.m128_f32[0],
-					mWorldTransform.Position.y + UIoffset.m128_f32[1],
-					mWorldTransform.Position.z + UIoffset.m128_f32[2]);
+				UIoffset = (1.0f - mWorldTransform.Scale.x) * inEyeLeft * 0.1f;
+
+				T = T * XMMatrixTranslationFromVector(UIoffset);
 				S = XMMatrixScaling(
 					mWorldTransform.Scale.x,
 					mWorldTransform.Scale.y,
 					mWorldTransform.Scale.z);
 			}
-
+			
 			XMMATRIX world = XMLoadFloat4x4(&e->World) * playerWorld * T;
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
+
 			UIConstants uiConstants;
 			XMStoreFloat4x4(&uiConstants.World, XMMatrixTranspose(world) * S);
 			XMStoreFloat4x4(&uiConstants.TexTransform, XMMatrixTranspose(texTransform));

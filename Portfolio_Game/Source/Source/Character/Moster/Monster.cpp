@@ -7,8 +7,7 @@
 using namespace DirectX;
 Monster::Monster()
 	: numOfCharacter(10),
-	mDamage(0),
-	mFullHealth(100),
+	mDamage(2),
 	MonsterAreaSize(20),
 	MaterialName("")
 {
@@ -62,7 +61,8 @@ void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 		}
 		if (mMonsterInfo[cIndex].mHealth < 0)
 			mMonsterInfo[cIndex].mHealth = 0;
-		mMonsterUI.SetDamageScale(cIndex, static_cast<float>(mMonsterInfo[cIndex].mHealth) / static_cast<float>(mFullHealth));
+
+		mMonsterUI.SetDamageScale(cIndex, static_cast<float>(mMonsterInfo[cIndex].mHealth) / static_cast<float>(mMonsterInfo[cIndex].mFullHealth));
 	}
 }
 
@@ -273,13 +273,20 @@ void Monster::BuildRenderItem(
 		XMVECTOR monsterPos = XMVectorSet(static_cast<float>(x - MonsterAreaSize), 0.0f, static_cast<float>(z - MonsterAreaSize), 0.0f);
 		cInfo.mMovement.SetPlayerPosition(monsterPos);
 
+		// Boss
+		float BossScale = 0.0f;
+		if (cIndex == 0)
+		{
+			BossScale = 3.0f;
+		}
+
 		// Character Mesh
 		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)
 		{
 			std::string SubmeshName = boneName[submeshIndex];
 
 			auto MonsterRitem = std::make_unique<RenderItem>();
-			XMStoreFloat4x4(&MonsterRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));
+			XMStoreFloat4x4(&MonsterRitem->World, XMMatrixScaling(4.0f + BossScale, 4.0f + BossScale, 4.0f + BossScale));
 			MonsterRitem->TexTransform = MathHelper::Identity4x4();
 			MonsterRitem->Mat = mMaterials.Get(MaterialName);
 			MonsterRitem->Geo = mGeometry.get();
@@ -306,6 +313,10 @@ void Monster::BuildRenderItem(
 
 		mMonsterInfo[cIndex] = cInfo;
 	}
+
+	// Boss
+	mMonsterInfo[0].mHealth = 200.0f;
+	mMonsterInfo[0].mFullHealth = 200.0f;
 }
 
 
@@ -398,6 +409,8 @@ void Monster::UpdateCharacterCBs(
 
 	//UI
 	auto curUICB = mCurrFrameResource->MonsterUICB.get();
+	vEyeLeft[0] *= 1.75f;
+
 	mMonsterUI.UpdateUICBs(curUICB, vWorld, vEyeLeft, mTransformDirty);
 }
 

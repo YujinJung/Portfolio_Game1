@@ -39,8 +39,14 @@ void MonsterUI::BuildRenderItem(
 		// place over the head
 		// odd are background HP bar
 
+		XMMATRIX uiWorldTransformSRx = XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(XM_PIDIV2);
+		if (i == 0)
+		{
+			uiWorldTransformSRx = XMMatrixScaling(2.0f, 1.0f, 1.0f) * uiWorldTransformSRx;
+		}
+
 		auto frontHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&frontHealthBar->World,XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5001f));
+		XMStoreFloat4x4(&frontHealthBar->World, uiWorldTransformSRx * XMMatrixTranslation(0.0f, 1.9f, 0.5005f));
 		frontHealthBar->TexTransform = MathHelper::Identity4x4();
 		frontHealthBar->Mat = mMaterials.Get("red");
 		frontHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -51,7 +57,7 @@ void MonsterUI::BuildRenderItem(
 		frontHealthBar->IndexCount = frontHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 
 		auto frontBGHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&frontBGHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
+		XMStoreFloat4x4(&frontBGHealthBar->World, uiWorldTransformSRx * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
 		frontBGHealthBar->TexTransform = MathHelper::Identity4x4();
 		frontBGHealthBar->Mat = mMaterials.Get("bricks0");
 		frontBGHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -61,8 +67,14 @@ void MonsterUI::BuildRenderItem(
 		frontBGHealthBar->BaseVertexLocation = frontBGHealthBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
 		frontBGHealthBar->IndexCount = frontBGHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 
+
+		uiWorldTransformSRx = XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(-XM_PIDIV2);
+		if (i == 0)
+		{
+			uiWorldTransformSRx = XMMatrixScaling(2.0f, 1.0f, 1.0f) * uiWorldTransformSRx;
+		}
 		auto backHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&backHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(-XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.4999f));
+		XMStoreFloat4x4(&backHealthBar->World, uiWorldTransformSRx * XMMatrixTranslation(0.0f, 1.9f, 0.4995f));
 		backHealthBar->TexTransform = MathHelper::Identity4x4();
 		backHealthBar->Mat = mMaterials.Get("red");
 		backHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -73,7 +85,7 @@ void MonsterUI::BuildRenderItem(
 		backHealthBar->IndexCount = backHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 
 		auto backBGHealthBar = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&backBGHealthBar->World, XMMatrixScaling(0.02f, 1.0f, 0.003f)  * XMMatrixRotationX(-XM_PIDIV2) * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
+		XMStoreFloat4x4(&backBGHealthBar->World, uiWorldTransformSRx * XMMatrixTranslation(0.0f, 1.9f, 0.5f));
 		backBGHealthBar->TexTransform = MathHelper::Identity4x4();
 		backBGHealthBar->Mat = mMaterials.Get("bricks0");
 		backBGHealthBar->Geo = mGeometries["shapeGeo"].get();
@@ -158,6 +170,8 @@ void MonsterUI::UpdateUICBs(
 			{
 				UIoffset = (1.0f - mWorldTransform[mIndex].Scale.x) * inEyeLeft[mIndex] * 0.8f;
 			}
+
+			if (mIndex == 0) { UIoffset *= 2.0f; }
 
 			XMMATRIX T = XMMatrixTranslation(
 				mWorldTransform[mIndex].Position.x + UIoffset.m128_f32[0],

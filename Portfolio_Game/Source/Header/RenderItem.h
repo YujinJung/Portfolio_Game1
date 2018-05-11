@@ -93,9 +93,12 @@ struct CharacterInfo
 	
 	std::string mClipName;
 	int mHealth;
+	int mFullHealth;
 	
 	CharacterInfo()
-		: mClipName("Idle"), mHealth(100)
+		: mClipName("Idle"),
+		mHealth(100), 
+		mFullHealth(100)
 	{ }
 };
 

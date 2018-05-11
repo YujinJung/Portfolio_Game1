@@ -67,7 +67,6 @@ private:
 	std::string MaterialName;
 
 	UINT mDamage;
-	UINT mFullHealth;
 	UINT numOfCharacter;
 
 	int offsetX;

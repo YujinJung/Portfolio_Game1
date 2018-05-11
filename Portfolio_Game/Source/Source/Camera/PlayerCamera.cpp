@@ -17,8 +17,8 @@ void PlayerCamera::UpdatePosition(
 	FXMVECTOR U,
 	GXMVECTOR R)
 {
-	const float eyePositionOffsetXZ = 15.0f;
-	const float eyePositionOffsetY = 10.0f;
+	const float eyePositionOffsetXZ = 30.0f;
+	const float eyePositionOffsetY = 20.0f;
 	const float eyeLookOffsetY = 5.0f;
 
 	XMVECTOR mP = XMVectorAdd(XMVectorSubtract(P, eyePositionOffsetXZ * L), eyePositionOffsetY * U);
