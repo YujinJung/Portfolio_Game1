@@ -76,11 +76,11 @@ bool PortfolioGameApp::Initialize()
 	mCbvSrvDescriptorSize = md3dDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	LoadTextures();
+	BuildShapeGeometry();
+	BuildMaterials();
 	BuildFbxGeometry();
 	BuildRootSignature();
 	BuildShadersAndInputLayout();
-	BuildShapeGeometry();
-	BuildMaterials();
 	BuildRenderItems();
 	BuildFrameResources();
 
@@ -527,6 +527,26 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 	static bool playerDeathCamFinished = false;
 	XMVECTOR PlayerPos = mPlayer.GetCharacterInfo().mMovement.GetPlayerPosition();
 	
+	int playerPosX = PlayerPos.m128_f32[0];
+	int playerPosZ = PlayerPos.m128_f32[2];
+
+	if (playerPosX < 0 && playerPosZ < 0)
+	{
+		if (mZoneIndex != 0)
+		{
+			mMonster = mMonstersByZone[0].get();
+			mZoneIndex = 0;
+		}
+	}
+	else if (playerPosX < 0 && playerPosZ > 0)
+	{
+		if (mZoneIndex != 1)
+		{
+			mMonster = mMonstersByZone[1].get();
+			mZoneIndex = 1;
+		}
+	}
+
 	if (mPlayer.GetHealth() <= 0 && !playerDeathCamFinished)
 	{
 		mCameraDetach = true;
@@ -553,7 +573,6 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 	mMonster->UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, DelayTime, gt);
 	
-	
 }
 
 void PortfolioGameApp::UpdateObjectShadows(const GameTimer& gt)
@@ -573,7 +592,6 @@ void PortfolioGameApp::BuildDescriptorHeaps()
 	UINT matCount = mMaterials.GetSize();
 	UINT uiCount = mPlayer.mUI.GetSize();
 	UINT monsterUICount = mMonster->GetUISize();
-
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
 	// +matCount for the Materials for each frame resources.
@@ -1251,20 +1269,23 @@ void PortfolioGameApp::LoadFBXMonster()
 	std::vector<Material> outMaterial;
 	std::string matName = "monsterMat0";
 	std::string FileName = "../Resource/FBX/Monster/Monster1/";
-
-	LoadFBXSubMonster(outMaterial, matName, FileName);
+	
+	LoadFBXSubMonster(outMaterial, matName, FileName, false, false);
 
 	matName = "monsterMat1";
 	FileName = "../Resource/FBX/Monster/Monster2/";
-	LoadFBXSubMonster(outMaterial, matName, FileName);
+	LoadFBXSubMonster(outMaterial, matName, FileName, false, true);
 
 	BuildFBXTexture(outMaterial, "monsterTex", "monsterMat");
 
-	// Initialize Monster in 0 zone
-	mMonster = mMonstersByZone[1].get();
+	// Initialize Monster in 1 zone
+	mMonster = mMonstersByZone[1 ].get();
 }
 
-void PortfolioGameApp::LoadFBXSubMonster(std::vector<Material> &outMaterial, std::string& inMaterialName, std::string &FileName)
+void PortfolioGameApp::LoadFBXSubMonster(
+	std::vector<Material> &outMaterial, 
+	std::string& inMaterialName, 	std::string &FileName,
+	bool isEvenX,	bool isEvenZ)
 {
 	FbxLoader fbx;
 	std::vector<SkinnedVertex> outSkinnedVertices;
@@ -1272,7 +1293,6 @@ void PortfolioGameApp::LoadFBXSubMonster(std::vector<Material> &outMaterial, std
 	SkinnedData outSkinnedInfo;
 
 	// Monster FBX
-	// Monster1
 	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
 
 	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
@@ -1282,8 +1302,20 @@ void PortfolioGameApp::LoadFBXSubMonster(std::vector<Material> &outMaterial, std
 	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
 
 	std::unique_ptr<Monster> tempMonster = std::make_unique<Monster>();
-	tempMonster->BuildGeometry(md3dDevice.Get(), mCommandList.Get(), outSkinnedVertices, outIndices, outSkinnedInfo, "MonsterGeo");
+	tempMonster->BuildGeometry(
+		md3dDevice.Get(), 
+		mCommandList.Get(),
+		outSkinnedVertices,
+		outIndices,
+		outSkinnedInfo,
+		"MonsterGeo");
 	tempMonster->SetMaterialName(inMaterialName);
+
+	int x = 0, z = 0;
+	if (!isEvenX)	x = -200;
+	if (!isEvenZ)	z = -200;
+	tempMonster->SetOffsetXZ(x, z);
+	
 	mMonstersByZone.push_back(std::move(tempMonster));
 }
 
@@ -1647,8 +1679,12 @@ void PortfolioGameApp::BuildRenderItems()
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
 
 	// Monster
-	mMonster->BuildRenderItem(mMaterials, "monsterMat0");
-	mMonster->mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonster->GetNumberOfMonster());
+	for (int i = 0; i < mMonstersByZone.size(); ++i)
+	{
+		Monster* tempMonster = mMonstersByZone[i].get();
+		tempMonster->BuildRenderItem(mMaterials, "monsterMat" + i);
+		tempMonster->mMonsterUI.BuildRenderItem(mGeometries, mMaterials, tempMonster->GetNumberOfMonster());
+	}
 }
 
 void PortfolioGameApp::BuildArchitecture(

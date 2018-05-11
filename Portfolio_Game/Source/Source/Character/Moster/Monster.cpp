@@ -122,6 +122,12 @@ void Monster::SetMaterialName(const std::string & inMaterialName)
 	MaterialName = inMaterialName;
 }
 
+void Monster::SetOffsetXZ(int x, int z)
+{
+	offsetX = x;
+	offsetZ = z;
+}
+
 void Monster::BuildGeometry(
 	ID3D12Device * device,
 	ID3D12GraphicsCommandList* cmdList,
@@ -130,6 +136,8 @@ void Monster::BuildGeometry(
 	const SkinnedData& inSkinInfo,
 	std::string geoName)
 {
+	const int numOfSubmesh = 65; // The largest number of bone(submesh) of the monsters
+
 	for (UINT i = 0; i < numOfCharacter; ++i)
 	{
 		mSkinnedInfo = inSkinInfo;
@@ -176,8 +184,21 @@ void Monster::BuildGeometry(
 	auto boneName = mSkinnedInfo.GetBoneName();
 
 	UINT SubmeshOffsetIndex = 0;
-	for (int i = 0; i < vSubmeshOffset.size(); ++i)
+	for (int i = 0; i <numOfSubmesh; ++i)
 	{
+		if (i >= vSubmeshOffset.size())
+		{
+			SubmeshGeometry FbxSubmesh;
+			FbxSubmesh.IndexCount = 0;
+			FbxSubmesh.StartIndexLocation = SubmeshOffsetIndex;
+			FbxSubmesh.BaseVertexLocation = 0;
+
+			std::string SubmeshName = boneName[0] + std::to_string(i);
+			geo->DrawArgs[SubmeshName] = FbxSubmesh;
+			mSkinnedInfo.SetBoneName(SubmeshName);
+			continue;
+		}
+
 		UINT CurrSubmeshOffsetIndex = vSubmeshOffset[i];
 
 		SubmeshGeometry FbxSubmesh;
@@ -233,8 +254,8 @@ void Monster::BuildRenderItem(
 	std::string matrialPrefix)
 {
 	int chaIndex = 0;
-	int BoneCount = (UINT)mSkinnedInfo.BoneCount();
 	auto boneName = mSkinnedInfo.GetBoneName();
+	int BoneCount = boneName.size();
 
 	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
@@ -243,11 +264,11 @@ void Monster::BuildRenderItem(
 		// Monster - Random Position
 		auto seed = std::chrono::system_clock::now().time_since_epoch().count();
 		std::mt19937 engine{ (unsigned int)seed };
-		std::uniform_int_distribution <> dis{ 1, MonsterAreaSize * 2 };
+		std::uniform_int_distribution <> dis{ 50, 150 };
 
 		//Generate a random integer
-		int x{ dis(engine) };
-		int z{ dis(engine) };
+		int x{ dis(engine) + offsetX };
+		int z{ dis(engine) + offsetZ };
 
 		XMVECTOR monsterPos = XMVectorSet(static_cast<float>(x - MonsterAreaSize), 0.0f, static_cast<float>(z - MonsterAreaSize), 0.0f);
 		cInfo.mMovement.SetPlayerPosition(monsterPos);
@@ -319,7 +340,6 @@ void Monster::UpdateCharacterCBs(
 		int monsterIndex = j / monsterOffset;
 
 		MonsterContants monsterConstants;
-
 		std::copy(
 			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
 			std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),

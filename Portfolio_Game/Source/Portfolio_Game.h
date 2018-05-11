@@ -56,7 +56,10 @@ private:
 	void LoadFBXPlayer();
 	void BuildFBXTexture(std::vector<Material> &outMaterial, std::string inTextureName, std::string inMaterialName);
 	void LoadFBXMonster();
-	void LoadFBXSubMonster(std::vector<Material> &outMaterial, std::string& inMaterialName, std::string &FileName);
+	void LoadFBXSubMonster(
+		std::vector<Material> &outMaterial, 
+		std::string& inMaterialName, std::string &FileName, 
+		bool isEvenX, bool isEvenZ);
 	void LoadFBXArchitecture();
 
 	void BuildMaterials();
@@ -121,6 +124,8 @@ private:
 	Player mPlayer;
 	Monster* mMonster;
 	std::vector<std::unique_ptr<Monster>> mMonstersByZone;
+	UINT mZoneIndex;
+
 	Textures mTextures;
 	Materials mMaterials;
 };

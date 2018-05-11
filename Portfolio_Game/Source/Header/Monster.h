@@ -27,6 +27,7 @@ public:
 
 	void SetClipName(const std::string & inClipName, int cIndex);
 	void SetMaterialName(const std::string& inMaterialName);
+	void SetOffsetXZ(int x, int z);
 
 public:
 	virtual void BuildGeometry(
@@ -68,5 +69,9 @@ private:
 	UINT mDamage;
 	UINT mFullHealth;
 	UINT numOfCharacter;
+
+	int offsetX;
+	int offsetZ;
+
 	int MonsterAreaSize;
 };
