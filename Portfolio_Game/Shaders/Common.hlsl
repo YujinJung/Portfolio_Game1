@@ -78,13 +78,6 @@ cbuffer cbPlayer : register(b3)
 	float4x4 gChaTexTransform;
 };
 
-//cbuffer cbMonster : register(b4)
-//{
-//	float4x4 gMonsterBoneTransforms[96];
-//	float4x4 gMonsterWorld;
-//	float4x4 gMonsterTexTransform;
-//};
-
 cbuffer cbUI : register(b4)
 {
 	float4x4 gUIWorld;

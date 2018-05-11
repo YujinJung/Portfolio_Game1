@@ -41,8 +41,6 @@ VertexOut VS(VertexIn vin)
 	float3 normalL = float3(0.0f, 0.0f, 0.0f);
 	for (int i = 0; i < 4; ++i)
 	{
-		// Assume no nonuniform scaling when transforming normals, so 
-		// that we do not have to use the inverse-transpose.
 		posL += weights[i] * mul(float4(vin.PosL, 1.0f), gBoneTransforms[vin.BoneIndices[i]]).xyz;
 		normalL += weights[i] * mul(vin.NormalL, (float3x3)gBoneTransforms[vin.BoneIndices[i]]);
 	}

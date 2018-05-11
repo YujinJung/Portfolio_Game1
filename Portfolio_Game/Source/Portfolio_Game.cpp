@@ -210,17 +210,12 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 		mCommandList->SetPipelineState(mPSOs["Player_wireframe"].Get());
 	}
 	DrawRenderItems(mCommandList.Get(), mPlayer.GetRenderItem(RenderLayer::Character));
-
-	// Monster
-	mCommandList->SetPipelineState(mPSOs["Monster"].Get());
 	DrawRenderItems(mCommandList.Get(), mMonster->GetRenderItem(RenderLayer::Monster));
 
 	// Shadow
 	mCommandList->OMSetStencilRef(0);
 	mCommandList->SetPipelineState(mPSOs["Player_shadow"].Get());
 	DrawRenderItems(mCommandList.Get(), mPlayer.GetRenderItem(RenderLayer::Shadow));
-
-	mCommandList->SetPipelineState(mPSOs["Monster_shadow"].Get());
 	DrawRenderItems(mCommandList.Get(), mMonster->GetRenderItem(RenderLayer::Shadow));
 
 	// Indicate a state transition on the resource usage.
@@ -827,14 +822,12 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 
 	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["skinnedVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "VS", "vs_5_1");
-	mShaders["monsterVS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "VS", "vs_5_1");
 	mShaders["uiVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", playerUIDefines, "VS", "vs_5_1");
 	mShaders["monsterUIVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", monsterUIDefines, "VS", "vs_5_1");
 	mShaders["skyVS"] = d3dUtil::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "VS", "vs_5_1");
 
 	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["skinnedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "PS", "ps_5_1");
-	mShaders["monsterPS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "PS", "ps_5_1");
 	mShaders["uiPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", playerUIDefines, "PS", "ps_5_1");
 	mShaders["skyPS"] = d3dUtil::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "PS", "ps_5_1");
 
@@ -910,23 +903,6 @@ void PortfolioGameApp::BuildPSOs()
 		mShaders["skinnedPS"]->GetBufferSize()
 	};
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerPsoDesc, IID_PPV_ARGS(&mPSOs["Player"])));
-
-	// PSO for Monster
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC MonsterPsoDesc = PlayerPsoDesc;
-	MonsterPsoDesc.InputLayout = { mSkinnedInputLayout.data(), (UINT)mSkinnedInputLayout.size() };
-	MonsterPsoDesc.VS =
-	{
-		reinterpret_cast<BYTE*>(mShaders["monsterVS"]->GetBufferPointer()),
-		mShaders["monsterVS"]->GetBufferSize()
-	};
-	MonsterPsoDesc.PS =
-	{
-		reinterpret_cast<BYTE*>(mShaders["monsterPS"]->GetBufferPointer()),
-		mShaders["monsterPS"]->GetBufferSize()
-	};
-	
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&MonsterPsoDesc, IID_PPV_ARGS(&mPSOs["Monster"])));
-
 
 	// PSO for ui
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC UIPsoDesc = opaquePsoDesc;
@@ -1041,15 +1017,6 @@ void PortfolioGameApp::BuildPSOs()
 	PlayerShadowPsoDesc.DepthStencilState = shadowDSS;
 	PlayerShadowPsoDesc.BlendState.RenderTarget[0] = shadowBlendDesc;
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&PlayerShadowPsoDesc, IID_PPV_ARGS(&mPSOs["Player_shadow"])));
-	
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC MonsterShadowPsoDesc = PlayerShadowPsoDesc;
-	MonsterShadowPsoDesc.VS =
-	{
-		reinterpret_cast<BYTE*>(mShaders["monsterVS"]->GetBufferPointer()),
-		mShaders["monsterVS"]->GetBufferSize()
-	};
-	
-	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&MonsterShadowPsoDesc, IID_PPV_ARGS(&mPSOs["Monster_shadow"])));
 }
 
 
@@ -1787,14 +1754,14 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 
 		if (ri->PlayerCBIndex >= 0)
 		{
-			characterIndex += ri->PlayerCBIndex;;
+			characterIndex += ri->PlayerCBIndex;
 			characterCbvHandle.Offset(characterIndex, mCbvSrvDescriptorSize);
 
 			cmdList->SetGraphicsRootDescriptorTable(texOffset + 3, characterCbvHandle);
 		}
 		else if (ri->MonsterCBIndex >= 0)
 		{
-			characterIndex = ri->MonsterCBIndex + playerRCount;
+			characterIndex += ri->MonsterCBIndex + playerRCount;
 			characterCbvHandle.Offset(characterIndex, mCbvSrvDescriptorSize);
 
 			cmdList->SetGraphicsRootDescriptorTable(texOffset + 3, characterCbvHandle);

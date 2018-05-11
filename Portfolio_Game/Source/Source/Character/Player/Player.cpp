@@ -300,7 +300,6 @@ void Player::UpdateCharacterCBs(
 	UpdateCharacterShadows(mMainLight);
 	for (auto& e : mRitems[(int)RenderLayer::Shadow])
 	{
-
 		SkinnedConstants skinnedConstants;
 
 		std::copy(

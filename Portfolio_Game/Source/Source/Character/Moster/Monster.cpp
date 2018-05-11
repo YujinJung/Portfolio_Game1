@@ -256,7 +256,7 @@ void Monster::BuildRenderItem(
 		}
 
 		// Character Mesh
-		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)
+		for (int submeshIndex = 0; submeshIndex < BoneCount- 1; ++submeshIndex)
 		{
 			std::string SubmeshName = boneName[submeshIndex];
 
@@ -369,7 +369,6 @@ void Monster::UpdateCharacterCBs(
 			std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
 			&monsterConstants.BoneTransforms[0]);
 
-		// TODO : player constroller
 		XMMATRIX world = XMLoadFloat4x4(&e->World);
 		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
