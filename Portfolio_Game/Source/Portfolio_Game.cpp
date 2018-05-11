@@ -1451,13 +1451,13 @@ void PortfolioGameApp::LoadTextures()
 		"stoneTex",
 		L"../Resource/Textures/stone.dds");
 
-	mTextures.SetTexture(
-		"tileTex",
-		L"../Resource/Textures/tile.dds");
+	//mTextures.SetTexture(
+	//	"tileTex",
+	//	L"../Resource/Textures/tile.dds");
 
-	mTextures.SetTexture(
-		"grassTex",
-		L"../Resource/Textures/grass.dds");
+	//mTextures.SetTexture(
+	//	"grassTex",
+	//	L"../Resource/Textures/grass.dds");
 
 	mTextures.SetTexture(
 		"tundraTex",
@@ -1682,9 +1682,8 @@ void PortfolioGameApp::BuildRenderItems()
 	// Monster
 	for (int i = 0; i < mMonstersByZone.size(); ++i)
 	{
-		Monster* tempMonster = mMonstersByZone[i].get();
-		tempMonster->BuildRenderItem(mMaterials, "monsterMat" + i);
-		tempMonster->mMonsterUI.BuildRenderItem(mGeometries, mMaterials, tempMonster->GetNumberOfMonster());
+		mMonstersByZone[i]->BuildRenderItem(mMaterials, "monsterMat" + i);
+		mMonstersByZone[i]->mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonstersByZone[i]->GetNumberOfMonster());
 	}
 }
 

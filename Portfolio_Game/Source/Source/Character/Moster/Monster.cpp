@@ -350,21 +350,8 @@ void Monster::UpdateCharacterCBs(
 	{
 		int monsterIndex = j / monsterOffset;
 
-		MonsterContants monsterConstants;
-		std::copy(
-			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
-			std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
-			&monsterConstants.BoneTransforms[monsterIndex][0]);
-
-		// TODO : player constroller
 		XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix(monsterIndex);
 		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
-		monsterConstants.monsterIndex = monsterIndex;
-
-		XMStoreFloat4x4(&monsterConstants.World[monsterIndex], XMMatrixTranspose(world));
-		XMStoreFloat4x4(&monsterConstants.TexTransform[monsterIndex], XMMatrixTranspose(texTransform));
-
-		curMonsterCB->CopyData(e->MonsterCBIndex, monsterConstants);
 
 		if (preMonsterIndex != monsterIndex)
 		{
@@ -374,6 +361,18 @@ void Monster::UpdateCharacterCBs(
 			vWorld.push_back(world);
 			vEyeLeft.push_back(-mMonsterInfo[monsterIndex].mMovement.GetPlayerRight());
 		}
+
+		MonsterContants monsterConstants;
+
+		std::copy(
+			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+			std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+			&monsterConstants.BoneTransforms[0]);
+		monsterConstants.monsterIndex = monsterIndex;
+		XMStoreFloat4x4(&monsterConstants.World, XMMatrixTranspose(world));
+		XMStoreFloat4x4(&monsterConstants.TexTransform, XMMatrixTranspose(texTransform));
+
+		curMonsterCB->CopyData(e->MonsterCBIndex, monsterConstants);
 
 		++j;
 	}
@@ -391,15 +390,15 @@ void Monster::UpdateCharacterCBs(
 		std::copy(
 			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
 			std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
-			&monsterConstants.BoneTransforms[monsterIndex][0]);
+			&monsterConstants.BoneTransforms[0]);
 
 		// TODO : player constroller
 		XMMATRIX world = XMLoadFloat4x4(&e->World);
 		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 		monsterConstants.monsterIndex = monsterIndex;
 
-		XMStoreFloat4x4(&monsterConstants.World[monsterIndex], XMMatrixTranspose(world));
-		XMStoreFloat4x4(&monsterConstants.TexTransform[monsterIndex], XMMatrixTranspose(texTransform));
+		XMStoreFloat4x4(&monsterConstants.World, XMMatrixTranspose(world));
+		XMStoreFloat4x4(&monsterConstants.TexTransform, XMMatrixTranspose(texTransform));
 
 		curMonsterCB->CopyData(e->MonsterCBIndex, monsterConstants);
 

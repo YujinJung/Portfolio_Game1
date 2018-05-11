@@ -140,7 +140,7 @@ public:
 private:
 	std::unordered_map<unsigned int, CtrlPoint*> mControlPoints;
 	std::vector<std::string> mBoneName;
-
+	
 	// skinnedData Output
 	std::vector<int> mBoneHierarchy;
 	std::vector<DirectX::XMFLOAT4X4> mBoneOffsets;
