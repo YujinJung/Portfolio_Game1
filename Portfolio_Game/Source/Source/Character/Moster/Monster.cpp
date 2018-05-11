@@ -8,7 +8,6 @@ using namespace DirectX;
 Monster::Monster()
 	: numOfCharacter(10),
 	mDamage(2),
-	MonsterAreaSize(20),
 	MaterialName("")
 {
 	for (UINT i = 0; i < numOfCharacter; ++i)
@@ -131,7 +130,7 @@ void Monster::SetOffsetXZ(int x, int z)
 void Monster::BuildGeometry(
 	ID3D12Device * device,
 	ID3D12GraphicsCommandList* cmdList,
-	const std::vector<SkinnedVertex>& inVertices,
+	const std::vector<CharacterVertex>& inVertices,
 	const std::vector<std::uint32_t>& inIndices,
 	const SkinnedData& inSkinInfo,
 	std::string geoName)
@@ -161,7 +160,7 @@ void Monster::BuildGeometry(
 	vCount = (UINT)inVertices.size();
 	iCount = (UINT)inIndices.size();
 
-	const UINT vbByteSize = vCount * sizeof(SkinnedVertex);
+	const UINT vbByteSize = vCount * sizeof(CharacterVertex);
 	const UINT ibByteSize = iCount * sizeof(std::uint32_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
@@ -176,7 +175,7 @@ void Monster::BuildGeometry(
 	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inVertices.data(), vbByteSize, geo->VertexBufferUploader);
 	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inIndices.data(), ibByteSize, geo->IndexBufferUploader);
 
-	geo->VertexByteStride = sizeof(SkinnedVertex);
+	geo->VertexByteStride = sizeof(CharacterVertex);
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
@@ -222,7 +221,7 @@ void Monster::BuildConstantBufferViews(
 	int mMonsterCbvOffset)
 {
 	UINT MonsterCount = GetAllRitemsSize();
-	UINT MonsterCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MonsterContants));
+	UINT MonsterCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(CharacterConstants));
 	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
@@ -263,23 +262,27 @@ void Monster::BuildRenderItem(
 		CharacterInfo cInfo;
 
 		// Monster - Random Position
+		// 50 ~ 150 | -50 ~ -150
 		auto seed = std::chrono::system_clock::now().time_since_epoch().count();
 		std::mt19937 engine{ (unsigned int)seed };
-		std::uniform_int_distribution <> dis{ 50, 150 };
+		std::uniform_int_distribution <> dis{ 50, 150 }; // monster Area
 
 		//Generate a random integer
-		int x{ dis(engine) + offsetX };
-		int z{ dis(engine) + offsetZ };
+		// offset - 0 | -200
+		int x{ dis(engine) };
+		int z{ dis(engine) };
 
-		XMVECTOR monsterPos = XMVectorSet(static_cast<float>(x - MonsterAreaSize), 0.0f, static_cast<float>(z - MonsterAreaSize), 0.0f);
-		cInfo.mMovement.SetPlayerPosition(monsterPos);
+		XMVECTOR monsterPos = XMVectorSet(static_cast<float>(x + offsetX), 0.0f, static_cast<float>(z + offsetZ), 0.0f);
 
 		// Boss
 		float BossScale = 0.0f;
-		if (cIndex == 0)
+		if (cIndex == 0) 
 		{
 			BossScale = 3.0f;
+			monsterPos = XMVectorSet(static_cast<float>(100 + offsetX), 0.0f, static_cast<float>(100 + offsetZ), 0.0f);
 		}
+
+		cInfo.mMovement.SetPlayerPosition(monsterPos);
 
 		// Character Mesh
 		for (int submeshIndex = 0; submeshIndex < BoneCount - 1; ++submeshIndex)
@@ -364,7 +367,7 @@ void Monster::UpdateCharacterCBs(
 			vEyeLeft.push_back(-mMonsterInfo[monsterIndex].mMovement.GetPlayerRight());
 		}
 
-		MonsterContants monsterConstants;
+		CharacterConstants monsterConstants;
 
 		std::copy(
 			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
@@ -387,7 +390,7 @@ void Monster::UpdateCharacterCBs(
 	{
 		int monsterIndex = monsterFullIndex / monsterOffset;
 
-		MonsterContants monsterConstants;
+		CharacterConstants monsterConstants;
 
 		std::copy(
 			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),

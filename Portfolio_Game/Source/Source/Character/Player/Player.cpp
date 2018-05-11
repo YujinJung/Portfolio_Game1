@@ -112,7 +112,7 @@ void Player::SetClipTime(float time)
 void Player::BuildGeometry(
 	ID3D12Device * device,
 	ID3D12GraphicsCommandList* cmdList,
-	const std::vector<SkinnedVertex>& inVertices,
+	const std::vector<CharacterVertex>& inVertices,
 	const std::vector<std::uint32_t>& inIndices,
 	const SkinnedData& inSkinInfo,
 	std::string geoName)
@@ -131,10 +131,10 @@ void Player::BuildGeometry(
 	}
 
 	UINT vCount = 0, iCount = 0;
-	vCount = inVertices.size();
-	iCount = inIndices.size();
+	vCount = (UINT)inVertices.size();
+	iCount = (UINT)inIndices.size();
 
-	const UINT vbByteSize = (UINT)inVertices.size() * sizeof(SkinnedVertex);
+	const UINT vbByteSize = (UINT)inVertices.size() * sizeof(CharacterVertex);
 	const UINT ibByteSize = (UINT)inIndices.size() * sizeof(std::uint32_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
@@ -149,7 +149,7 @@ void Player::BuildGeometry(
 	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inVertices.data(), vbByteSize, geo->VertexBufferUploader);
 	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inIndices.data(), ibByteSize, geo->IndexBufferUploader);
 
-	geo->VertexByteStride = sizeof(SkinnedVertex);
+	geo->VertexByteStride = sizeof(CharacterVertex);
 	geo->VertexBufferByteSize = vbByteSize;
 	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
 	geo->IndexBufferByteSize = ibByteSize;
@@ -179,7 +179,7 @@ void Player::BuildGeometry(
 		box,
 		inVertices.size(),
 		&inVertices[0].Pos,
-		sizeof(SkinnedVertex));
+		sizeof(CharacterVertex));
 	box.Extents = { 3.0f, 1.0f, 3.0f };
 	box.Center.y = 3.0f;
 
@@ -195,7 +195,7 @@ void Player::BuildConstantBufferViews(
 	int mPlayerCbvOffset)
 {
 	UINT playerCount = GetAllRitemsSize();
-	UINT playerCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(SkinnedConstants));
+	UINT playerCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(CharacterConstants));
 	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
@@ -279,7 +279,7 @@ void Player::UpdateCharacterCBs(
 	for (auto& e : mRitems[(int)RenderLayer::Character])
 	{
 
-		SkinnedConstants skinnedConstants;
+		CharacterConstants skinnedConstants;
 
 		std::copy(
 			std::begin(mSkinnedModelInst->FinalTransforms),
@@ -301,7 +301,7 @@ void Player::UpdateCharacterCBs(
 	for (auto& e : mRitems[(int)RenderLayer::Shadow])
 	{
 
-		SkinnedConstants skinnedConstants;
+		CharacterConstants skinnedConstants;
 
 		std::copy(
 			std::begin(mSkinnedModelInst->FinalTransforms),

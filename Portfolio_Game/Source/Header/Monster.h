@@ -33,7 +33,7 @@ public:
 	virtual void BuildGeometry(
 		ID3D12Device * device,
 		ID3D12GraphicsCommandList * cmdList,
-		const std::vector<SkinnedVertex>& inVertices,
+		const std::vector<CharacterVertex>& inVertices,
 		const std::vector<std::uint32_t>& inIndices,
 		const SkinnedData & inSkinInfo, std::string geoName) override;
 	virtual void BuildConstantBufferViews(
@@ -71,6 +71,4 @@ private:
 
 	int offsetX;
 	int offsetZ;
-
-	int MonsterAreaSize;
 };

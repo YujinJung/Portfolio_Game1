@@ -530,7 +530,7 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 	int playerPosX = PlayerPos.m128_i32[0];
 	int playerPosZ = PlayerPos.m128_i32[2];
 
-	if (playerPosX < 0 && playerPosZ < 0)
+	if (playerPosX < 0 && playerPosZ > 0)
 	{
 		if (mZoneIndex != 0)
 		{
@@ -538,12 +538,20 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 			mZoneIndex = 0;
 		}
 	}
-	else if (playerPosX < 0 && playerPosZ > 0)
+	else if (playerPosX > 0 && playerPosZ > 0)
 	{
 		if (mZoneIndex != 1)
 		{
 			mMonster = mMonstersByZone[1].get();
 			mZoneIndex = 1;
+		}
+	}
+	else if (playerPosX > 0 && playerPosZ < 0)
+	{
+		if (mZoneIndex != 2)
+		{
+			mMonster = mMonstersByZone[2].get();
+			mZoneIndex = 2;
 		}
 	}
 
@@ -1241,7 +1249,7 @@ void PortfolioGameApp::BuildFBXTexture(
 void PortfolioGameApp::LoadFBXPlayer()
 {
 	FbxLoader fbx;
-	std::vector<SkinnedVertex> outSkinnedVertices;
+	std::vector<CharacterVertex> outSkinnedVertices;
 	std::vector<std::uint32_t> outIndices;
 	std::vector<Material> outMaterial;
 	SkinnedData outSkinnedInfo;
@@ -1269,17 +1277,20 @@ void PortfolioGameApp::LoadFBXMonster()
 	std::vector<Material> outMaterial;
 	std::string matName = "monsterMat0";
 	std::string FileName = "../Resource/FBX/Monster/Monster1/";
-	
-	LoadFBXSubMonster(outMaterial, matName, FileName, false, false);
+	LoadFBXSubMonster(outMaterial, matName, FileName, false, true); // left up
 
 	matName = "monsterMat1";
 	FileName = "../Resource/FBX/Monster/Monster2/";
-	LoadFBXSubMonster(outMaterial, matName, FileName, false, true);
+	LoadFBXSubMonster(outMaterial, matName, FileName, true, true); // right up
+
+	matName = "monsterMat2";
+	FileName = "../Resource/FBX/Monster/Monster3/";
+	LoadFBXSubMonster(outMaterial, matName, FileName, true, false); // right down
 
 	BuildFBXTexture(outMaterial, "monsterTex", "monsterMat");
 
 	// Initialize Monster in 1 zone
-	mMonster = mMonstersByZone[1 ].get();
+	mMonster = mMonstersByZone[1].get();
 }
 
 void PortfolioGameApp::LoadFBXSubMonster(
@@ -1288,7 +1299,7 @@ void PortfolioGameApp::LoadFBXSubMonster(
 	bool isEvenX,	bool isEvenZ)
 {
 	FbxLoader fbx;
-	std::vector<SkinnedVertex> outSkinnedVertices;
+	std::vector<CharacterVertex> outSkinnedVertices;
 	std::vector<std::uint32_t> outIndices;
 	SkinnedData outSkinnedInfo;
 

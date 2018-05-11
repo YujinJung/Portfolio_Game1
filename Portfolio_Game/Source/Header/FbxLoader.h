@@ -38,7 +38,7 @@ public:
 	~FbxLoader();
 
 	HRESULT LoadFBX(
-		std::vector<SkinnedVertex>& outVertexVector,
+		std::vector<CharacterVertex>& outVertexVector,
 		std::vector<uint32_t>& outIndexVector,
 		SkinnedData& outSkinnedData,
 		const std::string& ClipName,
@@ -57,7 +57,7 @@ public:
 		std::string fileName);
 
 	bool LoadTXT(
-		std::vector<SkinnedVertex>& outVertexVector,
+		std::vector<CharacterVertex>& outVertexVector,
 		std::vector<uint32_t>& outIndexVector,
 		SkinnedData& outSkinnedData, 
 		const std::string& clipName, 
@@ -77,47 +77,47 @@ public:
 
 
 	void GetSkeletonHierarchy(
-		FbxNode * pNode, 
+		fbxsdk::FbxNode * pNode, 
 		SkinnedData& outSkinnedData,
 		int curIndex, int parentIndex);
 
-	void GetControlPoints(FbxNode * pFbxRootNode);
+	void GetControlPoints(fbxsdk::FbxNode * pFbxRootNode);
 
 	void GetAnimation(
-		FbxScene * pFbxScene, 
-		FbxNode * pFbxChildNode,
+		fbxsdk::FbxScene * pFbxScene,
+		fbxsdk::FbxNode * pFbxChildNode,
 		std::string & outAnimationName, 
 		const std::string& ClipName);
 
 	void GetOnlyAnimation(
-		FbxScene* pFbxScene, 
-		FbxNode * pFbxChildNode,
+		fbxsdk::FbxScene* pFbxScene,
+		fbxsdk::FbxNode * pFbxChildNode,
 		AnimationClip& animation, 
 		const std::string clipName);
 
 	void GetVerticesAndIndice(
-		FbxMesh * pMesh, 
-		std::vector<SkinnedVertex> & outVertexVector,
+		fbxsdk::FbxMesh * pMesh,
+		std::vector<CharacterVertex> & outVertexVector,
 		std::vector<uint32_t> & outIndexVector, 
 		SkinnedData& outSkinnedData);
 
 	void GetVerticesAndIndice(
-		FbxMesh * pMesh, 
+		fbxsdk::FbxMesh * pMesh,
 		std::vector<Vertex>& outVertexVector, 
 		std::vector<uint32_t>& outIndexVector);
 
 
-	void GetMaterials(FbxNode * pNode, std::vector<Material>& outMaterial);
+	void GetMaterials(fbxsdk::FbxNode * pNode, std::vector<Material>& outMaterial);
 
-	void GetMaterialAttribute(FbxSurfaceMaterial* pMaterial, Material& outMaterial);
+	void GetMaterialAttribute(fbxsdk::FbxSurfaceMaterial* pMaterial, Material& outMaterial);
 	
-	void GetMaterialTexture(FbxSurfaceMaterial * pMaterial, Material & Mat);
+	void GetMaterialTexture(fbxsdk::FbxSurfaceMaterial * pMaterial, Material & Mat);
 
-	FbxAMatrix GetGeometryTransformation(FbxNode * pNode);
+	FbxAMatrix GetGeometryTransformation(fbxsdk::FbxNode * pNode);
 
 
 	void ExportFBX(
-		std::vector<SkinnedVertex>& outVertexVector,
+		std::vector<CharacterVertex>& outVertexVector,
 		std::vector<uint32_t>& outIndexVector,
 		SkinnedData& outSkinnedData,
 		const std::string& clipName, 

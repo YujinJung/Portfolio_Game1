@@ -5,6 +5,8 @@
 #include "vertexHash.h"
 #include "FbxLoader.h"
 
+using namespace fbxsdk;
+
 FbxLoader::FbxLoader()
 {
 }
@@ -17,7 +19,7 @@ FbxLoader::~FbxLoader()
 FbxManager * gFbxManager = nullptr;
 
 HRESULT FbxLoader::LoadFBX(
-	std::vector<SkinnedVertex>& outVertexVector,
+	std::vector<CharacterVertex>& outVertexVector,
 	std::vector<uint32_t>& outIndexVector,
 	SkinnedData& outSkinnedData,
 	const std::string& clipName,
@@ -251,7 +253,7 @@ HRESULT FbxLoader::LoadFBX(
 }
 
 bool FbxLoader::LoadTXT(
-	std::vector<SkinnedVertex>& outVertexVector,
+	std::vector<CharacterVertex>& outVertexVector,
 	std::vector<uint32_t>& outIndexVector, 
 	SkinnedData& outSkinnedData, 
 	const std::string& clipName, 
@@ -281,7 +283,7 @@ bool FbxLoader::LoadTXT(
 		// Vertex Data
 		for (uint32_t i = 0; i < vertexSize; ++i)
 		{
-			SkinnedVertex vertex;
+			CharacterVertex vertex;
 			int temp[4];
 			fileIn >> ignore >> vertex.Pos.x >> vertex.Pos.y >> vertex.Pos.z;
 			fileIn >> ignore >> vertex.Normal.x >> vertex.Normal.y >> vertex.Normal.z;
@@ -704,7 +706,7 @@ void FbxLoader::GetAnimation(
 	currBoneIndexAndWeight.mBoneWeight = 0;
 	for (auto itr = mControlPoints.begin(); itr != mControlPoints.end(); ++itr)
 	{
-		for (unsigned int i = itr->second->mBoneInfo.size(); i <= 4; ++i)
+		for (uint32_t i = itr->second->mBoneInfo.size(); i <= 4; ++i)
 		{
 			itr->second->mBoneInfo.push_back(currBoneIndexAndWeight);
 		}
@@ -836,7 +838,7 @@ void FbxLoader::GetOnlyAnimation(
 
 void FbxLoader::GetVerticesAndIndice(
 	FbxMesh * pMesh, 
-	std::vector<SkinnedVertex> & outVertexVector, 
+	std::vector<CharacterVertex> & outVertexVector, 
 	std::vector<uint32_t> & outIndexVector,
 	SkinnedData& outSkinnedData)
 {
@@ -934,7 +936,7 @@ void FbxLoader::GetVerticesAndIndice(
 				IndexVector[CurrBoneName].push_back(Index);
 
 				// Vertex
-				SkinnedVertex SkinnedVertexInfo;
+				CharacterVertex SkinnedVertexInfo;
 				SkinnedVertexInfo.Pos = Temp.Pos;
 				SkinnedVertexInfo.Normal = Temp.Normal;
 				SkinnedVertexInfo.TexC = Temp.TexC;
@@ -1065,7 +1067,7 @@ void FbxLoader::GetVerticesAndIndice(
 
 void FbxLoader::GetMaterials(FbxNode* pNode, std::vector<Material>& outMaterial)
 {
-	uint32_t MaterialCount = pNode->GetMaterialCount();
+	int MaterialCount = pNode->GetMaterialCount();
 
 	for (int i = 0; i < MaterialCount; ++i)
 	{
@@ -1157,7 +1159,7 @@ void FbxLoader::GetMaterialAttribute(FbxSurfaceMaterial* pMaterial, Material& ou
 	}
 }
 
-void FbxLoader::GetMaterialTexture(FbxSurfaceMaterial * pMaterial, Material & Mat)
+void FbxLoader::GetMaterialTexture(fbxsdk::FbxSurfaceMaterial * pMaterial, Material & Mat)
 {
 	unsigned int textureIndex = 0;
 	FbxProperty property;
@@ -1204,7 +1206,6 @@ void FbxLoader::GetMaterialTexture(FbxSurfaceMaterial * pMaterial, Material & Ma
 		}
 	}
 }
-
 
 FbxAMatrix FbxLoader::GetGeometryTransformation(FbxNode* pNode)
 {
@@ -1254,7 +1255,7 @@ void FbxLoader::ExportAnimation(
 }
 
 void FbxLoader::ExportFBX(
-	std::vector<SkinnedVertex>& outVertexVector, 
+	std::vector<CharacterVertex>& outVertexVector, 
 	std::vector<uint32_t>& outIndexVector, 
 	SkinnedData& outSkinnedData, 
 	const std::string& clipName, 

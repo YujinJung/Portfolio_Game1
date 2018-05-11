@@ -75,11 +75,11 @@ void PlayerUI::BuildGeometry(
 	std::string geoName)
 {
 	UINT vCount = 0, iCount = 0;
-	vCount = inVertices.size();
-	iCount = inIndices.size();
+	vCount = (UINT)inVertices.size();
+	iCount = (UINT)inIndices.size();
 
-	const UINT vbByteSize = (UINT)inVertices.size() * sizeof(UIVertex);
-	const UINT ibByteSize = (UINT)inIndices.size() * sizeof(std::uint32_t);
+	const UINT vbByteSize = vCount * sizeof(UIVertex);
+	const UINT ibByteSize = iCount * sizeof(std::uint32_t);
 
 	auto geo = std::make_unique<MeshGeometry>();
 	geo->Name = geoName;

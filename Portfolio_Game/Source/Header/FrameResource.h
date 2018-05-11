@@ -36,14 +36,7 @@ struct PassConstants
 	Light Lights[MaxLights];
 };
 
-struct SkinnedConstants
-{
-	DirectX::XMFLOAT4X4 BoneTransforms[96];
-	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
-	DirectX::XMFLOAT4X4 TexTransform = MathHelper::Identity4x4();
-};
-
-struct MonsterContants
+struct CharacterConstants
 {
 	DirectX::XMFLOAT4X4 BoneTransforms[96];
 	DirectX::XMFLOAT4X4 World = MathHelper::Identity4x4();
@@ -79,7 +72,7 @@ struct Vertex
 	}
 };
 
-struct SkinnedVertex
+struct CharacterVertex
 {
 	DirectX::XMFLOAT3 Pos;
 	DirectX::XMFLOAT3 Normal;
@@ -98,26 +91,20 @@ struct UIVertex
 	float Row;
 };
 
-// Stores the resources needed for the CPU to build the command lists
-// for a frame.  
+// Stores the resources needed for the CPU to build the command lists for a frame.  
 struct FrameResource
 {
 public:
-    
     FrameResource(ID3D12Device* device, UINT passCount, UINT objectCount, UINT materialCount, UINT PlayerCount, UINT MonsterCount, UINT UICount, UINT MonsterUICount);
     FrameResource(const FrameResource& rhs) = delete;
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
 
-    // We cannot reset the allocator until the GPU is done processing the commands.
-    // So each frame needs their own allocator.
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CmdListAlloc;
 
-    // We cannot update a cbuffer until the GPU is done processing the commands
-    // that reference it.  So each frame needs their own cbuffers.
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
-	std::unique_ptr<UploadBuffer<SkinnedConstants>> PlayerCB = nullptr;
-	std::unique_ptr<UploadBuffer<MonsterContants>> MonsterCB = nullptr;
+	std::unique_ptr<UploadBuffer<CharacterConstants>> PlayerCB = nullptr;
+	std::unique_ptr<UploadBuffer<CharacterConstants>> MonsterCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialConstants>>  MaterialCB = nullptr;
     std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
     std::unique_ptr<UploadBuffer<UIConstants>> UICB = nullptr;
