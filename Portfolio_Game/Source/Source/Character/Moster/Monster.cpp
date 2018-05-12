@@ -333,14 +333,14 @@ void Monster::UpdateCharacterCBs(
 	static float time = 0.0f;
 
 	// Animation per 0.01s
-	if (gt.TotalTime() - time > 0.01f)
-	{
+	//if (gt.TotalTime() - time > 0.01f)
+	//{
 		for (UINT k = 0; k < numOfCharacter; ++k)
 		{
 			mSkinnedModelInst[k]->UpdateSkinnedAnimation(mMonsterInfo[k].mClipName, gt.DeltaTime());
 		}
 		time = gt.TotalTime();
-	}
+	//}
 
 	// Character Offset : mAllsize  / numOfcharacter
 	int monsterFullIndex = 0;

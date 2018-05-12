@@ -561,9 +561,9 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 
 		XMVECTOR CameraPos= mPlayer.mCamera.GetEyePosition();
 
-		if (MathHelper::getDistance(PlayerPos, CameraPos) < 50.0f)
+		if (MathHelper::getDistance(PlayerPos, CameraPos) < 500.0f)
 		{
-			mPlayer.mCamera.Walk(-0.5f);
+			mPlayer.mCamera.Walk(-0.01f);
 			mPlayer.mCamera.UpdateViewMatrix();
 		}
 		else
@@ -805,18 +805,18 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 		NULL, NULL
 	};
 
-	mShaders["standardVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["skinnedVS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "VS", "vs_5_1");
-	mShaders["monsterVS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "VS", "vs_5_1");
-	mShaders["uiVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", playerUIDefines, "VS", "vs_5_1");
-	mShaders["monsterUIVS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", monsterUIDefines, "VS", "vs_5_1");
-	mShaders["skyVS"] = d3dUtil::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["standardVS"] = d3dUtil::CompileShader(L"..\\Shaders\\Default.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["skinnedVS"] = d3dUtil::CompileShader(L"..\\Shaders\\Default.hlsl", skinnedDefines, "VS", "vs_5_1");
+	mShaders["monsterVS"] = d3dUtil::CompileShader(L"..\\Shaders\\Monster.hlsl", nullptr, "VS", "vs_5_1");
+	mShaders["uiVS"] = d3dUtil::CompileShader(L"..\\Shaders\\UI.hlsl", playerUIDefines, "VS", "vs_5_1");
+	mShaders["monsterUIVS"] = d3dUtil::CompileShader(L"..\\Shaders\\UI.hlsl", monsterUIDefines, "VS", "vs_5_1");
+	mShaders["skyVS"] = d3dUtil::CompileShader(L"..\\Shaders\\Sky.hlsl", nullptr, "VS", "vs_5_1");
 
-	mShaders["opaquePS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
-	mShaders["skinnedPS"] = d3dUtil::CompileShader(L"Shaders\\Default.hlsl", skinnedDefines, "PS", "ps_5_1");
-	mShaders["monsterPS"] = d3dUtil::CompileShader(L"Shaders\\Monster.hlsl", nullptr, "PS", "ps_5_1");
-	mShaders["uiPS"] = d3dUtil::CompileShader(L"Shaders\\UI.hlsl", playerUIDefines, "PS", "ps_5_1");
-	mShaders["skyPS"] = d3dUtil::CompileShader(L"Shaders\\Sky.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["opaquePS"] = d3dUtil::CompileShader(L"..\\Shaders\\Default.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["skinnedPS"] = d3dUtil::CompileShader(L"..\\Shaders\\Default.hlsl", skinnedDefines, "PS", "ps_5_1");
+	mShaders["monsterPS"] = d3dUtil::CompileShader(L"..\\Shaders\\Monster.hlsl", nullptr, "PS", "ps_5_1");
+	mShaders["uiPS"] = d3dUtil::CompileShader(L"..\\Shaders\\UI.hlsl", playerUIDefines, "PS", "ps_5_1");
+	mShaders["skyPS"] = d3dUtil::CompileShader(L"..\\Shaders\\Sky.hlsl", nullptr, "PS", "ps_5_1");
 
 	mInputLayout =
 	{
@@ -1523,7 +1523,7 @@ void PortfolioGameApp::BuildMaterials()
 		MatIndex++, 
 		mTextures.GetTextureIndex("stoneTex"), 
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
-		XMFLOAT3(0.05f, 0.05f, 0.05), 
+		XMFLOAT3(0.05f, 0.05f, 0.05f), 
 		0.3f);
 
 	mMaterials.SetMaterial(
