@@ -297,24 +297,39 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 
 	// Architecture
 	// Collision Chk
-	XMVECTOR Look = mPlayer.GetCharacterInfo().mMovement.GetPlayerLook();
+	XMVECTOR playerLook = mPlayer.GetCharacterInfo().mMovement.GetPlayerLook();
+	XMVECTOR playerPos = mPlayer.GetCharacterInfo().mMovement.GetPlayerPosition();
 	auto playerBoundForward = mPlayer.GetCharacterInfo().mBoundingBox;
 	auto playerBoundBackward = playerBoundForward;
 
-	playerBoundForward.Center.x += Look.m128_f32[0];
-	playerBoundForward.Center.y += Look.m128_f32[1];
-	playerBoundForward.Center.z += Look.m128_f32[2];
+	playerBoundForward.Center.x += 3.0f * playerLook.m128_f32[0];
+	playerBoundForward.Center.y += 3.0f * playerLook.m128_f32[1];
+	playerBoundForward.Center.z += 3.0f * playerLook.m128_f32[2];
 
-	playerBoundBackward.Center.x -= Look.m128_f32[0];
-	playerBoundBackward.Center.y -= Look.m128_f32[1];
-	playerBoundBackward.Center.z -= Look.m128_f32[2];
+	playerBoundBackward.Center.x -= 3.0f * playerLook.m128_f32[0];
+	playerBoundBackward.Center.y -= 3.0f * playerLook.m128_f32[1];
+	playerBoundBackward.Center.z -= 3.0f * playerLook.m128_f32[2];
 
 	for (auto&e : mRitems[(int)RenderLayer::Architecture])
 	{
-		if (playerBoundForward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
+		if (isForward && playerBoundForward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
+		{
+			mPlayer.SetClipName("WalkingBackward");
+
+			if (isBackward)
+				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, -7.0f * dt);
+
 			isForward = false;
-		if (playerBoundBackward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
+		}
+		if (isBackward && playerBoundBackward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
+		{
+			mPlayer.SetClipName("playerWalking");
+
+			if (isForward)
+				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 7.0f * dt);
+
 			isBackward = false;
+		}
 	}
 
 	// Input
@@ -341,18 +356,21 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 				mPlayer.SetClipName("run");
 
 				if (isForward)
-					mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 18.0f * dt);
+					mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 50.0f * dt);
+					//mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 18.0f * dt);
+
+				isForward = true;
 			}
 			else
 			{
-
 				mPlayer.SetClipName("playerWalking");
 
 				if (isForward)
 					mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 7.0f * dt);
+
+				isForward = true;
 			}
 
-			isForward = true;
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
 			{
 				if (mPlayer.isClipEnd())
@@ -1398,7 +1416,7 @@ void PortfolioGameApp::LoadFBXArchitecture()
 	archIndex.push_back(outIndices);
 	archName.push_back("Rock0");
 
-
+	
 	BuildArcheGeometry(archVertex, archIndex, archName);
 	BuildFBXTexture(outMaterial, "archiTex", "archiMat");
 
@@ -1513,7 +1531,7 @@ void PortfolioGameApp::LoadTextures()
 
 	mTextures.SetTexture(
 		"redTex",
-		L"../Resource/Textures/red.png");
+		L"../Resource/Textures/red.png"); 
 
 	mTextures.SetTexture(
 		"iconKickTex",
@@ -1584,6 +1602,14 @@ void PortfolioGameApp::BuildMaterials()
 		0.1f);
 
 	mMaterials.SetMaterial(
+		"Transparency",
+		MatIndex++,
+		mTextures.GetTextureIndex("redTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f),
+		XMFLOAT3(0.05f, 0.02f, 0.02f),
+		0.1f);
+
+	mMaterials.SetMaterial(
 		"shadow0", 
 		MatIndex++, 
 		mTextures.GetTextureIndex("grassTex"), 
@@ -1621,32 +1647,7 @@ void PortfolioGameApp::BuildRenderItems()
 {
 	UINT objCBIndex = -1;
 
-	// Ground
-	BuildSubRenderItems(
-		"shapeGeo",
-		"grid",
-		"tundra0",
-		RenderLayer::Opaque,
-		++objCBIndex,
-		XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(-250.0f, -0.1f, -250.0f),
-		XMMatrixScaling(10.0f, 10.0f, 1.0f));
-	BuildSubRenderItems(
-		"shapeGeo",
-		"grid",
-		"stone0",
-		RenderLayer::Opaque,
-		++objCBIndex,
-		XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(-250.0f, -0.1f, 250.0f),
-		XMMatrixScaling(10.0f, 10.0f, 1.0f));
-	BuildSubRenderItems(
-		"shapeGeo",
-		"grid",
-		"tundra0",
-		RenderLayer::Opaque,
-		++objCBIndex,
-		XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(500.0f, -0.1f, 500.0f),
-		XMMatrixScaling(10.0f, 10.0f, 1.0f));
-
+	BuildLandscapeRitems(objCBIndex);
 
 	auto skyRitem = std::make_unique<RenderItem>();
 	XMStoreFloat4x4(&skyRitem->World, XMMatrixScaling(5000.0f, 5000.0f, 5000.0f));
@@ -1663,7 +1664,7 @@ void PortfolioGameApp::BuildRenderItems()
 	
 	// Architecture
 	XMMATRIX worldSR = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f);
-	BuildSubRenderItems(
+	BuildSubRitems(
 		"Architecture",
 		"house",
 		"archiMat0",
@@ -1672,7 +1673,7 @@ void PortfolioGameApp::BuildRenderItems()
 		worldSR * XMMatrixTranslation(-300.0f, 0.0f, -200.0f),
 		XMMatrixIdentity());
 
-	BuildSubRenderItems(
+	BuildSubRitems(
 		"Architecture",
 		"house",
 		"archiMat0",
@@ -1681,7 +1682,7 @@ void PortfolioGameApp::BuildRenderItems()
 		worldSR * XMMatrixTranslation(-300.0f, 0.0f, -150.0f),
 		XMMatrixIdentity());
 
-	BuildSubRenderItems(
+	BuildSubRitems(
 		"Architecture",
 		"house",
 		"archiMat0",
@@ -1690,14 +1691,8 @@ void PortfolioGameApp::BuildRenderItems()
 		worldSR * XMMatrixTranslation(-300.0f, 0.0f, -100.0f),
 		XMMatrixIdentity());
 
-	/*BuildArchitecture(
-		worldSR * XMMatrixTranslation(-200.0f, 0.0f, 0.0f),
-		"archiMat0",
-		"house",
-		++objCBIndex);*/
-
 	// Rocks
-	BuildSubRenderItems(
+	BuildSubRitems(
 		"Architecture",
 		"RockCluster",
 		"archiMat1",
@@ -1705,7 +1700,7 @@ void PortfolioGameApp::BuildRenderItems()
 		++objCBIndex,
 		XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f) * XMMatrixTranslation(-100.0f, 3.0f, -200.0f),
 		XMMatrixIdentity());
-	BuildSubRenderItems(
+	BuildSubRitems(
 		"Architecture",
 		"RockCluster",
 		"archiMat1",
@@ -1713,7 +1708,7 @@ void PortfolioGameApp::BuildRenderItems()
 		++objCBIndex,
 		XMMatrixScaling(20.0f, 20.0f, 20.0f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, -XM_PI) * XMMatrixTranslation(-110.0f, 6.0f, -270.0f),
 		XMMatrixIdentity());
-	BuildSubRenderItems(
+	BuildSubRitems(
 		"Architecture",
 		"RockCluster",
 		"archiMat1",
@@ -1721,53 +1716,46 @@ void PortfolioGameApp::BuildRenderItems()
 		++objCBIndex,
 		XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-170.0f, 3.0f, -250.0f),
 		XMMatrixIdentity());
-	
-	// Canyon
-	BuildSubRenderItems(
-		"Architecture",
-		"Canyon0",
-		"archiMat2",
-		RenderLayer::Architecture,
-		++objCBIndex,
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-100.0f, -1.0f, 160.0f),
-		XMMatrixIdentity());
-	BuildSubRenderItems(
-		"Architecture",
-		"Canyon1",
-		"archiMat2",
-		RenderLayer::Architecture,
-		++objCBIndex,
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, -XM_PIDIV2) * XMMatrixTranslation(-300.0f, 72.0f, 660.0f),
-		XMMatrixIdentity());
-	BuildSubRenderItems(
-		"Architecture",
-		"Canyon2",
-		"archiMat2",
-		RenderLayer::Architecture,
-		++objCBIndex,
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(210.0f, 72.0f, 340.0f),
-		XMMatrixIdentity());
 
-
-	/*
-	BuildSubRenderItems(
-		"shapeGeo",
-		"box",
-		"ice0",
-		RenderLayer::Architecture,
-		++objCBIndex,
-		XMMatrixScaling(105.0f, 105.0f, 100.0f) * XMMatrixTranslation(-35.0f, 0.0f, 70.0f),
-		XMMatrixIdentity());*/
-	
-	
-	/*BuildSubRenderItems(
+	BuildSubRitems(
 		"Architecture",
-		"Rock",
+		"Rock0",
 		"archiMat3",
 		RenderLayer::Architecture,
 		++objCBIndex,
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PI, 0.0f, -XM_PI),
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PI, 0.0f, XM_PI) * XMMatrixTranslation(350.0f, -2.0f, 270.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"Rock0",
+		"archiMat3",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PI, 0.0f, XM_PI) * XMMatrixTranslation(370.0f, -2.0f, 240.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"Rock0",
+		"archiMat3",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PI, 0.0f, XM_PIDIV2) * XMMatrixTranslation(390.0f, 20.0f, 270.0f),
+		XMMatrixIdentity());
+
+	/*BuildSubRitems(
+		"Architecture",
+		"oldHouse",
+		"archiMat4",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixTranslation(-0.0f, 0.0f, -0.0f),
 		XMMatrixIdentity());*/
+	
+
+	
+
+	
+	
 
 
 	// Player
@@ -1782,7 +1770,115 @@ void PortfolioGameApp::BuildRenderItems()
 	}
 }
 
-void PortfolioGameApp::BuildSubRenderItems(
+void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
+{
+	// Ground
+	float z = 250.0f;
+	for (int i = 0; i < 4; ++i)
+	{
+		auto subRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&subRitem->TexTransform, XMMatrixScaling(10.0f, 10.0f, 1.0f));
+		subRitem->ObjCBIndex = ++objCBIndex;
+		subRitem->Geo = mGeometries["shapeGeo"].get();
+		subRitem->Mat = mMaterials.Get("tundra0");
+		subRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		subRitem->IndexCount = subRitem->Geo->DrawArgs["grid"].IndexCount;
+		subRitem->StartIndexLocation = subRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+		subRitem->BaseVertexLocation = subRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
+		subRitem->Geo->DrawArgs["grid"].Bounds.Transform(subRitem->Bounds, XMLoadFloat4x4(&subRitem->World));
+
+		z *= -1.0f;
+		if (i > 1)
+		{
+			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(-250.0f, -0.1f, z));
+
+			if (i == 3)
+				subRitem->Mat = mMaterials.Get("stone0");
+		}
+		else
+		{
+			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(250.0f, -0.1f, z));
+		}
+		mRitems[(int)RenderLayer::Opaque].push_back(subRitem.get());
+		mAllRitems.push_back(std::move(subRitem));
+	}
+
+
+	// Area
+	XMMATRIX S = XMMatrixScaling(500.0f, 200.0f, 10.0f);
+	float x = 400.0f;
+	z = 300.0f;
+	for (int i = 0; i < 2; ++i)
+	{
+		// | |
+		x *= -1.0f;
+		auto subRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&subRitem->World, S * XMMatrixRotationY(XM_PIDIV2) * XMMatrixTranslation(x, 0.0f, 0.0f));
+		subRitem->TexTransform = MathHelper::Identity4x4();
+		subRitem->ObjCBIndex = ++objCBIndex;
+		subRitem->Mat = mMaterials.Get("Transparency");
+		subRitem->Geo = mGeometries["shapeGeo"].get();
+		subRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		subRitem->IndexCount = subRitem->Geo->DrawArgs["box"].IndexCount;
+		subRitem->StartIndexLocation = subRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		subRitem->BaseVertexLocation = subRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		subRitem->Geo->DrawArgs["box"].Bounds.Transform(subRitem->Bounds, XMLoadFloat4x4(&subRitem->World));
+		mRitems[(int)RenderLayer::Architecture].push_back(subRitem.get());
+		mAllRitems.push_back(std::move(subRitem));
+
+		// --
+		z *= -1.0f;
+		auto subRitem2 = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&subRitem2->World, S * XMMatrixTranslation(0.0f, 0.0f, z));
+		subRitem2->TexTransform = MathHelper::Identity4x4();
+		subRitem2->ObjCBIndex = ++objCBIndex;
+		subRitem2->Mat = mMaterials.Get("Transparency");
+		subRitem2->Geo = mGeometries["shapeGeo"].get();
+		subRitem2->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		subRitem2->IndexCount = subRitem2->Geo->DrawArgs["box"].IndexCount;
+		subRitem2->StartIndexLocation = subRitem2->Geo->DrawArgs["box"].StartIndexLocation;
+		subRitem2->BaseVertexLocation = subRitem2->Geo->DrawArgs["box"].BaseVertexLocation;
+		subRitem2->Geo->DrawArgs["box"].Bounds.Transform(subRitem2->Bounds, XMLoadFloat4x4(&subRitem2->World));
+		mRitems[(int)RenderLayer::Architecture].push_back(subRitem2.get());
+		mAllRitems.push_back(std::move(subRitem2));
+	}
+	// 1 | 4
+	BuildSubRitems(
+		"shapeGeo",
+		"box",
+		"ice0",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(250.0f, 200.0f, 10.0f) * XMMatrixRotationY(XM_PIDIV2) * XMMatrixTranslation(0.0f, 0.0f, -150.0f),
+		XMMatrixIdentity());
+
+	// Canyon
+	BuildSubRitems(
+		"Architecture",
+		"Canyon0",
+		"archiMat2",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-100.0f, -1.0f, 160.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"Canyon2",
+		"archiMat2",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(210.0f, 72.0f, 340.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"Canyon1",
+		"archiMat2",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, -XM_PIDIV2) * XMMatrixTranslation(-300.0f, 72.0f, 660.0f),
+		XMMatrixIdentity());
+}
+void PortfolioGameApp::BuildSubRitems(
 	std::string geoName,
 	std::string subRitemName,
 	std::string matName, 

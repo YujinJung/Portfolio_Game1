@@ -66,7 +66,8 @@ private:
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildRenderItems();
-	void BuildSubRenderItems(
+	void BuildLandscapeRitems(UINT& objCBIndex);
+	void BuildSubRitems(
 		std::string geoName,
 		std::string subRitemName,
 		std::string matName,

@@ -1,6 +1,6 @@
 ﻿VertexSize 2131
 IndexSize 7053
-MaterialSize 1
+MaterialSize 0
 Pos 617.874 -802.679 65.3288
 Normal -0.988915 -0.0773338 -0.126755
 TexC 0.558866 0.291332
@@ -8747,11 +8747,3 @@ Indices
 2125 2126 2127
 2128 2129 2130
 Material 
-Name ..\Resource\FBX\Architecture\Canyon\canyon8.jpg
-Ambient 0.498039 0.498039 0.498039
-Diffuse 0.498039 0.498039 0.498039 1
-Fresnel 0 0 0
-Specular 0.498039 0.498039 0.498039
-Emissive 0 0 0
-Roughness -54.7152
-MatTransform 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 

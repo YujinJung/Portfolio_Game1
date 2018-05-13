@@ -70,6 +70,11 @@ public:
 		std::vector<Material>& outMaterial,
 		std::string fileName);
 
+	bool LoadTXT(
+		std::vector<Vertex>& outVertexVector,
+		std::vector<uint32_t>& outIndexVector,
+		std::string fileName);
+
 	bool LoadAnimationTXT(
 		AnimationClip& animation,
 		const std::string& clipName, 

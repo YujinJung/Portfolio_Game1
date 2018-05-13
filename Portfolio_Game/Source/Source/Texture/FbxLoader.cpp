@@ -124,6 +124,7 @@ HRESULT FbxLoader::LoadFBX(
 {
 	// if exported animation exist
 	if (LoadTXT(outVertexVector, outIndexVector, outMaterial, fileName)) return S_OK;
+	if (LoadTXT(outVertexVector, outIndexVector, fileName)) return S_OK;
 
 	if (gFbxManager == nullptr)
 	{
@@ -470,6 +471,54 @@ bool FbxLoader::LoadTXT(
 				}
 			}
 			outMaterial.push_back(tempMaterial);
+		}
+
+		return true;
+	}
+
+	return false;
+}
+
+bool FbxLoader::LoadTXT(
+	std::vector<Vertex>& outVertexVector,
+	std::vector<uint32_t>& outIndexVector,
+	std::string fileName)
+{
+	fileName = fileName + ".txt";
+	std::ifstream fileIn(fileName);
+
+	uint32_t vertexSize, indexSize;
+	uint32_t materialSize;
+
+	std::string ignore;
+	if (fileIn)
+	{
+		fileIn >> ignore >> vertexSize;
+		fileIn >> ignore >> indexSize;
+		fileIn >> ignore >> materialSize;
+
+		if (vertexSize == 0 || indexSize == 0)
+			return false;
+
+		// Vertex Data
+		for (uint32_t i = 0; i < vertexSize; ++i)
+		{
+			Vertex vertex;
+			fileIn >> ignore >> vertex.Pos.x >> vertex.Pos.y >> vertex.Pos.z;
+			fileIn >> ignore >> vertex.Normal.x >> vertex.Normal.y >> vertex.Normal.z;
+			fileIn >> ignore >> vertex.TexC.x >> vertex.TexC.y;
+
+			// push_back
+			outVertexVector.push_back(vertex);
+		}
+
+		// Index Data
+		fileIn >> ignore;
+		for (uint32_t i = 0; i < indexSize; ++i)
+		{
+			uint32_t index;
+			fileIn >> index;
+			outIndexVector.push_back(index);
 		}
 
 		return true;
