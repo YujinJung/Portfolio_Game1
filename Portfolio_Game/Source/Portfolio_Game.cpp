@@ -1416,6 +1416,25 @@ void PortfolioGameApp::LoadFBXArchitecture()
 	archIndex.push_back(outIndices);
 	archName.push_back("Rock0");
 
+	outVertices.clear();
+	outIndices.clear();
+	fbx.clear();
+
+	FileName = "../Resource/FBX/Architecture/Tree/Tree";
+	fbx.LoadFBX(outVertices, outIndices, outMaterial, FileName);
+	archVertex.push_back(outVertices);
+	archIndex.push_back(outIndices);
+	archName.push_back("Tree"); 
+
+	outVertices.clear();
+	outIndices.clear();
+	fbx.clear();
+
+	FileName = "../Resource/FBX/Architecture/Tree/Leaf";
+	fbx.LoadFBX(outVertices, outIndices, outMaterial, FileName);
+	archVertex.push_back(outVertices);
+	archIndex.push_back(outIndices);
+	archName.push_back("Leaf");
 	
 	BuildArcheGeometry(archVertex, archIndex, archName);
 	BuildFBXTexture(outMaterial, "archiTex", "archiMat");
@@ -1663,6 +1682,8 @@ void PortfolioGameApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(skyRitem));
 	
 	// Architecture
+	
+	// House - start
 	XMMATRIX worldSR = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f);
 	BuildSubRitems(
 		"Architecture",
@@ -1672,7 +1693,6 @@ void PortfolioGameApp::BuildRenderItems()
 		++objCBIndex,
 		worldSR * XMMatrixTranslation(-300.0f, 0.0f, -200.0f),
 		XMMatrixIdentity());
-
 	BuildSubRitems(
 		"Architecture",
 		"house",
@@ -1681,7 +1701,6 @@ void PortfolioGameApp::BuildRenderItems()
 		++objCBIndex,
 		worldSR * XMMatrixTranslation(-300.0f, 0.0f, -150.0f),
 		XMMatrixIdentity());
-
 	BuildSubRitems(
 		"Architecture",
 		"house",
@@ -1690,6 +1709,25 @@ void PortfolioGameApp::BuildRenderItems()
 		++objCBIndex,
 		worldSR * XMMatrixTranslation(-300.0f, 0.0f, -100.0f),
 		XMMatrixIdentity());
+
+	// House - third room
+	BuildSubRitems(
+		"Architecture",
+		"house",
+		"archiMat0",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		worldSR * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(350.0f, 0.0f, 180.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"house",
+		"archiMat0",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		worldSR * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(350.0f, 0.0f, 130.0f),
+		XMMatrixIdentity());
+
 
 	// Rocks
 	BuildSubRitems(
@@ -1717,6 +1755,7 @@ void PortfolioGameApp::BuildRenderItems()
 		XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-170.0f, 3.0f, -250.0f),
 		XMMatrixIdentity());
 
+	// Rocks
 	BuildSubRitems(
 		"Architecture",
 		"Rock0",
@@ -1741,23 +1780,81 @@ void PortfolioGameApp::BuildRenderItems()
 		++objCBIndex,
 		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PI, 0.0f, XM_PIDIV2) * XMMatrixTranslation(390.0f, 20.0f, 270.0f),
 		XMMatrixIdentity());
-
-	/*BuildSubRitems(
+	BuildSubRitems(
 		"Architecture",
-		"oldHouse",
-		"archiMat4",
+		"Rock0",
+		"archiMat3",
 		RenderLayer::Architecture,
 		++objCBIndex,
-		XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixTranslation(-0.0f, 0.0f, -0.0f),
-		XMMatrixIdentity());*/
-	
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PI, 0.0f, XM_PIDIV2) * XMMatrixTranslation(360.0f, 0.0f, 230.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"Rock0",
+		"archiMat3",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PI, 0.0f, XM_PIDIV2) * XMMatrixTranslation(350.0f, 0.0f, 250.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"Rock0",
+		"archiMat3",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PI, 0.0f, XM_PI) * XMMatrixTranslation(360.0f, 10.0f, 250.0f),
+		XMMatrixIdentity());
+
+	// Tree
+	XMMATRIX treeWorldSR = XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationX(-XM_PIDIV2);
+	float treeX = 90.0f;
+
+	for (int i = 0; i < 20; ++i)
+	{
+		auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+		std::mt19937 engine{ (unsigned int)seed };
+		std::uniform_int_distribution <> dis{ 15, 25 };
+		int x{ dis(engine) };
+		treeX += static_cast<float>(x);
+
+		XMMATRIX treeWorld = treeWorldSR * XMMatrixTranslation(treeX, 0.0f, 300.0f - static_cast<float>(x));
+		BuildSubRitems(
+			"Architecture",
+			"Tree",
+			"archiMat4",
+			RenderLayer::Architecture,
+			++objCBIndex,
+			treeWorld,
+			XMMatrixIdentity());
+		BuildSubRitems(
+			"Architecture",
+			"Leaf",
+			"archiMat5",
+			RenderLayer::Architecture,
+			++objCBIndex,
+			treeWorld,
+			XMMatrixIdentity());
+
+		treeWorld = treeWorldSR * XMMatrixTranslation(treeX - static_cast<float>(x), 0.0f, 320.0f - static_cast<float>(x));
+		BuildSubRitems(
+			"Architecture",
+			"Tree",
+			"archiMat4",
+			RenderLayer::Architecture,
+			++objCBIndex,
+			treeWorld,
+			XMMatrixIdentity());
+		BuildSubRitems(
+			"Architecture",
+			"Leaf",
+			"archiMat5",
+			RenderLayer::Architecture,
+			++objCBIndex,
+			treeWorld,
+			XMMatrixIdentity());
+	}
 
 	
-
-	
-	
-
-
 	// Player
 	mPlayer.BuildRenderItem(mMaterials, "playerMat0");
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
@@ -1846,7 +1943,7 @@ void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 	BuildSubRitems(
 		"shapeGeo",
 		"box",
-		"ice0",
+		"Transparency",
 		RenderLayer::Architecture,
 		++objCBIndex,
 		XMMatrixScaling(250.0f, 200.0f, 10.0f) * XMMatrixRotationY(XM_PIDIV2) * XMMatrixTranslation(0.0f, 0.0f, -150.0f),
@@ -1859,7 +1956,8 @@ void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 		"archiMat2",
 		RenderLayer::Architecture,
 		++objCBIndex,
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-100.0f, -1.0f, 160.0f),
+		//XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-100.0f, -1.0f, 160.0f),
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f),
 		XMMatrixIdentity());
 	BuildSubRitems(
 		"Architecture",
@@ -1867,7 +1965,7 @@ void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 		"archiMat2",
 		RenderLayer::Architecture,
 		++objCBIndex,
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(210.0f, 72.0f, 340.0f),
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(170.0f, 72.0f, 340.0f),
 		XMMatrixIdentity());
 	BuildSubRitems(
 		"Architecture",
@@ -1875,8 +1973,19 @@ void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 		"archiMat2",
 		RenderLayer::Architecture,
 		++objCBIndex,
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, -XM_PIDIV2) * XMMatrixTranslation(-300.0f, 72.0f, 660.0f),
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, -XM_PIDIV2) * XMMatrixTranslation(-340.0f, 72.0f, 660.0f),
 		XMMatrixIdentity());
+
+	// fourth room
+	//BuildSubRitems(
+	//	"Architecture",
+	//	"Canyon0",
+	//	//"archiMat2",
+	//	"ice0",
+	//	RenderLayer::Architecture,
+	//	++objCBIndex,
+	//	XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f) * XMMatrixTranslation(0.0f, -1.0f, 0.0f),
+	//	XMMatrixIdentity());
 }
 void PortfolioGameApp::BuildSubRitems(
 	std::string geoName,
