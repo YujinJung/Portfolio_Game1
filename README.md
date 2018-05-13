@@ -26,3 +26,5 @@
     - [Turbosquid](https://www.turbosquid.com)
         - [House](https://www.turbosquid.com/FullPreview/Index.cfm/ID/689373)
         - [Rocks](https://www.turbosquid.com/FullPreview/Index.cfm/ID/1074560)
+        - [Rocks](https://www.turbosquid.com/FullPreview/Index.cfm/ID/1048945)
+        - [Canyon](https://www.turbosquid.com/FullPreview/Index.cfm/ID/744445)

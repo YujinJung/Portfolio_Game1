@@ -191,7 +191,7 @@ HRESULT FbxLoader::LoadFBX(
 {
 	AnimationClip animation;
 	// if exported animation exist
-	if (LoadAnimation(animation, clipName, fileName))
+	if (LoadAnimationTXT(animation, clipName, fileName))
 	{
 		outSkinnedData.SetAnimation(animation, clipName);
 		return S_OK;
@@ -478,7 +478,7 @@ bool FbxLoader::LoadTXT(
 	return false;
 }
 
-bool FbxLoader::LoadAnimation(
+bool FbxLoader::LoadAnimationTXT(
 	AnimationClip& animation, 
 	const std::string& clipName, 
 	std::string fileName)

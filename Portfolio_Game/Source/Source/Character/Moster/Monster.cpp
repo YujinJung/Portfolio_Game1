@@ -262,10 +262,10 @@ void Monster::BuildRenderItem(
 		CharacterInfo cInfo;
 
 		// Monster - Random Position
-		// 50 ~ 150 | -50 ~ -150
+		// 130 ~ 230 | -130 ~ -230
 		auto seed = std::chrono::system_clock::now().time_since_epoch().count();
 		std::mt19937 engine{ (unsigned int)seed };
-		std::uniform_int_distribution <> dis{ 50, 150 }; // monster Area
+		std::uniform_int_distribution <> dis{ 130, 230 }; // monster Area
 
 		//Generate a random integer
 		// offset - 0 | -200
@@ -279,7 +279,7 @@ void Monster::BuildRenderItem(
 		if (cIndex == 0) 
 		{
 			BossScale = 3.0f;
-			monsterPos = XMVectorSet(static_cast<float>(100 + offsetX), 0.0f, static_cast<float>(100 + offsetZ), 0.0f);
+			monsterPos = XMVectorSet(static_cast<float>(180 + offsetX), 0.0f, static_cast<float>(180 + offsetZ), 0.0f);
 		}
 
 		cInfo.mMovement.SetPlayerPosition(monsterPos);

@@ -104,7 +104,7 @@ void PlayerUI::BuildGeometry(
 	UISubmesh.BaseVertexLocation = 0;
 
 	geo->DrawArgs["SkillUI"] = UISubmesh;
-
+	
 	mGeometry = std::move(geo);
 }
 
@@ -131,7 +131,7 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	// atan(theta) : Theta is associated with PlayerCamera
 	XMStoreFloat4x4(&bgHealthBar->World, XMMatrixScaling(0.01f, 1.0f, 0.002f) * XMMatrixRotationX(-atan(3.0f / 2.0f))  * XMMatrixTranslation(0.0f, 0.9f, 0.001f));
 	bgHealthBar->TexTransform = MathHelper::Identity4x4();
-	bgHealthBar->Mat = mMaterials.Get("bricks0");
+	bgHealthBar->Mat = mMaterials.Get("stone0");
 	bgHealthBar->Geo = mGeometries["shapeGeo"].get();
 	bgHealthBar->ObjCBIndex = UIIndex++;
 	bgHealthBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;

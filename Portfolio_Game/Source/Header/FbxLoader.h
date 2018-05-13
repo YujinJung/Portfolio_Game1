@@ -70,7 +70,7 @@ public:
 		std::vector<Material>& outMaterial,
 		std::string fileName);
 
-	bool LoadAnimation(
+	bool LoadAnimationTXT(
 		AnimationClip& animation,
 		const std::string& clipName, 
 		std::string fileName);

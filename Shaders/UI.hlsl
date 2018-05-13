@@ -65,12 +65,10 @@ float4 PS(VertexOut pin) : SV_Target
 	float fogAmount = saturate((distanceToEye - gFogStart) / gFogRange);
 	litColor = lerp(litColor, gFogColor, fogAmount);
 
-	/*if (diffuseAlbedo.x == 0.0f &&
-		diffuseAlbedo.y == 0.0f &&
-			diffuseAlbedo.z == 0.0f)
+	if (diffuseAlbedo.a == 0.0f)
 	{
 		discard;
-	}*/
+	}
 
 	return litColor;
 }

@@ -51,7 +51,7 @@ struct SkinnedModelInstance
 		// Loop animation
 		if (TimePos > SkinnedInfo->GetClipEndTime(ClipName))
 		{
-			if (ClipName == "Idle" || ClipName == "Walking" || ClipName == "run")
+			if (ClipName == "Idle" || ClipName == "Walking")
 			{
 				TimePos = 0.0f;
 			}
@@ -82,8 +82,6 @@ struct SkinnedModelInstance
 		// Compute the final transforms for this time position.
 		SkinnedInfo->GetFinalTransforms(ClipName, TimePos, FinalTransforms);
 	}
-
-	// TODO SetClipName?
 };
 
 struct CharacterInfo

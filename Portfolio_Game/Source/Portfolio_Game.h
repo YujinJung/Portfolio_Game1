@@ -66,11 +66,14 @@ private:
 	void BuildPSOs();
 	void BuildFrameResources();
 	void BuildRenderItems();
-	void BuildArchitecture(
-		const FXMMATRIX& world,
+	void BuildSubRenderItems(
+		std::string geoName,
+		std::string subRitemName,
 		std::string matName,
-		std::string architectureName,
-		UINT &objCBIndex);
+		RenderLayer subRtype,
+		UINT &objCBIndex,
+		FXMMATRIX& worldTransform,
+		CXMMATRIX& texTransform);
 	void DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const std::vector<RenderItem*>& ritems);
 	std::array<const CD3DX12_STATIC_SAMPLER_DESC, 6> GetStaticSamplers();
 
