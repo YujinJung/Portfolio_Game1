@@ -10,7 +10,7 @@ Player::Player()
 	mFullHealth(100),
 	mDamage(10)
 {
-	XMVECTOR P = XMVectorSet(150.0f, 0.0f, 200.0f, 0.0f);
+	XMVECTOR P = XMVectorSet(-150.0f, 0.0f, -200.0f, 0.0f);
 	mPlayerInfo.mMovement.SetPlayerPosition(P);
 }
 

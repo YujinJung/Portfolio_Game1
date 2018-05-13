@@ -1339,10 +1339,13 @@ void PortfolioGameApp::LoadFBXSubMonster(
 		"MonsterGeo");
 	tempMonster->SetMaterialName(inMaterialName);
 
-	int x = 0, z = 0;
-	if (!isEvenX)	x = -360;
-	if (!isEvenZ)	z = -360;
-	tempMonster->SetOffsetXZ(x, z);
+	if(!isEvenX)
+		tempMonster->SetMonsterIndex(1);
+	else if(!isEvenZ)
+		tempMonster->SetMonsterIndex(3);
+	else
+		tempMonster->SetMonsterIndex(2);
+
 	
 	mMonstersByZone.push_back(std::move(tempMonster));
 }
@@ -1683,7 +1686,110 @@ void PortfolioGameApp::BuildRenderItems()
 	
 	// Architecture
 	
-	// House - start
+	
+
+	
+	// Player
+	mPlayer.BuildRenderItem(mMaterials, "playerMat0");
+	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
+
+	// Monster
+	for (int i = 0; i < mMonstersByZone.size(); ++i)
+	{
+		mMonstersByZone[i]->BuildRenderItem(mMaterials, "monsterMat" + i);
+		mMonstersByZone[i]->mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonstersByZone[i]->GetNumberOfMonster());
+	}
+}
+
+void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
+{
+	// Ground
+	float z = 250.0f;
+	for (int i = 0; i < 4; ++i)
+	{
+		auto subRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&subRitem->TexTransform, XMMatrixScaling(10.0f, 10.0f, 1.0f));
+		subRitem->ObjCBIndex = ++objCBIndex;
+		subRitem->Geo = mGeometries["shapeGeo"].get();
+		subRitem->Mat = mMaterials.Get("tundra0");
+		subRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		subRitem->IndexCount = subRitem->Geo->DrawArgs["grid"].IndexCount;
+		subRitem->StartIndexLocation = subRitem->Geo->DrawArgs["grid"].StartIndexLocation;
+		subRitem->BaseVertexLocation = subRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
+		subRitem->Geo->DrawArgs["grid"].Bounds.Transform(subRitem->Bounds, XMLoadFloat4x4(&subRitem->World));
+
+		z *= -1.0f;
+		if (i > 1)
+		{
+			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(-250.0f, -0.1f, z));
+
+			if (i == 3)
+				subRitem->Mat = mMaterials.Get("stone0");
+		}
+		else
+		{
+			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(250.0f, -0.1f, z));
+
+			if(i == 0)
+				subRitem->Mat = mMaterials.Get("ice0");
+		}
+		mRitems[(int)RenderLayer::Opaque].push_back(subRitem.get());
+		mAllRitems.push_back(std::move(subRitem));
+	}
+
+
+	// Area
+	XMMATRIX S = XMMatrixScaling(500.0f, 200.0f, 10.0f);
+	float x = 400.0f;
+	z = 300.0f;
+	for (int i = 0; i < 2; ++i)
+	{
+		// | |
+		x *= -1.0f;
+		auto subRitem = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&subRitem->World, S * XMMatrixRotationY(XM_PIDIV2) * XMMatrixTranslation(x, 0.0f, 0.0f));
+		subRitem->TexTransform = MathHelper::Identity4x4();
+		subRitem->ObjCBIndex = ++objCBIndex;
+		subRitem->Mat = mMaterials.Get("Transparency");
+		subRitem->Geo = mGeometries["shapeGeo"].get();
+		subRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		subRitem->IndexCount = subRitem->Geo->DrawArgs["box"].IndexCount;
+		subRitem->StartIndexLocation = subRitem->Geo->DrawArgs["box"].StartIndexLocation;
+		subRitem->BaseVertexLocation = subRitem->Geo->DrawArgs["box"].BaseVertexLocation;
+		subRitem->Geo->DrawArgs["box"].Bounds.Transform(subRitem->Bounds, XMLoadFloat4x4(&subRitem->World));
+		mRitems[(int)RenderLayer::Architecture].push_back(subRitem.get());
+		mAllRitems.push_back(std::move(subRitem));
+
+		// --
+		z *= -1.0f;
+		auto subRitem2 = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&subRitem2->World, S * XMMatrixTranslation(0.0f, 0.0f, z));
+		subRitem2->TexTransform = MathHelper::Identity4x4();
+		subRitem2->ObjCBIndex = ++objCBIndex;
+		subRitem2->Mat = mMaterials.Get("Transparency");
+		subRitem2->Geo = mGeometries["shapeGeo"].get();
+		subRitem2->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		subRitem2->IndexCount = subRitem2->Geo->DrawArgs["box"].IndexCount;
+		subRitem2->StartIndexLocation = subRitem2->Geo->DrawArgs["box"].StartIndexLocation;
+		subRitem2->BaseVertexLocation = subRitem2->Geo->DrawArgs["box"].BaseVertexLocation;
+		subRitem2->Geo->DrawArgs["box"].Bounds.Transform(subRitem2->Bounds, XMLoadFloat4x4(&subRitem2->World));
+		mRitems[(int)RenderLayer::Architecture].push_back(subRitem2.get());
+		mAllRitems.push_back(std::move(subRitem2));
+	}
+	// 1 | 4
+	BuildSubRitems(
+		"shapeGeo",
+		"box",
+		"ice0",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(250.0f, 200.0f, 10.0f) * XMMatrixRotationY(XM_PIDIV2) * XMMatrixTranslation(0.0f, 0.0f, -150.0f),
+		XMMatrixScaling(5.0f, 4.0f, 1.0f));
+	
+
+	// First Room
+
+	// House
 	XMMATRIX worldSR = XMMatrixScaling(0.5f, 0.5f, 0.5f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, -XM_PIDIV2, 0.0f);
 	BuildSubRitems(
 		"Architecture",
@@ -1710,25 +1816,6 @@ void PortfolioGameApp::BuildRenderItems()
 		worldSR * XMMatrixTranslation(-300.0f, 0.0f, -100.0f),
 		XMMatrixIdentity());
 
-	// House - third room
-	BuildSubRitems(
-		"Architecture",
-		"house",
-		"archiMat0",
-		RenderLayer::Architecture,
-		++objCBIndex,
-		worldSR * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(350.0f, 0.0f, 180.0f),
-		XMMatrixIdentity());
-	BuildSubRitems(
-		"Architecture",
-		"house",
-		"archiMat0",
-		RenderLayer::Architecture,
-		++objCBIndex,
-		worldSR * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(350.0f, 0.0f, 130.0f),
-		XMMatrixIdentity());
-
-
 	// Rocks
 	BuildSubRitems(
 		"Architecture",
@@ -1752,7 +1839,115 @@ void PortfolioGameApp::BuildRenderItems()
 		"archiMat1",
 		RenderLayer::Architecture,
 		++objCBIndex,
+		XMMatrixScaling(20.0f, 20.0f, 20.0f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, -XM_PIDIV4 * 3.0f) * XMMatrixTranslation(-50.0f, 6.0f, -270.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"RockCluster",
+		"archiMat1",
+		RenderLayer::Architecture,
+		++objCBIndex,
 		XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-170.0f, 3.0f, -250.0f),
+		XMMatrixIdentity());
+	
+	// Tree
+	XMMATRIX treeWorldSR = XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationX(-XM_PIDIV2);
+	float treeX = -170.0f;
+
+	for (int i = 0; i < 10; ++i)
+	{
+		auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+		std::mt19937 engine{ (unsigned int)seed };
+		std::uniform_int_distribution <> dis{ 15, 25 };
+		int x{ dis(engine) };
+		treeX -= static_cast<float>(x);
+
+		XMMATRIX treeWorld = treeWorldSR * XMMatrixTranslation(treeX, 0.0f, -210.0f - static_cast<float>(x));
+		BuildSubRitems(
+			"Architecture",
+			"Tree",
+			"archiMat4",
+			RenderLayer::Architecture,
+			++objCBIndex,
+			treeWorld,
+			XMMatrixIdentity());
+		BuildSubRitems(
+			"Architecture",
+			"Leaf",
+			"archiMat5",
+			RenderLayer::Architecture,
+			++objCBIndex,
+			treeWorld,
+			XMMatrixIdentity());
+
+		treeWorld = treeWorldSR * XMMatrixTranslation(treeX - static_cast<float>(x), 0.0f, -230.0f - static_cast<float>(x));
+		BuildSubRitems(
+			"Architecture",
+			"Tree",
+			"archiMat4",
+			RenderLayer::Architecture,
+			++objCBIndex,
+			treeWorld,
+			XMMatrixIdentity());
+		BuildSubRitems(
+			"Architecture",
+			"Leaf",
+			"archiMat5",
+			RenderLayer::Architecture,
+			++objCBIndex,
+			treeWorld,
+			XMMatrixIdentity());
+	}
+
+
+	// Second Room
+
+	// Canyon
+	BuildSubRitems(
+		"Architecture",
+		"Canyon0",
+		"archiMat2",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		//XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-100.0f, -1.0f, 160.0f),
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"Canyon2",
+		"archiMat2",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(170.0f, 72.0f, 340.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"Canyon1",
+		"archiMat2",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, -XM_PIDIV2) * XMMatrixTranslation(-340.0f, 72.0f, 660.0f),
+		XMMatrixIdentity());
+
+
+	// Third Room
+
+	// House
+	BuildSubRitems(
+		"Architecture",
+		"house",
+		"archiMat0",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		worldSR * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(350.0f, 0.0f, 180.0f),
+		XMMatrixIdentity());
+	BuildSubRitems(
+		"Architecture",
+		"house",
+		"archiMat0",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		worldSR * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(350.0f, 0.0f, 130.0f),
 		XMMatrixIdentity());
 
 	// Rocks
@@ -1806,8 +2001,8 @@ void PortfolioGameApp::BuildRenderItems()
 		XMMatrixIdentity());
 
 	// Tree
-	XMMATRIX treeWorldSR = XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationX(-XM_PIDIV2);
-	float treeX = 90.0f;
+	treeWorldSR = XMMatrixScaling(10.0f, 10.0f, 10.0f) * XMMatrixRotationX(-XM_PIDIV2);
+	treeX = 90.0f;
 
 	for (int i = 0; i < 20; ++i)
 	{
@@ -1854,138 +2049,42 @@ void PortfolioGameApp::BuildRenderItems()
 			XMMatrixIdentity());
 	}
 
-	
-	// Player
-	mPlayer.BuildRenderItem(mMaterials, "playerMat0");
-	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
-
-	// Monster
-	for (int i = 0; i < mMonstersByZone.size(); ++i)
-	{
-		mMonstersByZone[i]->BuildRenderItem(mMaterials, "monsterMat" + i);
-		mMonstersByZone[i]->mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonstersByZone[i]->GetNumberOfMonster());
-	}
-}
-
-void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
-{
-	// Ground
-	float z = 250.0f;
-	for (int i = 0; i < 4; ++i)
-	{
-		auto subRitem = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&subRitem->TexTransform, XMMatrixScaling(10.0f, 10.0f, 1.0f));
-		subRitem->ObjCBIndex = ++objCBIndex;
-		subRitem->Geo = mGeometries["shapeGeo"].get();
-		subRitem->Mat = mMaterials.Get("tundra0");
-		subRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		subRitem->IndexCount = subRitem->Geo->DrawArgs["grid"].IndexCount;
-		subRitem->StartIndexLocation = subRitem->Geo->DrawArgs["grid"].StartIndexLocation;
-		subRitem->BaseVertexLocation = subRitem->Geo->DrawArgs["grid"].BaseVertexLocation;
-		subRitem->Geo->DrawArgs["grid"].Bounds.Transform(subRitem->Bounds, XMLoadFloat4x4(&subRitem->World));
-
-		z *= -1.0f;
-		if (i > 1)
-		{
-			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(-250.0f, -0.1f, z));
-
-			if (i == 3)
-				subRitem->Mat = mMaterials.Get("stone0");
-		}
-		else
-		{
-			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(250.0f, -0.1f, z));
-		}
-		mRitems[(int)RenderLayer::Opaque].push_back(subRitem.get());
-		mAllRitems.push_back(std::move(subRitem));
-	}
 
 
-	// Area
-	XMMATRIX S = XMMatrixScaling(500.0f, 200.0f, 10.0f);
-	float x = 400.0f;
-	z = 300.0f;
-	for (int i = 0; i < 2; ++i)
-	{
-		// | |
-		x *= -1.0f;
-		auto subRitem = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&subRitem->World, S * XMMatrixRotationY(XM_PIDIV2) * XMMatrixTranslation(x, 0.0f, 0.0f));
-		subRitem->TexTransform = MathHelper::Identity4x4();
-		subRitem->ObjCBIndex = ++objCBIndex;
-		subRitem->Mat = mMaterials.Get("Transparency");
-		subRitem->Geo = mGeometries["shapeGeo"].get();
-		subRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		subRitem->IndexCount = subRitem->Geo->DrawArgs["box"].IndexCount;
-		subRitem->StartIndexLocation = subRitem->Geo->DrawArgs["box"].StartIndexLocation;
-		subRitem->BaseVertexLocation = subRitem->Geo->DrawArgs["box"].BaseVertexLocation;
-		subRitem->Geo->DrawArgs["box"].Bounds.Transform(subRitem->Bounds, XMLoadFloat4x4(&subRitem->World));
-		mRitems[(int)RenderLayer::Architecture].push_back(subRitem.get());
-		mAllRitems.push_back(std::move(subRitem));
+	// Fourth Room
 
-		// --
-		z *= -1.0f;
-		auto subRitem2 = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&subRitem2->World, S * XMMatrixTranslation(0.0f, 0.0f, z));
-		subRitem2->TexTransform = MathHelper::Identity4x4();
-		subRitem2->ObjCBIndex = ++objCBIndex;
-		subRitem2->Mat = mMaterials.Get("Transparency");
-		subRitem2->Geo = mGeometries["shapeGeo"].get();
-		subRitem2->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
-		subRitem2->IndexCount = subRitem2->Geo->DrawArgs["box"].IndexCount;
-		subRitem2->StartIndexLocation = subRitem2->Geo->DrawArgs["box"].StartIndexLocation;
-		subRitem2->BaseVertexLocation = subRitem2->Geo->DrawArgs["box"].BaseVertexLocation;
-		subRitem2->Geo->DrawArgs["box"].Bounds.Transform(subRitem2->Bounds, XMLoadFloat4x4(&subRitem2->World));
-		mRitems[(int)RenderLayer::Architecture].push_back(subRitem2.get());
-		mAllRitems.push_back(std::move(subRitem2));
-	}
-	// 1 | 4
-	BuildSubRitems(
-		"shapeGeo",
-		"box",
-		"Transparency",
-		RenderLayer::Architecture,
-		++objCBIndex,
-		XMMatrixScaling(250.0f, 200.0f, 10.0f) * XMMatrixRotationY(XM_PIDIV2) * XMMatrixTranslation(0.0f, 0.0f, -150.0f),
-		XMMatrixIdentity());
-
-	// Canyon
 	BuildSubRitems(
 		"Architecture",
 		"Canyon0",
-		"archiMat2",
+		"ice0",
 		RenderLayer::Architecture,
 		++objCBIndex,
-		//XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-100.0f, -1.0f, 160.0f),
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f),
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f) * XMMatrixTranslation(100.0f, -1.0f, -100.0f),
 		XMMatrixIdentity());
 	BuildSubRitems(
 		"Architecture",
-		"Canyon2",
-		"archiMat2",
+		"Canyon0",
+		"ice0",
 		RenderLayer::Architecture,
 		++objCBIndex,
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(170.0f, 72.0f, 340.0f),
+		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f) * XMMatrixTranslation(400.0f, -1.0f, -100.0f),
 		XMMatrixIdentity());
 	BuildSubRitems(
 		"Architecture",
-		"Canyon1",
-		"archiMat2",
+		"Canyon0",
+		"ice0",
 		RenderLayer::Architecture,
 		++objCBIndex,
-		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, -XM_PIDIV2) * XMMatrixTranslation(-340.0f, 72.0f, 660.0f),
+		XMMatrixScaling(0.5f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f) * XMMatrixTranslation(400.0f, -1.0f, -500.0f),
 		XMMatrixIdentity());
-
-	// fourth room
-	//BuildSubRitems(
-	//	"Architecture",
-	//	"Canyon0",
-	//	//"archiMat2",
-	//	"ice0",
-	//	RenderLayer::Architecture,
-	//	++objCBIndex,
-	//	XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f) * XMMatrixTranslation(0.0f, -1.0f, 0.0f),
-	//	XMMatrixIdentity());
+	BuildSubRitems(
+		"shapeGeo",
+		"box",
+		"ice0",
+		RenderLayer::Architecture,
+		++objCBIndex,
+		XMMatrixScaling(150.0f, 200.0f, 10.0f) * XMMatrixRotationY(XM_PIDIV2) * XMMatrixTranslation(400.0f, 0.0f, -220.0f),
+		XMMatrixIdentity());
 }
 void PortfolioGameApp::BuildSubRitems(
 	std::string geoName,

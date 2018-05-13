@@ -6,7 +6,7 @@
 
 using namespace DirectX;
 Monster::Monster()
-	: numOfCharacter(10),
+	: numOfCharacter(20),
 	mDamage(2),
 	MaterialName("")
 {
@@ -121,10 +121,9 @@ void Monster::SetMaterialName(const std::string & inMaterialName)
 	MaterialName = inMaterialName;
 }
 
-void Monster::SetOffsetXZ(int x, int z)
+void Monster::SetMonsterIndex(int inMonsterIndex)
 {
-	offsetX = x;
-	offsetZ = z;
+	monsterIndex = inMonsterIndex;
 }
 
 void Monster::BuildGeometry(
@@ -257,29 +256,51 @@ void Monster::BuildRenderItem(
 	auto boneName = mSkinnedInfo.GetBoneName();
 	int BoneCount = boneName.size();
 
+	int xRange, xOffset;
+	int zRange, zOffset;
+	float bossX, bossZ;
+
+	if (monsterIndex == 1)
+	{
+		xRange = 70; xOffset = -230;
+		zRange = 200; zOffset = 50;
+		bossX = -200.0f; bossZ = 200.0f;
+	}
+	else if (monsterIndex == 2)
+	{
+		xRange = 180; xOffset = 150;
+		zRange = 150; zOffset = 100;
+		bossX = 250.0f; bossZ = 150.0f;
+	}
+	else if (monsterIndex == 3)
+	{
+		xRange = 200; xOffset = 100;
+		zRange = 120; zOffset = -280;
+		bossX = 250.0f; bossZ = -250.0f;
+	}
+
 	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
 		CharacterInfo cInfo;
 
 		// Monster - Random Position
-		// 130 ~ 230 | -130 ~ -230
 		auto seed = std::chrono::system_clock::now().time_since_epoch().count();
 		std::mt19937 engine{ (unsigned int)seed };
-		std::uniform_int_distribution <> dis{ 130, 230 }; // monster Area
+		std::uniform_int_distribution <> disX{ 0, xRange }; // monster Area
+		std::uniform_int_distribution <> disz{ 0, zRange }; // monster Area
 
 		//Generate a random integer
-		// offset - 0 | -200
-		int x{ dis(engine) };
-		int z{ dis(engine) };
+		int x{ disX(engine) };
+		int z{ disz(engine) };
 
-		XMVECTOR monsterPos = XMVectorSet(static_cast<float>(x + offsetX), 0.0f, static_cast<float>(z + offsetZ), 0.0f);
+		XMVECTOR monsterPos = XMVectorSet(static_cast<float>(x + xOffset), 0.0f, static_cast<float>(z + zOffset), 0.0f);
 
 		// Boss
 		float BossScale = 0.0f;
 		if (cIndex == 0) 
 		{
 			BossScale = 3.0f;
-			monsterPos = XMVectorSet(static_cast<float>(180 + offsetX), 0.0f, static_cast<float>(180 + offsetZ), 0.0f);
+			monsterPos = XMVectorSet(bossX, 0.0f, bossZ, 0.0f);
 		}
 
 		cInfo.mMovement.SetPlayerPosition(monsterPos);
@@ -521,7 +542,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 				SetClipName("Idle", cIndex);
 			}
 		}
-		else if (distance < 50.0f) // Move Monster
+		else if (distance < 100.0f) // Move Monster
 		{
 			// Monster Collision Check
 			for (UINT j = 0; j < numOfCharacter; ++j)
