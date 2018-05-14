@@ -15,6 +15,9 @@ public:
 	void SetTexture(
 		const std::string& Name,
 		const std::wstring& szFileName);
+	void SetTexture(
+		const std::vector<std::string>& Name,
+		const std::vector<std::wstring>& szFileName);
 
 	void Begin(ID3D12Device* device, ID3D12GraphicsCommandList* cmdList, ID3D12DescriptorHeap* cbvHeap);
 	void End();

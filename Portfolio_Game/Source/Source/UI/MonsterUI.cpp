@@ -37,6 +37,7 @@ void MonsterUI::BuildRenderItem(
 	std::unordered_map<std::string,
 	std::unique_ptr<MeshGeometry>>& mGeometries,
 	Materials & mMaterials,
+	std::string monsterName,
 	UINT numOfMonster)
 {
 	int UIIndex = 0;
@@ -106,7 +107,7 @@ void MonsterUI::BuildRenderItem(
 		auto backNameBar = std::make_unique<RenderItem>();
 		XMStoreFloat4x4(&backNameBar->World, uiWorldTransformSRx * XMMatrixTranslation(0.0f, 2.0f, 0.4995f));
 		backNameBar->TexTransform = MathHelper::Identity4x4();
-		backNameBar->Mat = mMaterials.Get("NameMutant");
+		backNameBar->Mat = mMaterials.Get(monsterName);
 		backNameBar->Geo = mGeometries["shapeGeo"].get();
 		backNameBar->ObjCBIndex = UIIndex++;
 		backNameBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
@@ -118,7 +119,7 @@ void MonsterUI::BuildRenderItem(
 		auto frontNameBar = std::make_unique<RenderItem>();
 		XMStoreFloat4x4(&frontNameBar->World, uiWorldTransformSRx * XMMatrixTranslation(0.0f, 2.0f, 0.5005f));
 		frontNameBar->TexTransform = MathHelper::Identity4x4();
-		frontNameBar->Mat = mMaterials.Get("NameMutant");
+		frontNameBar->Mat = mMaterials.Get(monsterName);
 		frontNameBar->Geo = mGeometries["shapeGeo"].get();
 		frontNameBar->ObjCBIndex = UIIndex++;
 		frontNameBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;

@@ -1271,11 +1271,11 @@ void PortfolioGameApp::BuildFBXTexture(
 		auto playerTexIndex = mTextures.GetTextureIndex(TextureName);
 		mMaterials.SetMaterial(
 			MaterialName,
-			MatIndex++,
 			mTextures.GetTextureIndex(TextureName),
 			outMaterial[i].DiffuseAlbedo,
 			outMaterial[i].FresnelR0,
-			outMaterial[i].Roughness);
+			outMaterial[i].Roughness,
+			MatIndex++);
 	}
 	mTextures.End();
 }
@@ -1550,54 +1550,53 @@ void PortfolioGameApp::LoadTextures()
 {
 	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
 
-	mTextures.SetTexture(
-		"bricksTex",
-		L"../Resource/Textures/bricks.dds");
+	std::vector<std::string> texNames;
+	std::vector<std::wstring> texPaths;
 
-	mTextures.SetTexture(
-		"bricks3Tex",
-		L"../Resource/Textures/bricks3.dds");
+	texNames.push_back("bricksTex");
+	texPaths.push_back(L"../Resource/Textures/bricks.dds");
 
-	mTextures.SetTexture(
-		"stoneTex",
-		L"../Resource/Textures/stone.dds");
-
-	mTextures.SetTexture(
-		"tundraTex",
-		L"../Resource/Textures/tundra.jpg");
-
-	mTextures.SetTexture(
-		"iceTex",
-		L"../Resource/Textures/ice.dds");
-
-	mTextures.SetTexture(
-		"redTex",
-		L"../Resource/Textures/red.png"); 
-
-	mTextures.SetTexture(
-		"iconPunchTex",
-		L"../Resource/UI/iconPunch.png");
-
-	mTextures.SetTexture(
-		"iconKickTex",
-		L"../Resource/UI/iconKick.png");
-
-	mTextures.SetTexture(
-		"iconKick2Tex",
-		L"../Resource/UI/iconKick2.png");
+	texNames.push_back("bricks3Tex");
+	texPaths.push_back(L"../Resource/Textures/bricks3.dds");
 	
-	mTextures.SetTexture(
-		"GameoverTex",
-		L"../Resource/UI/Gameover.png");
+	texNames.push_back("stoneTex");
+	texPaths.push_back(L"../Resource/Textures/stone.dds");
 
-	mTextures.SetTexture(
-		"NameMutantTex",
-		L"../Resource/UI/NameMutant.png");
+	texNames.push_back("tundraTex");
+	texPaths.push_back(L"../Resource/Textures/tundra.jpg");
+
+	texNames.push_back("iceTex");
+	texPaths.push_back(L"../Resource/Textures/ice.dds");
+
+	texNames.push_back("redTex");
+	texPaths.push_back(L"../Resource/Textures/red.png");
+
+	texNames.push_back("iconPunchTex");
+	texPaths.push_back(L"../Resource/UI/iconPunch.png");
+
+	texNames.push_back("iconKickTex");
+	texPaths.push_back(L"../Resource/UI/iconKick.png");
+
+	texNames.push_back("iconKick2Tex");
+	texPaths.push_back(L"../Resource/UI/iconKick2.png");
+	
+	texNames.push_back("GameoverTex");
+	texPaths.push_back(L"../Resource/UI/Gameover.png");
+
+	texNames.push_back("NameMutantTex");
+	texPaths.push_back(L"../Resource/UI/NameMutant.png");
+
+	texNames.push_back("NameWarrokTex");
+	texPaths.push_back(L"../Resource/UI/NameWarrok.png");
+
+	texNames.push_back("NameMawTex");
+	texPaths.push_back(L"../Resource/UI/NameMaw.png");
 
 	// Cube Map,
-	mTextures.SetTexture(
-		"skyCubeMap",
-		L"../Resource/Textures/snowcube1024.dds");
+	texNames.push_back("skyCubeMap");
+	texPaths.push_back(L"../Resource/Textures/snowcube1024.dds");
+
+	mTextures.SetTexture(texNames, texPaths);
 
 	mTextures.End();
 }
@@ -1606,117 +1605,111 @@ void PortfolioGameApp::BuildMaterials()
 {
 	int MatIndex = mMaterials.GetSize();
 
-	mMaterials.SetMaterial(
-		"bricks0",
-		MatIndex++, 
-		mTextures.GetTextureIndex("bricksTex"), 
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
-		XMFLOAT3(0.02f, 0.02f, 0.02f), 
-		0.1f);
+	std::vector<std::string> matName;
+	std::vector<int> texIndices;
+	std::vector<XMFLOAT4> diffuses;
+	std::vector<XMFLOAT3> fresnels;
+	std::vector<float> roughnesses;
+
+	matName.push_back("bricks0");
+	texIndices.push_back(mTextures.GetTextureIndex("bricksTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.02f, 0.02f, 0.02f));
+	roughnesses.push_back(0.1f);
+
+	matName.push_back("bricks3");
+	texIndices.push_back(mTextures.GetTextureIndex("bricks3Tex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.02f, 0.02f, 0.02f));
+	roughnesses.push_back(0.1f);
+
+	matName.push_back("stone0");
+	texIndices.push_back(mTextures.GetTextureIndex("stoneTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.05f, 0.05f, 0.05f));
+	roughnesses.push_back(0.3f);
+
+	matName.push_back("tundra0");
+	texIndices.push_back(mTextures.GetTextureIndex("tundraTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
+	roughnesses.push_back(0.1f);
+
+	matName.push_back("ice0");
+	texIndices.push_back(mTextures.GetTextureIndex("iceTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
+	roughnesses.push_back(0.1f);
+
+	matName.push_back("red");
+	texIndices.push_back(mTextures.GetTextureIndex("redTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
+	roughnesses.push_back(0.1f);
+
+	matName.push_back("Transparency");
+	texIndices.push_back(mTextures.GetTextureIndex("redTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f));
+	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
+	roughnesses.push_back(0.1f);
+
+	matName.push_back("shadow0");
+	texIndices.push_back(mTextures.GetTextureIndex("redTex"));
+	diffuses.push_back(XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f));
+	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
+	roughnesses.push_back(0.0f);
+
+	matName.push_back("iconPunch");
+	texIndices.push_back(mTextures.GetTextureIndex("iconPunchTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
+	roughnesses.push_back(0.0f);
+
+	matName.push_back("iconKick");
+	texIndices.push_back(mTextures.GetTextureIndex("iconKickTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
+	roughnesses.push_back(0.0f);
+
+	matName.push_back("iconKick2");
+	texIndices.push_back(mTextures.GetTextureIndex("iconKick2Tex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
+	roughnesses.push_back(0.0f);
+
+	matName.push_back("Gameover");
+	texIndices.push_back(mTextures.GetTextureIndex("GameoverTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
+	roughnesses.push_back(0.0f);
+
+	matName.push_back("NameMutant");
+	texIndices.push_back(mTextures.GetTextureIndex("NameMutantTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
+	roughnesses.push_back(0.0f);
+
+	matName.push_back("NameWarrok");
+	texIndices.push_back(mTextures.GetTextureIndex("NameWarrokTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
+	roughnesses.push_back(0.0f);
+
+	matName.push_back("NameMaw");
+	texIndices.push_back(mTextures.GetTextureIndex("NameMawTex"));
+	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
+	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
+	roughnesses.push_back(0.0f);
+
+	matName.push_back("sky");
+	texIndices.push_back(mTextureOffset);
+	diffuses.push_back(XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f));
+	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
+	roughnesses.push_back(0.0f);
 
 	mMaterials.SetMaterial(
-		"bricks3",
-		MatIndex++, 
-		mTextures.GetTextureIndex("bricks3Tex"), 
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
-		XMFLOAT3(0.02f, 0.02f, 0.02f), 
-		0.1f);
-
-	mMaterials.SetMaterial(
-		"stone0", 
-		MatIndex++, 
-		mTextures.GetTextureIndex("stoneTex"), 
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f), 
-		XMFLOAT3(0.05f, 0.05f, 0.05f), 
-		0.3f);
-
-	mMaterials.SetMaterial(
-		"tundra0",
-		MatIndex++,
-		mTextures.GetTextureIndex("tundraTex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
-		XMFLOAT3(0.05f, 0.02f, 0.02f),
-		0.1f);
-
-	mMaterials.SetMaterial(
-		"ice0",
-		MatIndex++,
-		mTextures.GetTextureIndex("iceTex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
-		XMFLOAT3(0.05f, 0.02f, 0.02f),
-		0.1f);
-
-	mMaterials.SetMaterial(
-		"red",
-		MatIndex++,
-		mTextures.GetTextureIndex("redTex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
-		XMFLOAT3(0.05f, 0.02f, 0.02f),
-		0.1f);
-
-	mMaterials.SetMaterial(
-		"Transparency",
-		MatIndex++,
-		mTextures.GetTextureIndex("redTex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f),
-		XMFLOAT3(0.05f, 0.02f, 0.02f),
-		0.1f);
-
-	mMaterials.SetMaterial(
-		"shadow0", 
-		MatIndex++, 
-		mTextures.GetTextureIndex("grassTex"), 
-		XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f), 
-		XMFLOAT3(0.001f, 0.001f, 0.001f), 
-		0.0f);
-
-	mMaterials.SetMaterial(
-		"iconPunch",
-		MatIndex++,
-		mTextures.GetTextureIndex("iconPunchTex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
-		XMFLOAT3(0.001f, 0.001f, 0.001f),
-		0.0f);
-
-	mMaterials.SetMaterial(
-		"iconKick",
-		MatIndex++,
-		mTextures.GetTextureIndex("iconKickTex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
-		XMFLOAT3(0.05f, 0.02f, 0.02f),
-		0.0f);
-
-	mMaterials.SetMaterial(
-		"iconKick2",
-		MatIndex++,
-		mTextures.GetTextureIndex("iconKick2Tex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
-		XMFLOAT3(0.05f, 0.02f, 0.02f),
-		0.0f);
-
-	mMaterials.SetMaterial(
-		"Gameover",
-		MatIndex++,
-		mTextures.GetTextureIndex("GameoverTex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
-		XMFLOAT3(0.05f, 0.02f, 0.02f),
-		0.0f);
-	
-	mMaterials.SetMaterial(
-		"NameMutant",
-		MatIndex++,
-		mTextures.GetTextureIndex("NameMutantTex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
-		XMFLOAT3(0.05f, 0.02f, 0.02f),
-		0.0f);
-	
-	mMaterials.SetMaterial(
-		"sky",
-		MatIndex++,
-		mTextureOffset,
-		XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f),
-		XMFLOAT3(0.001f, 0.001f, 0.001f),
-		0.0f);
+		matName, texIndices, diffuses,
+		fresnels, roughnesses, MatIndex);
 	
 }
 
@@ -1749,10 +1742,18 @@ void PortfolioGameApp::BuildRenderItems()
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
 
 	// Monster
+	std::string monsterName;
 	for (int i = 0; i < mMonstersByZone.size(); ++i)
 	{
+		if (i == 0)
+			monsterName = "NameMutant";
+		else if (i == 1)
+			monsterName = "NameWarrok";
+		else if (i == 2)
+			monsterName = "NameMaw";
+
 		mMonstersByZone[i]->BuildRenderItem(mMaterials, "monsterMat" + i);
-		mMonstersByZone[i]->mMonsterUI.BuildRenderItem(mGeometries, mMaterials, mMonstersByZone[i]->GetNumberOfMonster());
+		mMonstersByZone[i]->mMonsterUI.BuildRenderItem(mGeometries, mMaterials, monsterName, mMonstersByZone[i]->GetNumberOfMonster());
 	}
 }
 

@@ -19,9 +19,11 @@ public:
 		ID3D12DescriptorHeap * mCbvHeap,
 		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
 		int mMonsterUICbvOffset);
+
 	void BuildRenderItem(
 		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
 		Materials & mMaterials,
+		std::string monsterName,
 		UINT numOfMonster);
 
 	void UpdateUICBs(

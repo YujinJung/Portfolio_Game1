@@ -63,6 +63,40 @@ void Textures::SetTexture(
 	mTextures[temp->Name] = std::move(temp);
 }
 
+void Textures::SetTexture(
+	const std::vector<std::string>& Name,
+	const std::vector<std::wstring>& szFileName)
+{
+	if (!mInBeginEndPair)
+		throw std::exception("Begin must be called before Set Texture");
+
+	for (int i = 0; i < Name.size(); ++i)
+	{
+		auto temp = std::make_unique<Texture>();
+		temp->Name = Name[i];
+		temp->Filename = szFileName[i];
+		std::string format;
+		for (int j = szFileName[i].size() - 3; j < szFileName[i].size(); ++j)
+			format.push_back(szFileName[i][j]);
+
+		if (format == "dds")
+		{
+			ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(mDevice,
+				mCommandList, temp->Filename.c_str(),
+				temp->Resource, temp->UploadHeap));
+		}
+		else
+		{
+			ThrowIfFailed(DirectX::CreateImageDataTextureFromFile(mDevice,
+				mCommandList, temp->Filename.c_str(),
+				temp->Resource, temp->UploadHeap));
+		}
+
+		mOrderTexture.push_back(temp.get());
+		mTextures[temp->Name] = std::move(temp);
+	}
+}
+
 void Textures::Begin(ID3D12Device * device, ID3D12GraphicsCommandList * cmdList, ID3D12DescriptorHeap* cbvHeap)
 {
 	if (mInBeginEndPair)
@@ -99,6 +133,7 @@ void Textures::BuildConstantBufferViews(int mTextureOffset)
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> vTex;
 	for (auto& e : mOrderTexture)
 	{
+		std::string nn = e->Name;
 		if (e->Name == "skyCubeMap")
 			continue;
 		vTex.push_back(e->Resource);

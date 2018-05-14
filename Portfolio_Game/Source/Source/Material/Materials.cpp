@@ -20,7 +20,12 @@ Material * Materials::Get(std::string Name)
 	return mMaterials[Name].get();
 }
 
-void Materials::SetMaterial(const std::string& Name, const int& MatIndex, const int& DiffuseSrvHeapIndex, const DirectX::XMFLOAT4& DiffuseAlbedo, const DirectX::XMFLOAT3& FresnelR0, const float& Roughness)
+void Materials::SetMaterial(
+	const std::string& Name,
+	const int& DiffuseSrvHeapIndex,
+	const DirectX::XMFLOAT4& DiffuseAlbedo,
+	const DirectX::XMFLOAT3& FresnelR0,
+	const float& Roughness, const int& MatIndex)
 {
 	auto temp = std::make_unique<Material>();
 	temp->Name = Name;
@@ -31,6 +36,26 @@ void Materials::SetMaterial(const std::string& Name, const int& MatIndex, const 
 	temp->Roughness = Roughness;
 
 	mMaterials[Name] = std::move(temp);
+}
+void Materials::SetMaterial(
+	const std::vector<std::string>& Name,
+	const std::vector<int>& DiffuseSrvHeapIndex,
+	const std::vector<DirectX::XMFLOAT4>& DiffuseAlbedo,
+	const std::vector<DirectX::XMFLOAT3>& FresnelR0,
+	const std::vector<float>& Roughness, int MatIndex)
+{
+	for (int i = 0; i < Name.size(); ++i)
+	{
+		auto temp = std::make_unique<Material>();
+		temp->Name = Name[i];
+		temp->MatCBIndex = MatIndex++;
+		temp->DiffuseSrvHeapIndex = DiffuseSrvHeapIndex[i];
+		temp->DiffuseAlbedo = DiffuseAlbedo[i];
+		temp->FresnelR0 = FresnelR0[i];
+		temp->Roughness = Roughness[i];
+
+		mMaterials[Name[i]] = std::move(temp);
+	}
 }
 
 void Materials::Begin(ID3D12Device * device, ID3D12DescriptorHeap * cbvHeap)
