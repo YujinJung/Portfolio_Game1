@@ -31,6 +31,19 @@ void PlayerUI::SetDamageScale(float inScale)
 {
 	mWorldTransform.Scale.x = inScale;
 }
+void PlayerUI::SetGameover()
+{
+	// Show Gameover Text
+	auto& gameoverWorld = mRitems[(int)eUIList::Rect].back()->World;
+	XMStoreFloat4x4(&gameoverWorld, XMLoadFloat4x4(&gameoverWorld) * XMMatrixRotationY(XM_PI));
+
+	// Hide Skill Icon
+	for (int i = (int)eUIList::I_Punch; i < (int)eUIList::Count; ++i)
+	{
+		auto& e = mRitems[i][0]->World;
+		XMStoreFloat4x4(&e, XMLoadFloat4x4(&e) * XMMatrixRotationY(XM_PI));
+	}
+}
 
 void PlayerUI::BuildConstantBufferViews(
 	ID3D12Device * device,
@@ -108,7 +121,10 @@ void PlayerUI::BuildGeometry(
 	mGeometry = std::move(geo);
 }
 
-void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries, Materials & mMaterials)
+void PlayerUI::BuildRenderItem(
+	std::unordered_map<std::string,
+	std::unique_ptr<MeshGeometry>>& mGeometries,
+	Materials & mMaterials)
 {
 	int UIIndex = 0;
 
@@ -189,7 +205,7 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 
 	auto GameoverUI = std::make_unique<RenderItem>();
 	// atan(theta) : Theta is associated with PlayerCamera
-	XMStoreFloat4x4(&GameoverUI->World, XMMatrixScaling(0.1f, 1.0f, 0.021f) * XMMatrixRotationX(-atan(3.0f / 2.0f)) * XMMatrixTranslation(0.0f, 0.901f, -1.0f));
+	XMStoreFloat4x4(&GameoverUI->World, XMMatrixScaling(0.3f, 1.0f, 0.061f) * XMMatrixRotationX(-atan(3.0f / 2.0f)) * XMMatrixRotationY(XM_PI) * XMMatrixTranslation(0.0f, 2.0f, -5.0f));
 	GameoverUI->TexTransform = MathHelper::Identity4x4();
 	GameoverUI->Mat = mMaterials.Get("Gameover");
 	GameoverUI->Geo = mGeometries["shapeGeo"].get();

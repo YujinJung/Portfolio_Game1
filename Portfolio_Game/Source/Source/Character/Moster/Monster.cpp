@@ -6,7 +6,7 @@
 
 using namespace DirectX;
 Monster::Monster()
-	: numOfCharacter(5),
+	: numOfCharacter(15),
 	MaterialName("")
 {
 	for (UINT i = 0; i < numOfCharacter; ++i)

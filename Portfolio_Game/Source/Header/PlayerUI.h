@@ -11,20 +11,34 @@ public:
 	~PlayerUI();
 
 	virtual UINT GetSize() const;
+
 	const std::vector<RenderItem*> GetRenderItem(eUIList Type);
 
+
 	void SetPosition(DirectX::FXMVECTOR inPosition);
+
 	void SetDamageScale(float inScale);
+
+	void SetGameover();
+
 
 	void BuildConstantBufferViews(
 		ID3D12Device* device,
 		ID3D12DescriptorHeap* mCbvHeap,
 		const std::vector<std::unique_ptr<FrameResource>> &mFrameResources,
 		int mUICbvOffset);
-	void BuildGeometry(ID3D12Device * device, ID3D12GraphicsCommandList * cmdList, const std::vector<UIVertex>& inVertices, const std::vector<std::uint32_t>& inIndices, std::string geoName);
+
+	void BuildGeometry(
+		ID3D12Device * device, 
+		ID3D12GraphicsCommandList * cmdList,
+		const std::vector<UIVertex>& inVertices, 
+		const std::vector<std::uint32_t>& inIndices, 
+		std::string geoName);
+
 	void BuildRenderItem(
 		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
 		Materials & mMaterials);
+
 
 	void UpdateUICBs(
 		UploadBuffer<UIConstants>* currUICB,

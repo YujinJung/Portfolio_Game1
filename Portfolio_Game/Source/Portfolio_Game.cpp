@@ -590,13 +590,14 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 
 		XMVECTOR CameraPos= mPlayer.mCamera.GetEyePosition();
 
-		if (MathHelper::getDistance(PlayerPos, CameraPos) < 500.0f)
+		if (MathHelper::getDistance(PlayerPos, CameraPos) < 100.0f)
 		{
-			mPlayer.mCamera.Walk(-0.01f);
+			mPlayer.mCamera.Walk(-0.25f);
 			mPlayer.mCamera.UpdateViewMatrix();
 		}
 		else
 		{
+			mPlayer.mUI.SetGameover();
 			playerDeathCamFinished = true;
 		}
 	}
