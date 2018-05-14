@@ -12,6 +12,8 @@ public:
 
 	void SetDamageScale(int cIndex, float inScale);
 
+	void DeleteMonsterUI(int cIndex);
+
 	void BuildConstantBufferViews(
 		ID3D12Device * device,
 		ID3D12DescriptorHeap * mCbvHeap,

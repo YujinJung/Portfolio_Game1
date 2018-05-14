@@ -90,13 +90,17 @@ struct CharacterInfo
 	DirectX::BoundingBox mBoundingBox;
 	
 	std::string mClipName;
+	float mAttackTime;
 	int mHealth;
 	int mFullHealth;
+
+	bool isDeath;
 	
 	CharacterInfo()
 		: mClipName("Idle"),
 		mHealth(100), 
-		mFullHealth(100)
+		mFullHealth(100),
+		isDeath(false)
 	{ }
 };
 

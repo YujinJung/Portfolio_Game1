@@ -66,8 +66,10 @@ private:
 private:
 	std::string MaterialName;
 
-	UINT mDamage;
 	UINT numOfCharacter;
 
-	int monsterIndex;
+	UINT mDamage;
+	UINT mBossDamage;
+	int mMonsterIndex;
+	float mAttackTimes[2];
 };

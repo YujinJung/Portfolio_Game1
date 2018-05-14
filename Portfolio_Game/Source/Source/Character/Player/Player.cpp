@@ -32,8 +32,9 @@ void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 	XMVECTOR mP = Position;
 	XMVECTOR P = mPlayerInfo.mMovement.GetPlayerPosition();
 
-	if (MathHelper::getDistance(mP, P) > 10.0f)
+	if (MathHelper::getDistance(mP, P) > 15.0f)
 		return;
+
 	if (mPlayerInfo.mHealth >= 0)
 	{
 		mSkinnedModelInst->TimePos = 0.0f;
@@ -55,7 +56,7 @@ void Player::Attack(Character * inMonster, std::string clipName)
 	SetClipTime(0.0f);
 
 	if (clipName == "Kick")
-		mDamage = 30;
+		mDamage = 100;
 	else if (clipName == "Hook")
 		mDamage = 10;
 

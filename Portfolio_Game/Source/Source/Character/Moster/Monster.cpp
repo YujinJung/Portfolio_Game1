@@ -6,8 +6,7 @@
 
 using namespace DirectX;
 Monster::Monster()
-	: numOfCharacter(20),
-	mDamage(2),
+	: numOfCharacter(5),
 	MaterialName("")
 {
 	for (UINT i = 0; i < numOfCharacter; ++i)
@@ -123,7 +122,7 @@ void Monster::SetMaterialName(const std::string & inMaterialName)
 
 void Monster::SetMonsterIndex(int inMonsterIndex)
 {
-	monsterIndex = inMonsterIndex;
+	mMonsterIndex = inMonsterIndex;
 }
 
 void Monster::BuildGeometry(
@@ -260,24 +259,34 @@ void Monster::BuildRenderItem(
 	int zRange, zOffset;
 	float bossX, bossZ;
 
-	if (monsterIndex == 1)
+	if (mMonsterIndex == 1)
 	{
 		xRange = 70; xOffset = -230;
 		zRange = 200; zOffset = 50;
 		bossX = -200.0f; bossZ = 200.0f;
+		mAttackTimes[0] = mSkinnedInfo.GetClipEndTime("MAttack1") / 2.0f;
+		mAttackTimes[1] = mSkinnedInfo.GetClipEndTime("MAttack2") / 6.0f;
+		mDamage = 2;
 	}
-	else if (monsterIndex == 2)
+	else if (mMonsterIndex == 2)
 	{
 		xRange = 180; xOffset = 150;
 		zRange = 150; zOffset = 100;
 		bossX = 250.0f; bossZ = 150.0f;
+		mAttackTimes[0] = mSkinnedInfo.GetClipEndTime("MAttack1") / 2.0f;
+		mAttackTimes[1] = mSkinnedInfo.GetClipEndTime("MAttack2") / 2.0f;
+		mDamage = 4;
 	}
-	else if (monsterIndex == 3)
+	else if (mMonsterIndex == 3)
 	{
 		xRange = 200; xOffset = 100;
 		zRange = 120; zOffset = -280;
 		bossX = 250.0f; bossZ = -250.0f;
+		mAttackTimes[0] = mSkinnedInfo.GetClipEndTime("MAttack1") / 3.0f;
+		mAttackTimes[1] = mSkinnedInfo.GetClipEndTime("MAttack2") / 2.0f;
+		mDamage = 6;
 	}
+	mBossDamage = 2 * mDamage; 
 
 	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
@@ -376,6 +385,10 @@ void Monster::UpdateCharacterCBs(
 	{
 		int monsterIndex = monsterFullIndex / monsterOffset;
 
+		if (mMonsterInfo[monsterIndex].isDeath)
+		{
+		}
+
 		XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix(monsterIndex);
 		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
@@ -403,7 +416,6 @@ void Monster::UpdateCharacterCBs(
 		++monsterFullIndex;
 	}
 
-
 	// Shadow
 	UpdateCharacterShadows(mMainLight);
 	monsterFullIndex = 0;
@@ -429,7 +441,6 @@ void Monster::UpdateCharacterCBs(
 
 		++monsterFullIndex;
 	}
-
 
 	//UI
 	auto curUICB = mCurrFrameResource->MonsterUICB.get();
@@ -470,15 +481,28 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 	XMVECTOR pPosition = Player.GetCharacterInfo().mMovement.GetPlayerPosition();
 	static std::vector<std::pair<float, bool>> HitTime(numOfCharacter, std::make_pair(gt.TotalTime(), false));
 
+	auto seed = std::chrono::system_clock::now().time_since_epoch().count();
+	std::mt19937 engine{ (unsigned int)seed };
+	std::uniform_int_distribution <> disX{ 0, 2 }; // monster Area
+	int attackIndex{ disX(engine) };
+
 	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
 		// Monster Die
-		if (mMonsterInfo[cIndex].mHealth <= 0)
+		if (!mMonsterInfo[cIndex].isDeath && mMonsterInfo[cIndex].mHealth <= 0)
 		{
 			SetClipName("Death", cIndex);
+			HitTime[cIndex].first = gt.TotalTime();
+			mMonsterInfo[cIndex].isDeath = true;
 		}
 		if (mMonsterInfo[cIndex].mClipName == "Death")
 		{
+			if (gt.TotalTime() - HitTime[cIndex].first > 7.0f)
+			{
+				// If spawn
+				mMonsterInfo[cIndex].mMovement.SetPlayerPosition(XMVectorZero());
+			}
+
 			continue;
 		}
 
@@ -505,34 +529,47 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 
 		float curDeltaTime = gt.TotalTime() - HitTime[cIndex].first;
 		float curClipTime = mSkinnedModelInst[cIndex]->TimePos;
-		if (curDeltaTime < 5.0f) // Attack
+		if (curDeltaTime < 5.0f) // Attack Time
 		{
 			// After half the full time of the clip
-			if (mSkinnedInfo.GetClipEndTime("MAttack1") / 2.0f < curClipTime && HitTime[cIndex].second)
+			if (mMonsterInfo[cIndex].mAttackTime < curClipTime && HitTime[cIndex].second)
 			{
-				Player.Damage(mDamage, mPosition, mLook);
-
 				HitTime[cIndex].second = false;
+
+				if (cIndex == 0)	// boss monster
+					Player.Damage(mBossDamage, mPosition, mLook);
+				else
+					Player.Damage(mDamage, mPosition, mLook);
 			}
 		}
 
 		float distance = MathHelper::getDistance(pPosition, mPosition);
 
 
-		if (distance < 3.0f)
+		if (distance < 10.0f)
 		{
 			// Move Back
 			mPosition = XMVectorSubtract(mPosition, mLook);
 			M.mMovement.SetPlayerPosition(mPosition);
 		}
-		else if (distance < 10.0f)
+
+		if (distance < 12.0f)
 		{
 			float pHealth = static_cast<float>(Player.GetCharacterInfo().mHealth);
 
 			if (curDeltaTime > 10.0f && pHealth > 0) // Hit per 5 seconds
 			{
 				HitTime[cIndex].first = gt.TotalTime();
-				SetClipName("MAttack1", cIndex);
+				if (attackIndex % 2 == 0)
+				{
+					SetClipName("MAttack1", cIndex);
+					mMonsterInfo[cIndex].mAttackTime = mAttackTimes[0];
+				}
+				else
+				{
+					SetClipName("MAttack2", cIndex);
+					mMonsterInfo[cIndex].mAttackTime = mAttackTimes[1];
+				}
 				mSkinnedModelInst[cIndex]->TimePos = 0.0f;
 
 				HitTime[cIndex].second = true;

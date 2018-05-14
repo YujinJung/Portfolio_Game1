@@ -1277,6 +1277,7 @@ void PortfolioGameApp::LoadFBXPlayer()
 	fbx.LoadFBX(outSkinnedInfo, "playerWalking", FileName);
 	fbx.LoadFBX(outSkinnedInfo, "run", FileName);
 	fbx.LoadFBX(outSkinnedInfo, "Kick", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "Kick2", FileName);
 	fbx.LoadFBX(outSkinnedInfo, "FlyingKick", FileName);
 	fbx.LoadFBX(outSkinnedInfo, "Hook", FileName);
 	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);

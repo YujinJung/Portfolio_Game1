@@ -26,6 +26,12 @@ void MonsterUI::SetDamageScale(int cIndex, float inScale)
 {
 	mWorldTransform[cIndex].Scale.x = inScale;
 }
+void MonsterUI::DeleteMonsterUI(int cIndex) // cIndex starts zero
+{
+	mAllRitems.erase(mAllRitems.begin() + 4 * cIndex, mAllRitems.begin() + 4 * cIndex + 4);
+	mRitems[(int)eUIList::Rect].erase(mRitems[(int)eUIList::Rect].begin() + 4 * cIndex, mRitems[(int)eUIList::Rect].begin() + 4 * cIndex + 4);
+	mWorldTransform.erase(mWorldTransform.begin() + cIndex);
+}
 
 void MonsterUI::BuildRenderItem(
 	std::unordered_map<std::string,
