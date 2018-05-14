@@ -141,6 +141,7 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	mRitems[(int)eUIList::Rect].push_back(bgHealthBar.get());
 	mAllRitems.push_back(std::move(bgHealthBar));
 
+
 	// Skill Icon
 	const float skillIconScale = 0.02f;
 	XMMATRIX skillIconWorldSRx = XMMatrixScaling(skillIconScale, 1.0f, skillIconScale) * XMMatrixRotationX(-atan(3.0f / 2.0f));
@@ -186,6 +187,19 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	mAllRitems.push_back(std::move(iconKick2));
 	skillFullTime.push_back(10.0f);
 
+	auto GameoverUI = std::make_unique<RenderItem>();
+	// atan(theta) : Theta is associated with PlayerCamera
+	XMStoreFloat4x4(&GameoverUI->World, XMMatrixScaling(0.1f, 1.0f, 0.021f) * XMMatrixRotationX(-atan(3.0f / 2.0f)) * XMMatrixTranslation(0.0f, 0.901f, -1.0f));
+	GameoverUI->TexTransform = MathHelper::Identity4x4();
+	GameoverUI->Mat = mMaterials.Get("Gameover");
+	GameoverUI->Geo = mGeometries["shapeGeo"].get();
+	GameoverUI->ObjCBIndex = UIIndex++;
+	GameoverUI->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	GameoverUI->StartIndexLocation = GameoverUI->Geo->DrawArgs["hpBar"].StartIndexLocation;
+	GameoverUI->BaseVertexLocation = GameoverUI->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+	GameoverUI->IndexCount = GameoverUI->Geo->DrawArgs["hpBar"].IndexCount;
+	mRitems[(int)eUIList::Rect].push_back(GameoverUI.get());
+	mAllRitems.push_back(std::move(GameoverUI));
 }
 
 void PlayerUI::UpdateUICBs(
@@ -230,7 +244,7 @@ void PlayerUI::UpdateUICBs(
 			XMStoreFloat4x4(&uiConstants.TexTransform, XMMatrixTranspose(texTransform));
 
 			float remainingTime;
-			if (iconIndex > 1)
+			if (iconIndex >= 2 && iconIndex < 2 + skillFullTime.size()) // 2, 3, 4
 			{
 				// iconIndex - 2 -> health Bar and bg bar
 				remainingTime = skillFullTime[iconIndex - 2] - Delay[iconIndex];

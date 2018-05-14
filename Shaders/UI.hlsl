@@ -36,6 +36,7 @@ VertexOut VS(VertexIn vin)
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gMonsterUITexTransform);
 #else
+	// skill Delay
 	vout.Row = vin.Row;
 
 	float4 posW = mul(float4(vin.PosL, 1.0f), gUIWorld);
@@ -64,7 +65,11 @@ float4 PS(VertexOut pin) : SV_Target
 	float distanceToEye = length(gEyePosW - pin.PosW);
 	float fogAmount = saturate((distanceToEye - gFogStart) / gFogRange);
 	litColor = lerp(litColor, gFogColor, fogAmount);
-
+	litColor.a = diffuseAlbedo.a;
+	if (litColor.a == 0.0f)
+	{
+		discard;
+	}
 	
 	return litColor;
 }

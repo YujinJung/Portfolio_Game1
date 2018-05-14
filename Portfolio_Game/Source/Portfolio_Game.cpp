@@ -958,6 +958,11 @@ void PortfolioGameApp::BuildPSOs()
 		reinterpret_cast<BYTE*>(mShaders["monsterUIVS"]->GetBufferPointer()),
 		mShaders["monsterUIVS"]->GetBufferSize()
 	};
+	MonsterUIPsoDesc.PS =
+	{
+		reinterpret_cast<BYTE*>(mShaders["uiPS"]->GetBufferPointer()),
+		mShaders["uiPS"]->GetBufferSize()
+	};
 	ThrowIfFailed(md3dDevice->CreateGraphicsPipelineState(&MonsterUIPsoDesc, IID_PPV_ARGS(&mPSOs["MonsterUI"])));
 
 
@@ -1585,6 +1590,10 @@ void PortfolioGameApp::LoadTextures()
 		"GameoverTex",
 		L"../Resource/UI/Gameover.png");
 
+	mTextures.SetTexture(
+		"NameMutantTex",
+		L"../Resource/UI/NameMutant.png");
+
 	// Cube Map,
 	mTextures.SetTexture(
 		"skyCubeMap",
@@ -1689,6 +1698,14 @@ void PortfolioGameApp::BuildMaterials()
 		"Gameover",
 		MatIndex++,
 		mTextures.GetTextureIndex("GameoverTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
+		XMFLOAT3(0.05f, 0.02f, 0.02f),
+		0.0f);
+	
+	mMaterials.SetMaterial(
+		"NameMutant",
+		MatIndex++,
+		mTextures.GetTextureIndex("NameMutantTex"),
 		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
 		XMFLOAT3(0.05f, 0.02f, 0.02f),
 		0.0f);

@@ -101,6 +101,32 @@ void MonsterUI::BuildRenderItem(
 		backBGHealthBar->BaseVertexLocation = backBGHealthBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
 		backBGHealthBar->IndexCount = backBGHealthBar->Geo->DrawArgs["hpBar"].IndexCount;
 
+		// Name
+		uiWorldTransformSRx = XMMatrixScaling(0.02f, 1.0f, 0.008f) * XMMatrixRotationX(-XM_PIDIV2);
+		auto backNameBar = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&backNameBar->World, uiWorldTransformSRx * XMMatrixTranslation(0.0f, 2.0f, 0.4995f));
+		backNameBar->TexTransform = MathHelper::Identity4x4();
+		backNameBar->Mat = mMaterials.Get("NameMutant");
+		backNameBar->Geo = mGeometries["shapeGeo"].get();
+		backNameBar->ObjCBIndex = UIIndex++;
+		backNameBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		backNameBar->StartIndexLocation = backNameBar->Geo->DrawArgs["hpBar"].StartIndexLocation;
+		backNameBar->BaseVertexLocation = backNameBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+		backNameBar->IndexCount = backNameBar->Geo->DrawArgs["hpBar"].IndexCount;
+
+		uiWorldTransformSRx *= XMMatrixRotationY(XM_PI);
+		auto frontNameBar = std::make_unique<RenderItem>();
+		XMStoreFloat4x4(&frontNameBar->World, uiWorldTransformSRx * XMMatrixTranslation(0.0f, 2.0f, 0.5005f));
+		frontNameBar->TexTransform = MathHelper::Identity4x4();
+		frontNameBar->Mat = mMaterials.Get("NameMutant");
+		frontNameBar->Geo = mGeometries["shapeGeo"].get();
+		frontNameBar->ObjCBIndex = UIIndex++;
+		frontNameBar->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+		frontNameBar->StartIndexLocation = frontNameBar->Geo->DrawArgs["hpBar"].StartIndexLocation;
+		frontNameBar->BaseVertexLocation = frontNameBar->Geo->DrawArgs["hpBar"].BaseVertexLocation;
+		frontNameBar->IndexCount = frontNameBar->Geo->DrawArgs["hpBar"].IndexCount;
+
+
 		mRitems[(int)eUIList::Rect].push_back(frontHealthBar.get());
 		mAllRitems.push_back(std::move(frontHealthBar));
 		mRitems[(int)eUIList::Rect].push_back(backHealthBar.get());
@@ -109,6 +135,10 @@ void MonsterUI::BuildRenderItem(
 		mAllRitems.push_back(std::move(frontBGHealthBar));
 		mRitems[(int)eUIList::Rect].push_back(backBGHealthBar.get());
 		mAllRitems.push_back(std::move(backBGHealthBar));
+		mRitems[(int)eUIList::Rect].push_back(frontNameBar.get());
+		mAllRitems.push_back(std::move(frontNameBar));
+		mRitems[(int)eUIList::Rect].push_back(backNameBar.get());
+		mAllRitems.push_back(std::move(backNameBar));
 	}
 
 	mWorldTransform.resize(numOfMonster);
@@ -166,13 +196,15 @@ void MonsterUI::UpdateUICBs(
 		if (e->NumFramesDirty > 0)
 		{
 			XMVECTOR UIoffset;
-			// front HP bar 4n
-			if (e->ObjCBIndex % 4 == 0)
+
+			int res = e->ObjCBIndex % 6;
+			// front HP bar 6n
+			if (e->ObjCBIndex % 6 == 0)
 			{
 				UIoffset = (1.0f - mWorldTransform[mIndex].Scale.x) * (-inEyeLeft[mIndex]) * 0.8f;
 			}
-			// back HP bar 4n + 3
-			else if (e->ObjCBIndex % 4 == 3)
+			// back HP bar 6n + 3
+			else if (e->ObjCBIndex % 6 == 2)
 			{
 				UIoffset = (1.0f - mWorldTransform[mIndex].Scale.x) * inEyeLeft[mIndex] * 0.8f;
 			}
@@ -188,8 +220,8 @@ void MonsterUI::UpdateUICBs(
 				mWorldTransform[mIndex].Scale.y,
 				mWorldTransform[mIndex].Scale.z);
 
-			// Background Health Bar
-			if (e->ObjCBIndex % 2 == 1)
+			// Background Health Bar / 6n + 2, 3, 4, 5
+			if (res == 1 || res == 5 || res == 3 || res == 4)
 			{
 				T = XMMatrixTranslation(
 					mWorldTransform[mIndex].Position.x,
@@ -197,6 +229,7 @@ void MonsterUI::UpdateUICBs(
 					mWorldTransform[mIndex].Position.z);
 				S = XMMatrixIdentity();
 			}
+
 
 			XMMATRIX world = XMLoadFloat4x4(&e->World) * playerWorlds[mIndex] * T;
 			XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
