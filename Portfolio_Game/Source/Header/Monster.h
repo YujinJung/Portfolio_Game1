@@ -18,6 +18,7 @@ public:
 
 public:
 	bool isClipEnd(std::string clipName, int i);
+	bool isAllDie();
 	DirectX::XMMATRIX GetWorldTransformMatrix(int i) const;
 
 	UINT GetNumberOfMonster() const;
@@ -64,12 +65,12 @@ private:
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
 
 private:
-	std::string MaterialName;
-
+	int mMonsterIndex;
 	UINT numOfCharacter;
-
+	UINT mAliveMonster;
 	UINT mDamage;
 	UINT mBossDamage;
-	int mMonsterIndex;
 	float mAttackTimes[2];
+
+	std::string MaterialName;
 };

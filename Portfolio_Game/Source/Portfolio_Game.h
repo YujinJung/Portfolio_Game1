@@ -31,8 +31,14 @@ private:
 	virtual void OnMouseDown(WPARAM btnState, int x, int y)override;
 	virtual void OnMouseUp(WPARAM btnState, int x, int y)override;
 	virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
-
 	void OnKeyboardInput(const GameTimer& gt);
+	void checkCollision(
+		const std::vector<RenderItem*>& rItems,
+		const BoundingBox &playerBoundForward,
+		const BoundingBox &playerBoundBackward,
+		bool &isForward,
+		bool &isBackward,
+		const float &dt);
 
 	void UpdateObjectCBs(const GameTimer& gt);
 	void UpdateMainPassCB(const GameTimer& gt);
@@ -54,7 +60,9 @@ private:
 
 	void BuildFbxGeometry();
 	void LoadFBXPlayer();
-	void BuildFBXTexture(std::vector<Material> &outMaterial, std::string inTextureName, std::string inMaterialName);
+	void BuildFBXTexture(
+		std::vector<Material> &outMaterial, 
+		std::string inTextureName, std::string inMaterialName);
 	void LoadFBXMonster();
 	void LoadFBXSubMonster(
 		std::vector<Material> &outMaterial, 

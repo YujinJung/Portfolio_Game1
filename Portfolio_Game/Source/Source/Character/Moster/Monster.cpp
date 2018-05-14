@@ -6,7 +6,8 @@
 
 using namespace DirectX;
 Monster::Monster()
-	: numOfCharacter(15),
+	: numOfCharacter(5),
+	mAliveMonster(5),
 	MaterialName("")
 {
 	for (UINT i = 0; i < numOfCharacter; ++i)
@@ -36,10 +37,62 @@ int Monster::GetHealth(int i) const
 {
 	return mMonsterInfo[i].mHealth;
 }
+
 CharacterInfo & Monster::GetCharacterInfo(int cIndex)
 {
 	return mMonsterInfo[cIndex];
 }
+
+DirectX::XMMATRIX Monster::GetWorldTransformMatrix(int i) const
+{
+	auto T = mMonsterInfo[i].mMovement.GetWorldTransformInfo();
+	XMMATRIX P = XMMatrixTranslation(T.Position.x, T.Position.y, T.Position.z);
+	XMMATRIX R = XMLoadFloat4x4(&T.Rotation);
+	XMMATRIX S = XMMatrixScaling(T.Scale.x, T.Scale.y, T.Scale.z);
+
+	return S * R * P;
+}
+
+UINT Monster::GetNumberOfMonster() const
+{
+	return numOfCharacter;
+}
+
+UINT Monster::GetUISize() const
+{
+	UINT ret = 0;
+	for (UINT i = 0; i < numOfCharacter; ++i)
+	{
+		ret = ret + mMonsterUI.GetSize();
+	}
+	return ret;
+}
+
+UINT Monster::GetAllRitemsSize() const 
+{
+	return (UINT)mAllRitems.size();
+}
+
+const std::vector<RenderItem*> Monster::GetRenderItem(RenderLayer Type) const
+{
+	return mRitems[(int)Type];
+}
+
+
+bool Monster::isClipEnd(std::string clipName, int i)
+{
+	if (mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedModelInst[i]->TimePos < 0.001f)
+		return true;
+	return false;
+}
+
+bool Monster::isAllDie()
+{
+	if (mAliveMonster == 0)
+		return true;
+	return false;
+}
+
 void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 {
 	XMVECTOR HitTargetv = XMVectorAdd(Position, Look * 5.0f);
@@ -66,43 +119,6 @@ void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 	}
 }
 
-bool Monster::isClipEnd(std::string clipName, int i)
-{
-	if (mSkinnedInfo.GetAnimation(clipName).GetClipEndTime() - mSkinnedModelInst[i]->TimePos < 0.001f)
-		return true;
-	return false;
-}
-DirectX::XMMATRIX Monster::GetWorldTransformMatrix(int i) const
-{
-	auto T = mMonsterInfo[i].mMovement.GetWorldTransformInfo();
-	XMMATRIX P = XMMatrixTranslation(T.Position.x, T.Position.y, T.Position.z);
-	XMMATRIX R = XMLoadFloat4x4(&T.Rotation);
-	XMMATRIX S = XMMatrixScaling(T.Scale.x, T.Scale.y, T.Scale.z);
-
-	return S * R * P;
-}
-
-UINT Monster::GetNumberOfMonster() const
-{
-	return numOfCharacter;
-}
-UINT Monster::GetUISize() const
-{
-	UINT ret = 0;
-	for (UINT i = 0; i < numOfCharacter; ++i)
-	{
-		ret = ret + mMonsterUI.GetSize();
-	}
-	return ret;
-}
-UINT Monster::GetAllRitemsSize() const 
-{
-	return (UINT)mAllRitems.size();
-}
-const std::vector<RenderItem*> Monster::GetRenderItem(RenderLayer Type) const
-{
-	return mRitems[(int)Type];
-}
 
 void Monster::SetClipName(const std::string& inClipName, int cIndex)
 {
@@ -126,6 +142,7 @@ void Monster::SetMonsterIndex(int inMonsterIndex)
 {
 	mMonsterIndex = inMonsterIndex;
 }
+
 
 void Monster::BuildGeometry(
 	ID3D12Device * device,
@@ -387,10 +404,6 @@ void Monster::UpdateCharacterCBs(
 	{
 		int monsterIndex = monsterFullIndex / monsterOffset;
 
-		if (mMonsterInfo[monsterIndex].isDeath)
-		{
-		}
-
 		XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix(monsterIndex);
 		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
@@ -496,6 +509,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 			SetClipName("Death", cIndex);
 			HitTime[cIndex].first = gt.TotalTime();
 			mMonsterInfo[cIndex].isDeath = true;
+			mAliveMonster--;
 		}
 		if (mMonsterInfo[cIndex].mClipName == "Death")
 		{

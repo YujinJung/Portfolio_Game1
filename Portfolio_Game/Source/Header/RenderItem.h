@@ -31,6 +31,7 @@ enum class RenderLayer : int
 	Transparent,
 	Sky,
 	Architecture,
+	Wall,
 	Character,
 	Monster,
 	Shadow,
@@ -119,7 +120,7 @@ struct RenderItem
 	int MonsterCBIndex = -1;
 
 	int NumFramesDirty = gNumFrameResources;
-
+	
 	Material* Mat = nullptr;
 	MeshGeometry* Geo = nullptr;
 	SkinnedModelInstance* SkinnedModelInst = nullptr;

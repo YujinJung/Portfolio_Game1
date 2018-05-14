@@ -10,7 +10,7 @@ Player::Player()
 	mFullHealth(100),
 	mDamage(10)
 {
-	XMVECTOR P = XMVectorSet(-200.0f, 0.0f, -200.0f, 0.0f);
+	XMVECTOR P = XMVectorSet(-200.0f, 0.0f, -170.0f, 0.0f);
 	mPlayerInfo.mMovement.SetPlayerPosition(P);
 }
 
@@ -19,14 +19,17 @@ Player::~Player()
 
 }
 
+
 int Player::GetHealth(int i) const
 {
 	return mPlayerInfo.mHealth;
 }
+
 CharacterInfo & Player::GetCharacterInfo(int cIndex)
 {
 	return mPlayerInfo;
 }
+
 void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 {
 	XMVECTOR mP = Position;
@@ -50,6 +53,7 @@ void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 
 	mUI.SetDamageScale(static_cast<float>(mPlayerInfo.mHealth) / static_cast<float>(mFullHealth));
 }
+
 void Player::Attack(Character * inMonster, std::string clipName)
 {
 	SetClipName(clipName);
@@ -60,7 +64,7 @@ void Player::Attack(Character * inMonster, std::string clipName)
 	else if (clipName == "Kick2")
 		mDamage = 30;
 	else if (clipName == "Hook")
-		mDamage = 10;
+		mDamage = 100;
 
 	inMonster->Damage(
 		mDamage,
@@ -76,10 +80,12 @@ bool Player::isClipEnd()
 		return true;
 	return false;
 }
+
 eClipList Player::GetCurrentClip() const
 {
 	return mSkinnedModelInst->mState;
 }
+
 XMMATRIX Player::GetWorldTransformMatrix() const
 {
 	auto T = mPlayerInfo.mMovement.GetWorldTransformInfo();
@@ -90,15 +96,16 @@ XMMATRIX Player::GetWorldTransformMatrix() const
 	return  S * R * P;
 }
 
-
 UINT Player::GetAllRitemsSize() const
 {
 	return (UINT)mAllRitems.size();
 }
+
 const std::vector<RenderItem*> Player::GetRenderItem(RenderLayer Type) const
 {
 	return mRitems[(int)Type];
 }
+
 
 void Player::SetClipName(const std::string& inClipName)
 {
@@ -107,10 +114,12 @@ void Player::SetClipName(const std::string& inClipName)
 		mPlayerInfo.mClipName = inClipName;
 	}
 }
+
 void Player::SetClipTime(float time)
 {
 	mSkinnedModelInst->TimePos = time;
 }
+
 
 void Player::BuildGeometry(
 	ID3D12Device * device,
@@ -191,6 +200,7 @@ void Player::BuildGeometry(
 
 	mGeometry = std::move(geo);
 }
+
 void Player::BuildConstantBufferViews(
 	ID3D12Device * device,
 	ID3D12DescriptorHeap * mCbvHeap,
@@ -225,6 +235,7 @@ void Player::BuildConstantBufferViews(
 		}
 	}
 }
+
 void Player::BuildRenderItem(
 	Materials& mMaterials,
 	std::string matrialPrefix)
@@ -264,6 +275,7 @@ void Player::BuildRenderItem(
 		mAllRitems.push_back(std::move(ShadowedRitem));
 	}
 }
+
 
 void Player::UpdateCharacterCBs(
 	FrameResource* mCurrFrameResource,
@@ -334,6 +346,7 @@ void Player::UpdateCharacterCBs(
 		Delay,
 		mTransformDirty);
 }
+
 void Player::UpdateCharacterShadows(const Light& mMainLight)
 {
 	int i = 0;
@@ -352,6 +365,7 @@ void Player::UpdateCharacterShadows(const Light& mMainLight)
 		++i;
 	}
 }
+
 void Player::UpdatePlayerPosition(PlayerMoveList moveName, float velocity)
 {
 
@@ -385,6 +399,7 @@ void Player::UpdatePlayerPosition(PlayerMoveList moveName, float velocity)
 
 	mTransformDirty = true;
 }
+
 void Player::UpdateTransformationMatrix()
 {
 	mPlayerInfo.mMovement.UpdateTransformationMatrix();

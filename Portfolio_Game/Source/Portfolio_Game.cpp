@@ -186,6 +186,7 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	skyTexDescriptor.Offset(mTextureOffset, mCbvSrvDescriptorSize);
 	mCommandList->SetGraphicsRootDescriptorTable(8, skyTexDescriptor);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Opaque]);
+	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Wall]);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Architecture]);
 	mCommandList->SetPipelineState(mPSOs["sky"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Sky]);
@@ -313,27 +314,20 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	playerBoundBackward.Center.y -= 3.0f * playerLook.m128_f32[1];
 	playerBoundBackward.Center.z -= 3.0f * playerLook.m128_f32[2];
 
-	for (auto&e : mRitems[(int)RenderLayer::Architecture])
-	{
-		if (isForward && playerBoundForward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
-		{
-			mPlayer.SetClipName("WalkingBackward");
-
-			if (isBackward)
-				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, -7.0f * dt);
-
-			isForward = false;
-		}
-		if (isBackward && playerBoundBackward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
-		{
-			mPlayer.SetClipName("playerWalking");
-
-			if (isForward)
-				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 7.0f * dt);
-
-			isBackward = false;
-		}
-	}
+	checkCollision(
+		mRitems[(int)RenderLayer::Architecture],
+		playerBoundForward,
+		playerBoundBackward,
+		isForward,
+		isBackward,
+		dt);
+	checkCollision(
+		mRitems[(int)RenderLayer::Wall],
+		playerBoundForward,
+		playerBoundBackward,
+		isForward,
+		isBackward,
+		dt);
 
 	// Input
 	if (GetAsyncKeyState('7') & 0x8000)
@@ -472,6 +466,37 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	}
 }
 
+void PortfolioGameApp::checkCollision(
+	const std::vector<RenderItem*>& rItems,
+	const BoundingBox &playerBoundForward,
+	const BoundingBox &playerBoundBackward,
+	bool &isForward, 
+	bool &isBackward,
+	const float &dt)
+{
+	for (auto&e : rItems)
+	{
+		if (isForward && playerBoundForward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
+		{
+			mPlayer.SetClipName("WalkingBackward");
+
+			if (isBackward)
+				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, -7.0f * dt);
+
+			isForward = false;
+		}
+		if (isBackward && playerBoundBackward.Contains(e->Bounds) == ContainmentType::INTERSECTS)
+		{
+			mPlayer.SetClipName("playerWalking");
+
+			if (isForward)
+				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 7.0f * dt);
+
+			isBackward = false;
+		}
+	}
+}
+
 void PortfolioGameApp::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
@@ -548,6 +573,7 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 	static bool playerDeathCamFinished = false;
 	XMVECTOR PlayerPos = mPlayer.GetCharacterInfo().mMovement.GetPlayerPosition();
 	
+	// Spawn Monster
 	int playerPosX = PlayerPos.m128_i32[0];
 	int playerPosZ = PlayerPos.m128_i32[2];
 
@@ -584,6 +610,28 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 		}
 	}
 
+	
+	// when all monsters die, the next room(third room) opens
+	// and Block room4
+	auto& e = mRitems[(int)RenderLayer::Wall].front();
+	if (e->Mat->Name == "stone0" && mZoneIndex == 0 && mMonster->isAllDie())
+	{
+		XMMATRIX M = XMMatrixRotationY(XM_PIDIV2);
+		mAllRitems[e->ObjCBIndex]->Mat = mMaterials.Get("ice0");
+		e->Bounds.Transform(e->Bounds, M);
+		XMStoreFloat4x4(&e->World, XMLoadFloat4x4(&e->World) * M);
+		e->NumFramesDirty = gNumFrameResources;
+	}
+	if (e->Mat->Name == "ice0" && mZoneIndex == 1 && mMonster->isAllDie())
+	{
+		XMMATRIX M = XMMatrixRotationY(XM_PIDIV2);
+		mAllRitems[e->ObjCBIndex]->Mat = mMaterials.Get("Transparency");
+		e->Bounds.Transform(e->Bounds, M);
+		XMStoreFloat4x4(&e->World, XMLoadFloat4x4(&e->World) * M);
+		e->NumFramesDirty = gNumFrameResources;
+	}
+	
+
 	if (mPlayer.GetHealth() <= 0 && !playerDeathCamFinished)
 	{
 		mCameraDetach = true;
@@ -610,7 +658,6 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 	}
 	mMonster->UpdateCharacterCBs(mCurrFrameResource, mMainLight, gt);
 	mPlayer.UpdateCharacterCBs(mCurrFrameResource, mMainLight, DelayTime, gt);
-	
 }
 
 void PortfolioGameApp::UpdateObjectShadows(const GameTimer& gt)
@@ -1986,6 +2033,15 @@ void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, -XM_PIDIV2) * XMMatrixTranslation(-340.0f, 72.0f, 660.0f),
 		XMMatrixIdentity());
 
+	// The wall between the first room and the second room.
+	BuildSubRitems(
+		"shapeGeo",
+		"box",
+		"stone0",
+		RenderLayer::Wall,
+		++objCBIndex,
+		XMMatrixScaling(250.0f, 200.0f, 10.0f) * XMMatrixRotationY(XM_PIDIV2) * XMMatrixTranslation(0.0f, 0.0f, 150.0f),
+		XMMatrixScaling(5.0f, 4.0f, 1.0f));
 
 	// Third Room
 
