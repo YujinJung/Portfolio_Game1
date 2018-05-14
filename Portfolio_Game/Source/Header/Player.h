@@ -65,7 +65,7 @@ public:
 	void UpdateCharacterCBs(
 		FrameResource* mCurrFrameResource,
 		const Light& mMainLight,
-		std::vector<float> Delay,
+		float* Delay,
 		const GameTimer & gt);
 
 	virtual void UpdateCharacterShadows(const Light & mMainLight);

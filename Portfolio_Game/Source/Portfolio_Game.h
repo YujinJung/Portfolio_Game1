@@ -103,8 +103,10 @@ private:
 
 	// Render items divided by PSO.
 	std::vector<RenderItem*> mRitems[(int)RenderLayer::Count];
-	std::vector<float> HitTime;
-	std::vector<float> DelayTime;
+
+	// Skill Icon time
+	float HitTime[(int)eUIList::Count];
+	float DelayTime[(int)eUIList::Count];
 
 	UINT mObjCbvOffset = 0;
 	UINT mChaCbvOffset = 0;

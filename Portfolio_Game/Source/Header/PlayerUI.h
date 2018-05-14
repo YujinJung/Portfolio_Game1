@@ -30,7 +30,7 @@ public:
 		UploadBuffer<UIConstants>* currUICB,
 		DirectX::XMMATRIX playerWorld,
 		DirectX::XMVECTOR inEyeLeft,
-		std::vector<float> Delay,
+		float* Delay,
 		bool mTransformDirty);
 
 private:

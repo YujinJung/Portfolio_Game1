@@ -56,7 +56,9 @@ void Player::Attack(Character * inMonster, std::string clipName)
 	SetClipTime(0.0f);
 
 	if (clipName == "Kick")
-		mDamage = 100;
+		mDamage = 20;
+	else if (clipName == "Kick2")
+		mDamage = 30;
 	else if (clipName == "Hook")
 		mDamage = 10;
 
@@ -266,7 +268,7 @@ void Player::BuildRenderItem(
 void Player::UpdateCharacterCBs(
 	FrameResource* mCurrFrameResource,
 	const Light& mMainLight,
-	std::vector<float> Delay,
+	float* Delay,
 	const GameTimer & gt)
 {
 	if (mPlayerInfo.mHealth <= 0 && mPlayerInfo.mClipName != "Death")

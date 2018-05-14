@@ -49,7 +49,9 @@ void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 	{
 		XMVECTOR MonsterPos = mMonsterInfo[cIndex].mMovement.GetPlayerPosition();
 
-		if (MathHelper::getDistance(HitTargetv, MonsterPos) < 5.0f)
+		if (mMonsterInfo[cIndex].isDeath) continue;
+
+		if (MathHelper::getDistance(HitTargetv, MonsterPos) < 15.0f)
 		{
 			if (mMonsterInfo[cIndex].mHealth >= 0)
 				mSkinnedModelInst[cIndex]->TimePos = 0.0f;

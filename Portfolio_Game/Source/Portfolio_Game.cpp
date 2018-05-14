@@ -50,11 +50,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE prevInstance,
 }
 
 PortfolioGameApp::PortfolioGameApp(HINSTANCE hInstance)
-	: D3DApp(hInstance),
-	HitTime((int)eUIList::Count, 0.0f),
-	DelayTime((int)eUIList::Count, 0.0f)
+	: D3DApp(hInstance)
 {
-	
+	for (int i = 0; i < (int)eUIList::Count; ++i)
+	{
+		HitTime[i] = 0.0f;
+		DelayTime[i] = 0.0f;
+	}
 }
 
 PortfolioGameApp::~PortfolioGameApp()
@@ -195,8 +197,9 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	// UI
 	mCommandList->SetPipelineState(mPSOs["UI"].Get());
 	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::Rect));
-	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::I_Kick));
 	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::I_Punch));
+	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::I_Kick));
+	DrawRenderItems(mCommandList.Get(), mPlayer.mUI.GetRenderItem(eUIList::I_Kick2));
 	mCommandList->SetPipelineState(mPSOs["MonsterUI"].Get());
 	DrawRenderItems(mCommandList.Get(), mMonster->mMonsterUI.GetRenderItem(eUIList::Rect));
 
@@ -421,6 +424,16 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 			mPlayer.SetClipTime(0.0f);
 			mPlayer.Attack(mMonster, "Kick"); 
 			HitTime[(int)eUIList::I_Kick] = gt.TotalTime();
+		}
+	}
+	else if (GetAsyncKeyState('3') & 0x8000)
+	{
+		// Hook Delay, 3 seconds
+		if (gt.TotalTime() - HitTime[(int)eUIList::I_Kick2] > 10.0f)
+		{
+			mPlayer.SetClipTime(0.0f);
+			mPlayer.Attack(mMonster, "Kick2");
+			HitTime[(int)eUIList::I_Kick2] = gt.TotalTime();
 		}
 	}
 	else
@@ -1557,12 +1570,20 @@ void PortfolioGameApp::LoadTextures()
 		L"../Resource/Textures/red.png"); 
 
 	mTextures.SetTexture(
-		"iconKickTex",
-		L"../Resource/Icon/iconKick.png");
+		"iconPunchTex",
+		L"../Resource/UI/iconPunch.png");
 
 	mTextures.SetTexture(
-		"iconPunchTex",
-		L"../Resource/Icon/iconPunch.png");
+		"iconKickTex",
+		L"../Resource/UI/iconKick.png");
+
+	mTextures.SetTexture(
+		"iconKick2Tex",
+		L"../Resource/UI/iconKick2.png");
+	
+	mTextures.SetTexture(
+		"GameoverTex",
+		L"../Resource/UI/Gameover.png");
 
 	// Cube Map,
 	mTextures.SetTexture(
@@ -1641,6 +1662,14 @@ void PortfolioGameApp::BuildMaterials()
 		0.0f);
 
 	mMaterials.SetMaterial(
+		"iconPunch",
+		MatIndex++,
+		mTextures.GetTextureIndex("iconPunchTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+		XMFLOAT3(0.001f, 0.001f, 0.001f),
+		0.0f);
+
+	mMaterials.SetMaterial(
 		"iconKick",
 		MatIndex++,
 		mTextures.GetTextureIndex("iconKickTex"),
@@ -1649,13 +1678,21 @@ void PortfolioGameApp::BuildMaterials()
 		0.0f);
 
 	mMaterials.SetMaterial(
-		"iconPunch",
+		"iconKick2",
 		MatIndex++,
-		mTextures.GetTextureIndex("iconPunchTex"),
-		XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
-		XMFLOAT3(0.001f, 0.001f, 0.001f),
+		mTextures.GetTextureIndex("iconKick2Tex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
+		XMFLOAT3(0.05f, 0.02f, 0.02f),
 		0.0f);
 
+	mMaterials.SetMaterial(
+		"Gameover",
+		MatIndex++,
+		mTextures.GetTextureIndex("GameoverTex"),
+		XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f),
+		XMFLOAT3(0.05f, 0.02f, 0.02f),
+		0.0f);
+	
 	mMaterials.SetMaterial(
 		"sky",
 		MatIndex++,

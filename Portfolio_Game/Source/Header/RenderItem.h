@@ -19,6 +19,7 @@ enum class eUIList : int
 	Background,
 	I_Punch,
 	I_Kick,
+	I_Kick2,
 	Count
 };
 

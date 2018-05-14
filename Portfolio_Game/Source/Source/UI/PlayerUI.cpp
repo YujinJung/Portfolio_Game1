@@ -145,7 +145,7 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	const float skillIconScale = 0.02f;
 	XMMATRIX skillIconWorldSRx = XMMatrixScaling(skillIconScale, 1.0f, skillIconScale) * XMMatrixRotationX(-atan(3.0f / 2.0f));
 	auto iconDelayKick = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&iconDelayKick->World, skillIconWorldSRx * XMMatrixTranslation(-skillIconScale * 5.0f, -1.0f, 0.0f));
+	XMStoreFloat4x4(&iconDelayKick->World, skillIconWorldSRx * XMMatrixTranslation(-skillIconScale * 10.0f, -1.0f, 0.0f));
 	iconDelayKick->TexTransform = MathHelper::Identity4x4();
 	iconDelayKick->Mat = mMaterials.Get("iconPunch");
 	iconDelayKick->Geo = mGeometry.get();
@@ -159,7 +159,7 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	skillFullTime.push_back(3.0f);
 
 	auto iconKick = std::make_unique<RenderItem>();
-	XMStoreFloat4x4(&iconKick->World, skillIconWorldSRx  * XMMatrixTranslation(skillIconScale * 5.0f, -1.0f, 0.0f));
+	XMStoreFloat4x4(&iconKick->World, skillIconWorldSRx  * XMMatrixTranslation(0.0f, -1.0f, 0.0f));
 	iconKick->TexTransform = MathHelper::Identity4x4();
 	iconKick->Mat = mMaterials.Get("iconKick");
 	iconKick->Geo = mGeometry.get();
@@ -172,13 +172,27 @@ void PlayerUI::BuildRenderItem(std::unordered_map<std::string, std::unique_ptr<M
 	mAllRitems.push_back(std::move(iconKick));
 	skillFullTime.push_back(5.0f);
 
+	auto iconKick2 = std::make_unique<RenderItem>();
+	XMStoreFloat4x4(&iconKick2->World, skillIconWorldSRx  * XMMatrixTranslation(skillIconScale * 10.0f, -1.0f, 0.0f));
+	iconKick2->TexTransform = MathHelper::Identity4x4();
+	iconKick2->Mat = mMaterials.Get("iconKick2");
+	iconKick2->Geo = mGeometry.get();
+	iconKick2->ObjCBIndex = UIIndex++;
+	iconKick2->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
+	iconKick2->StartIndexLocation = iconKick2->Geo->DrawArgs["SkillUI"].StartIndexLocation;
+	iconKick2->BaseVertexLocation = iconKick2->Geo->DrawArgs["SkillUI"].BaseVertexLocation;
+	iconKick2->IndexCount = iconKick2->Geo->DrawArgs["SkillUI"].IndexCount;
+	mRitems[(int)eUIList::I_Kick2].push_back(iconKick2.get());
+	mAllRitems.push_back(std::move(iconKick2));
+	skillFullTime.push_back(10.0f);
+
 }
 
 void PlayerUI::UpdateUICBs(
 	UploadBuffer<UIConstants>* curUICB,
 	XMMATRIX playerWorld,
 	XMVECTOR inEyeLeft,
-	std::vector<float> Delay,
+	float* Delay,
 	bool mTransformDirty)
 {
 	int iconIndex = 0;
