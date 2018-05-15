@@ -621,13 +621,23 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 		XMStoreFloat4x4(&e->World, XMLoadFloat4x4(&e->World) * M);
 		e->NumFramesDirty = gNumFrameResources;
 	}
-	if (e->Mat->Name == "ice0" && mZoneIndex == 1 && mMonster->isAllDie())
+	else if (e->Mat->Name == "ice0" && mZoneIndex == 1 && mMonster->isAllDie())
 	{
 		XMMATRIX M = XMMatrixRotationY(XM_PIDIV2);
 		mAllRitems[e->ObjCBIndex]->Mat = mMaterials.Get("Transparency");
 		e->Bounds.Transform(e->Bounds, M);
 		XMStoreFloat4x4(&e->World, XMLoadFloat4x4(&e->World) * M);
 		e->NumFramesDirty = gNumFrameResources;
+	}
+	else if (e->Mat->Name == "Transparency" && mZoneIndex == 2 && mMonster->isAllDie())
+	{
+		XMMATRIX M = XMMatrixTranslation(0.0f, 0.0f, -500.0f);
+		mAllRitems[e->ObjCBIndex]->Mat = mMaterials.Get("tundra0");
+		e->Bounds.Transform(e->Bounds, M);
+		XMStoreFloat4x4(&e->World, XMLoadFloat4x4(&e->World) * M);
+		e->NumFramesDirty = gNumFrameResources;
+		
+		// TODO: set game end
 	}
 	
 
