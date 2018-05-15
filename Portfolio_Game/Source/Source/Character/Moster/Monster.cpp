@@ -562,7 +562,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 
 		float distance = MathHelper::getDistance(pPosition, mPosition);
 
-		// Collision
+		// Collision - player
 		if (distance < 8.0f)
 		{
 			// Move Back

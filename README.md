@@ -1,6 +1,13 @@
 # Portfolio - Game1
 - Direct3D 12를 이용한 게임입니다.
 
+## 실행 영상
+
+[![Click](https://img.youtube.com/vi/J2mbOL7OFVA/0.jpg)](https://www.youtube.com/watch?v=J2mbOL7OFVA)
+
+<br/>
+
+---
 
 ## 조작법
 ### 이동
@@ -16,7 +23,7 @@
 ![](./Resource/docs/Player/Attack_Player.gif)
 
 - 공격은 3가지로 이루어져 있으며 각각 주는 피해량이 다릅니다.
-- Punch, Kick, Kick2 로 이루어져 있으며 각각 1, 2, 3 으로 실행이 가능합니다.
+- Punch, Kick, Kick2 로 이루어져 있으며 각각 키보드 숫자키 1, 2, 3 으로 실행이 가능합니다.
 - 각각 공격이 진행된 뒤에 남은 쿨타임을 시각적으로 확인할 수 있습니다.
 
 <br>
