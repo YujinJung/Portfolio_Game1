@@ -353,8 +353,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 				mPlayer.SetClipName("run");
 
 				if (isForward)
-					mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 50.0f * dt);
-					//mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 18.0f * dt);
+					mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 18.0f * dt);
 
 				isForward = true;
 			}

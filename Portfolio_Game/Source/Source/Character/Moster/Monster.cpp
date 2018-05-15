@@ -95,6 +95,7 @@ bool Monster::isAllDie()
 
 void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 {
+	// Player Attack Range // Radius - 5.0f
 	XMVECTOR HitTargetv = XMVectorAdd(Position, Look * 5.0f);
 
 	// Damage
@@ -104,7 +105,7 @@ void Monster::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 
 		if (mMonsterInfo[cIndex].isDeath) continue;
 
-		if (MathHelper::getDistance(HitTargetv, MonsterPos) < 15.0f)
+		if (MathHelper::getDistance(HitTargetv, MonsterPos) < 5.0f)
 		{
 			if (mMonsterInfo[cIndex].mHealth >= 0)
 				mSkinnedModelInst[cIndex]->TimePos = 0.0f;
@@ -561,19 +562,20 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 
 		float distance = MathHelper::getDistance(pPosition, mPosition);
 
-
-		if (distance < 10.0f)
+		// Collision
+		if (distance < 8.0f)
 		{
 			// Move Back
 			mPosition = XMVectorSubtract(mPosition, mLook);
 			M.mMovement.SetPlayerPosition(mPosition);
 		}
 
+		// Attack
 		if (distance < 12.0f)
 		{
 			float pHealth = static_cast<float>(Player.GetCharacterInfo().mHealth);
 
-			if (curDeltaTime > 10.0f && pHealth > 0) // Hit per 5 seconds
+			if (curDeltaTime > 5.0f && pHealth > 0) // Hit per 5 seconds
 			{
 				HitTime[cIndex].first = gt.TotalTime();
 				if (attackIndex % 2 == 0)

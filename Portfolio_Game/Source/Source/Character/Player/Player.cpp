@@ -10,7 +10,7 @@ Player::Player()
 	mFullHealth(100),
 	mDamage(10)
 {
-	XMVECTOR P = XMVectorSet(-200.0f, 0.0f, -170.0f, 0.0f);
+	XMVECTOR P = XMVectorSet(-180.0f, 0.0f, -170.0f, 0.0f);
 	mPlayerInfo.mMovement.SetPlayerPosition(P);
 }
 
@@ -47,7 +47,6 @@ void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 		return;
 	}
 
-	// TODO: Monster Look Check
 	SetClipName("HitReaction");
 	mPlayerInfo.mHealth -= damage;
 
@@ -59,12 +58,12 @@ void Player::Attack(Character * inMonster, std::string clipName)
 	SetClipName(clipName);
 	SetClipTime(0.0f);
 
-	if (clipName == "Kick")
+	if (clipName == "Hook")
+		mDamage = 10;
+	else if (clipName == "Kick")
 		mDamage = 20;
 	else if (clipName == "Kick2")
 		mDamage = 30;
-	else if (clipName == "Hook")
-		mDamage = 100;
 
 	inMonster->Damage(
 		mDamage,
