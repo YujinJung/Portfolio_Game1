@@ -25,6 +25,7 @@ public:
 	UINT GetUISize() const;
 	UINT GetAllRitemsSize() const;
 	const std::vector<RenderItem*> GetRenderItem(RenderLayer Type) const;
+	int GetMonsterIndex() const;
 
 	void SetClipName(const std::string & inClipName, int cIndex);
 	void SetMaterialName(const std::string& inMaterialName);

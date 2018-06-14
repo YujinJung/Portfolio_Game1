@@ -42,10 +42,7 @@ void Player::Damage(int damage, XMVECTOR Position, XMVECTOR Look)
 	{
 		mSkinnedModelInst->TimePos = 0.0f;
 	}
-	else
-	{
-		return;
-	}
+	else { return; }
 
 	SetClipName("HitReaction");
 	mPlayerInfo.mHealth -= damage;
@@ -282,24 +279,32 @@ void Player::UpdateCharacterCBs(
 	float* Delay,
 	const GameTimer & gt)
 {
+	// Player 체력이 없으면 Death
 	if (mPlayerInfo.mHealth <= 0 && mPlayerInfo.mClipName != "Death")
 	{
 		SetClipName("Death");
 		mSkinnedModelInst->TimePos = 0.0f;
 	}
+
+	// Update Chracter, Shadow, Animation, Camera, BoundingBox
+	// Animation
 	mSkinnedModelInst->UpdateSkinnedAnimation(mPlayerInfo.mClipName, gt.DeltaTime());
+	// 초기 위치의 Bounding Box를 Transformation
+	mInitBoundsBox.Transform(mPlayerInfo.mBoundingBox, GetWorldTransformMatrix());
+	// Shadow
+	UpdateCharacterShadows(mMainLight);
+	// Camera
+	mCamera.UpdateViewMatrix();
 
 	auto currPlayerCB = mCurrFrameResource->PlayerCB.get();
-	for (auto& e : mRitems[(int)RenderLayer::Character])
+	CharacterConstants skinnedConstants;
+	std::copy(
+		std::begin(mSkinnedModelInst->FinalTransforms),
+		std::end(mSkinnedModelInst->FinalTransforms),
+		&skinnedConstants.BoneTransforms[0]);
+
+	for (auto& e : mAllRitems)
 	{
-
-		CharacterConstants skinnedConstants;
-
-		std::copy(
-			std::begin(mSkinnedModelInst->FinalTransforms),
-			std::end(mSkinnedModelInst->FinalTransforms),
-			&skinnedConstants.BoneTransforms[0]);
-
 		XMMATRIX world = XMLoadFloat4x4(&e->World) * GetWorldTransformMatrix();
 		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
 
@@ -309,34 +314,11 @@ void Player::UpdateCharacterCBs(
 		currPlayerCB->CopyData(e->PlayerCBIndex, skinnedConstants);
 	}
 
-	mInitBoundsBox.Transform(mPlayerInfo.mBoundingBox, GetWorldTransformMatrix());
 
-	UpdateCharacterShadows(mMainLight);
-	for (auto& e : mRitems[(int)RenderLayer::Shadow])
-	{
-
-		CharacterConstants skinnedConstants;
-
-		std::copy(
-			std::begin(mSkinnedModelInst->FinalTransforms),
-			std::end(mSkinnedModelInst->FinalTransforms),
-			&skinnedConstants.BoneTransforms[0]);
-
-		XMMATRIX world = XMLoadFloat4x4(&e->World);
-		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
-
-		XMStoreFloat4x4(&skinnedConstants.World, XMMatrixTranspose(world));
-		XMStoreFloat4x4(&skinnedConstants.TexTransform, XMMatrixTranspose(texTransform));
-
-		currPlayerCB->CopyData(e->PlayerCBIndex, skinnedConstants);
-	}
-
-	mCamera.UpdateViewMatrix();
-
+	// Update UI
 	XMVECTOR translation = 0.9 * XMVectorSubtract(mCamera.GetEyePosition(), mPlayerInfo.mMovement.GetPlayerPosition());
 	mUI.SetPosition(translation);
 
-	// UI
 	auto curUICB = mCurrFrameResource->UICB.get();
 	mUI.UpdateUICBs(
 		curUICB,
@@ -354,7 +336,7 @@ void Player::UpdateCharacterShadows(const Light& mMainLight)
 		// Load the object world
 		auto& o = mRitems[(int)RenderLayer::Character][i];
 
-		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World) * GetWorldTransformMatrix();
+		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World);
 		XMVECTOR shadowPlane = XMVectorSet(0.0f, 0.1f, 0.0f, 0.0f);
 		XMVECTOR toMainLight = -XMLoadFloat3(&mMainLight.Direction);
 		XMMATRIX S = XMMatrixShadow(shadowPlane, toMainLight);
@@ -367,7 +349,6 @@ void Player::UpdateCharacterShadows(const Light& mMainLight)
 
 void Player::UpdatePlayerPosition(PlayerMoveList moveName, float velocity)
 {
-
 	switch (moveName)
 	{
 	case PlayerMoveList::Walk:

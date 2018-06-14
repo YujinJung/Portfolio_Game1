@@ -209,19 +209,20 @@ void MonsterUI::UpdateUICBs(
 			{
 				UIoffset = (1.0f - mWorldTransform[mIndex].Scale.x) * inEyeLeft[mIndex] * 0.8f;
 			}
-
+			// Boss Monster`s health  
 			if (mIndex == 0) { UIoffset *= 2.0f; }
 
 			XMMATRIX T = XMMatrixTranslation(
 				mWorldTransform[mIndex].Position.x + UIoffset.m128_f32[0],
 				mWorldTransform[mIndex].Position.y + UIoffset.m128_f32[1],
-				mWorldTransform[mIndex].Position.z + UIoffset.m128_f32[2]);;
+				mWorldTransform[mIndex].Position.z + UIoffset.m128_f32[2]);
 			XMMATRIX S = XMMatrixScaling(
 				mWorldTransform[mIndex].Scale.x,
 				mWorldTransform[mIndex].Scale.y,
 				mWorldTransform[mIndex].Scale.z);
 
-			// Background Health Bar / 6n + 2, 3, 4, 5
+			// Background Health Bar / 6n + 2, 4
+			// Name / 6n + 5, 6
 			if (res == 1 || res == 5 || res == 3 || res == 4)
 			{
 				T = XMMatrixTranslation(

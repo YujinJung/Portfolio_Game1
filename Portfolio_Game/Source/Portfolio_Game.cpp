@@ -185,6 +185,8 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 	skyTexDescriptor.Offset(mTextureOffset, mCbvSrvDescriptorSize);
 	mCommandList->SetGraphicsRootDescriptorTable(8, skyTexDescriptor);
+
+
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Opaque]);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Wall]);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Architecture]);
@@ -401,7 +403,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	}
 	else if(GetAsyncKeyState('1') & 0x8000)
 	{
-		// Kick Delay, 5 seconds
+		// Punch Delay, 5 seconds
 		if (gt.TotalTime() - HitTime[(int)eUIList::I_Punch] > 3.0f)
 		{
 			mPlayer.SetClipTime(0.0f);
@@ -411,7 +413,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	}
 	else if (GetAsyncKeyState('2') & 0x8000)
 	{
-		// Hook Delay, 3 seconds
+		// Kick Delay, 3 seconds
 		if (gt.TotalTime() - HitTime[(int)eUIList::I_Kick] > 5.0f)
 		{
 			mPlayer.SetClipTime(0.0f);
@@ -499,9 +501,6 @@ void PortfolioGameApp::checkCollision(
 void PortfolioGameApp::UpdateObjectCBs(const GameTimer& gt)
 {
 	auto currObjectCB = mCurrFrameResource->ObjectCB.get();
-	auto playerBounds = mPlayer.GetCharacterInfo().mBoundingBox;
-	XMVECTOR playerPos = mPlayer.GetCharacterInfo().mMovement.GetPlayerPosition();
-	static int i = 0;
 
 	for (auto& e : mAllRitems)
 	{
@@ -571,6 +570,7 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 {
 	static bool playerDeathCamFinished = false;
 	XMVECTOR PlayerPos = mPlayer.GetCharacterInfo().mMovement.GetPlayerPosition();
+	int mZoneIndex = mMonster->GetMonsterIndex();
 	
 	// Spawn Monster
 	int playerPosX = PlayerPos.m128_i32[0];
@@ -578,42 +578,42 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 
 	if (playerPosX < 0 && playerPosZ > 0)
 	{
-		if (mZoneIndex != 0)
+		if (mZoneIndex != 1)
 		{
 			mMonster = mMonstersByZone[0].get();
-			mZoneIndex = 0;
+			mZoneIndex = 1;
 		}
 	}
 	else if (playerPosX > 0 && playerPosZ > 0)
 	{
-		if (mZoneIndex != 1)
+		if (mZoneIndex != 2)
 		{
 			mMonster = mMonstersByZone[1].get();
-			mZoneIndex = 1;
+			mZoneIndex = 2;
 		}
 	}
 	else if (playerPosX > 0 && playerPosZ < 0)
 	{
-		if (mZoneIndex != 2)
+		if (mZoneIndex != 3)
 		{
 			mMonster = mMonstersByZone[2].get();
-			mZoneIndex = 2;
+			mZoneIndex = 3;
 		}
 	}
 	else if (playerPosX < 0 && playerPosZ < 0)
 	{
-		if (mZoneIndex != 2)
+		if (mZoneIndex != 0)
 		{
 			mMonster = mMonstersByZone[2].get();
-			mZoneIndex = 2;
+			mZoneIndex = 0;
 		}
 	}
 
-	
+	mZoneIndex = mMonster->GetMonsterIndex();
 	// when all monsters die, the next room(third room) opens
 	// and Block room4
 	auto& e = mRitems[(int)RenderLayer::Wall].front();
-	if (e->Mat->Name == "stone0" && mZoneIndex == 0 && mMonster->isAllDie())
+	if (e->Mat->Name == "stone0" && mZoneIndex == 1 && mMonster->isAllDie())
 	{
 		XMMATRIX M = XMMatrixRotationY(XM_PIDIV2);
 		mAllRitems[e->ObjCBIndex]->Mat = mMaterials.Get("ice0");
@@ -621,7 +621,7 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 		XMStoreFloat4x4(&e->World, XMLoadFloat4x4(&e->World) * M);
 		e->NumFramesDirty = gNumFrameResources;
 	}
-	else if (e->Mat->Name == "ice0" && mZoneIndex == 1 && mMonster->isAllDie())
+	else if (e->Mat->Name == "ice0" && mZoneIndex == 2 && mMonster->isAllDie())
 	{
 		XMMATRIX M = XMMatrixRotationY(XM_PIDIV2);
 		mAllRitems[e->ObjCBIndex]->Mat = mMaterials.Get("Transparency");
@@ -629,7 +629,7 @@ void PortfolioGameApp::UpdateCharacterCBs(const GameTimer & gt)
 		XMStoreFloat4x4(&e->World, XMLoadFloat4x4(&e->World) * M);
 		e->NumFramesDirty = gNumFrameResources;
 	}
-	else if (e->Mat->Name == "Transparency" && mZoneIndex == 2 && mMonster->isAllDie())
+	else if (e->Mat->Name == "Transparency" && mZoneIndex == 3 && mMonster->isAllDie())
 	{
 		XMMATRIX M = XMMatrixTranslation(0.0f, 0.0f, -500.0f);
 		mAllRitems[e->ObjCBIndex]->Mat = mMaterials.Get("tundra0");
@@ -1297,46 +1297,6 @@ void PortfolioGameApp::BuildFbxGeometry()
 	LoadFBXArchitecture();
 }
 
-void PortfolioGameApp::BuildFBXTexture(
-	std::vector<Material> &outMaterial,
-	std::string inTextureName, std::string inMaterialName)
-{
-	// Begin
-	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
-	// Load Texture and Material
-	int MatIndex = mMaterials.GetSize();
-	for (int i = 0; i < outMaterial.size(); ++i)
-	{
-		std::string TextureName;
-		// Load Texture 
-		if (!outMaterial[i].Name.empty())
-		{
-			TextureName = inTextureName;
-			TextureName.push_back(i + 48);
-			std::wstring TextureFileName;
-			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
-
-			mTextures.SetTexture(
-				TextureName,
-				TextureFileName);
-		}
-
-		// Load Material
-		std::string MaterialName = inMaterialName;
-		MaterialName.push_back(i + 48);
-
-		auto playerTexIndex = mTextures.GetTextureIndex(TextureName);
-		mMaterials.SetMaterial(
-			MaterialName,
-			mTextures.GetTextureIndex(TextureName),
-			outMaterial[i].DiffuseAlbedo,
-			outMaterial[i].FresnelR0,
-			outMaterial[i].Roughness,
-			MatIndex++);
-	}
-	mTextures.End();
-}
-
 void PortfolioGameApp::LoadFBXPlayer()
 {
 	FbxLoader fbx;
@@ -1384,46 +1344,6 @@ void PortfolioGameApp::LoadFBXMonster()
 
 	// Initialize Monster in 1 zone
 	mMonster = mMonstersByZone[1].get();
-}
-
-void PortfolioGameApp::LoadFBXSubMonster(
-	std::vector<Material> &outMaterial, 
-	std::string& inMaterialName, 	std::string &FileName,
-	bool isEvenX,	bool isEvenZ)
-{
-	FbxLoader fbx;
-	std::vector<CharacterVertex> outSkinnedVertices;
-	std::vector<std::uint32_t> outIndices;
-	SkinnedData outSkinnedInfo;
-
-	// Monster FBX
-	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
-
-	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "MAttack1", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "MAttack2", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
-	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
-
-	std::unique_ptr<Monster> tempMonster = std::make_unique<Monster>();
-	tempMonster->BuildGeometry(
-		md3dDevice.Get(), 
-		mCommandList.Get(),
-		outSkinnedVertices,
-		outIndices,
-		outSkinnedInfo,
-		"MonsterGeo");
-	tempMonster->SetMaterialName(inMaterialName);
-
-	if(!isEvenX)
-		tempMonster->SetMonsterIndex(1);
-	else if(!isEvenZ)
-		tempMonster->SetMonsterIndex(3);
-	else
-		tempMonster->SetMonsterIndex(2);
-
-	
-	mMonstersByZone.push_back(std::move(tempMonster));
 }
 
 void PortfolioGameApp::LoadFBXArchitecture()
@@ -1521,6 +1441,87 @@ void PortfolioGameApp::LoadFBXArchitecture()
 	outVertices.clear();
 	outIndices.clear();
 	outMaterial.clear();
+}
+
+
+void PortfolioGameApp::BuildFBXTexture(
+	std::vector<Material> &outMaterial,
+	std::string inTextureName, std::string inMaterialName)
+{
+	// Begin
+	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+	// Load Texture and Material
+	int MatIndex = mMaterials.GetSize();
+	for (int i = 0; i < outMaterial.size(); ++i)
+	{
+		std::string TextureName;
+		// Load Texture 
+		if (!outMaterial[i].Name.empty())
+		{
+			TextureName = inTextureName;
+			TextureName.push_back(i + 48);
+			std::wstring TextureFileName;
+			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
+
+			mTextures.SetTexture(
+				TextureName,
+				TextureFileName);
+		}
+
+		// Load Material
+		std::string MaterialName = inMaterialName;
+		MaterialName.push_back(i + 48);
+
+		auto playerTexIndex = mTextures.GetTextureIndex(TextureName);
+		mMaterials.SetMaterial(
+			MaterialName,
+			mTextures.GetTextureIndex(TextureName),
+			outMaterial[i].DiffuseAlbedo,
+			outMaterial[i].FresnelR0,
+			outMaterial[i].Roughness,
+			MatIndex++);
+	}
+	mTextures.End();
+}
+
+void PortfolioGameApp::LoadFBXSubMonster(
+	std::vector<Material> &outMaterial,
+	std::string& inMaterialName, std::string &FileName,
+	bool isEvenX, bool isEvenZ)
+{
+	FbxLoader fbx;
+	std::vector<CharacterVertex> outSkinnedVertices;
+	std::vector<std::uint32_t> outIndices;
+	SkinnedData outSkinnedInfo;
+
+	// Monster FBX
+	fbx.LoadFBX(outSkinnedVertices, outIndices, outSkinnedInfo, "Idle", outMaterial, FileName);
+
+	fbx.LoadFBX(outSkinnedInfo, "Walking", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "MAttack1", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "MAttack2", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "HitReaction", FileName);
+	fbx.LoadFBX(outSkinnedInfo, "Death", FileName);
+
+	std::unique_ptr<Monster> tempMonster = std::make_unique<Monster>();
+	tempMonster->BuildGeometry(
+		md3dDevice.Get(),
+		mCommandList.Get(),
+		outSkinnedVertices,
+		outIndices,
+		outSkinnedInfo,
+		"MonsterGeo");
+	tempMonster->SetMaterialName(inMaterialName);
+
+	if (!isEvenX)
+		tempMonster->SetMonsterIndex(1);
+	else if (!isEvenZ)
+		tempMonster->SetMonsterIndex(3);
+	else
+		tempMonster->SetMonsterIndex(2);
+
+
+	mMonstersByZone.push_back(std::move(tempMonster));
 }
 
 void PortfolioGameApp::BuildArcheGeometry(
@@ -1767,7 +1768,6 @@ void PortfolioGameApp::BuildMaterials()
 	mMaterials.SetMaterial(
 		matName, texIndices, diffuses,
 		fresnels, roughnesses, MatIndex);
-	
 }
 
 void PortfolioGameApp::BuildRenderItems()
@@ -1790,10 +1790,7 @@ void PortfolioGameApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(skyRitem));
 	
 	// Architecture
-	
-	
-
-	
+		
 	// Player
 	mPlayer.BuildRenderItem(mMaterials, "playerMat0");
 	mPlayer.mUI.BuildRenderItem(mGeometries, mMaterials);
@@ -2253,9 +2250,9 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 
 		if (ri->ObjCBIndex >= 0)
 		{
-		UINT cbvIndex = mObjCbvOffset + mCurrFrameResourceIndex * (UINT)mAllRitems.size() + ri->ObjCBIndex;
-		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-		cbvHandle.Offset(cbvIndex, mCbvSrvDescriptorSize);
+			UINT cbvIndex = mObjCbvOffset + mCurrFrameResourceIndex * (UINT)mAllRitems.size() + ri->ObjCBIndex;
+			auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+			cbvHandle.Offset(cbvIndex, mCbvSrvDescriptorSize);
 			cmdList->SetGraphicsRootDescriptorTable(texOffset, cbvHandle);
 		}
 

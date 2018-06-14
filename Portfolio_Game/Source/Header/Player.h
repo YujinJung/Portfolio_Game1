@@ -62,6 +62,7 @@ public:
 		std::string matrialPrefix) override;
 
 
+	///
 	void UpdateCharacterCBs(
 		FrameResource* mCurrFrameResource,
 		const Light& mMainLight,

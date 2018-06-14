@@ -162,7 +162,9 @@ void SkinnedData::SetAnimationName(const std::string & clipName)
 	mAnimationName.push_back(clipName);
 }
 void SkinnedData::SetBoneName(std::string boneName)
-{ mBoneName.push_back(boneName); }
+{
+	mBoneName.push_back(boneName);
+}
 void SkinnedData::SetSubmeshOffset(int num)
 {
 	mSubmeshOffset.push_back(num);
@@ -208,6 +210,7 @@ void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos,
 	auto clip = mAnimations.find(clipName);
 	clip->second.Interpolate(timePos, toParentTransforms);
 
+	/*
 	//
 	// Traverse the hierarchy and transform all the bones to the root space.
 	//
@@ -216,7 +219,6 @@ void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos,
 	// The root bone has index 0.  The root bone has no parent, so its toRootTransform
 	// is just its local bone transform.
 	toRootTransforms[0] = toParentTransforms[0];
-
 	// Now find the toRootTransform of the children.
 	for (UINT i = 1; i < numBones; ++i)
 	{
@@ -229,15 +231,14 @@ void SkinnedData::GetFinalTransforms(const std::string& clipName, float timePos,
 
 		XMStoreFloat4x4(&toRootTransforms[i], toRoot);
 	}
+	*/
 
-	// Premultiply by the bone offset transform to get the final transform.
 	for (UINT i = 0; i < numBones; ++i)
 	{
 		XMMATRIX offset = XMLoadFloat4x4(&mBoneOffsets[i]);
 		XMMATRIX toRoot = XMLoadFloat4x4(&toParentTransforms[i]);
 		XMMATRIX finalTransform = XMMatrixMultiply(offset, toRoot);
 		finalTransform *= XMMatrixScaling(0.01f, 0.01f, 0.01f);
-
 		//printMatrix(L"Offset", i, offset);
 		//printMatrix(L"toRoot", i, toRoot);
 		//if(i == 15)

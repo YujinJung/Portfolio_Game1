@@ -78,6 +78,10 @@ const std::vector<RenderItem*> Monster::GetRenderItem(RenderLayer Type) const
 	return mRitems[(int)Type];
 }
 
+int Monster::GetMonsterIndex() const
+{
+	return mMonsterIndex;
+}
 
 bool Monster::isClipEnd(std::string clipName, int i)
 {
@@ -285,7 +289,7 @@ void Monster::BuildRenderItem(
 		zRange = 200; zOffset = 50;
 		bossX = -200.0f; bossZ = 200.0f;
 		mAttackTimes[0] = mSkinnedInfo.GetClipEndTime("MAttack1") / 2.0f;
-		mAttackTimes[1] = mSkinnedInfo.GetClipEndTime("MAttack2") / 6.0f;
+		mAttackTimes[1] = mSkinnedInfo.GetClipEndTime("MAttack2") / 3.0f;
 		mDamage = 2;
 	}
 	else if (mMonsterIndex == 2)
@@ -395,13 +399,17 @@ void Monster::UpdateCharacterCBs(
 	// Character Offset : mAllsize  / numOfcharacter
 	int monsterFullIndex = 0;
 	int preMonsterIndex = -1;
-	int monsterOffset = mRitems[(int)RenderLayer::Monster].size() / numOfCharacter;
+	UpdateCharacterShadows(mMainLight);
+	//int monsterOffset = mRitems[(int)RenderLayer::Monster].size() / numOfCharacter;
+	int monsterOffset = mAllRitems.size() / numOfCharacter;
 
 	std::vector<XMMATRIX> vWorld;
 	std::vector<XMVECTOR> vEyeLeft;
+	CharacterConstants monsterConstants;
 
 	// Monster
-	for (auto& e : mRitems[(int)RenderLayer::Monster])
+	//for (auto& e : mRitems[(int)RenderLayer::Monster])
+	for (auto& e : mAllRitems)
 	{
 		int monsterIndex = monsterFullIndex / monsterOffset;
 
@@ -415,15 +423,14 @@ void Monster::UpdateCharacterCBs(
 			mMonsterInfo[monsterIndex].mMovement.UpdateTransformationMatrix();
 			vWorld.push_back(world);
 			vEyeLeft.push_back(-mMonsterInfo[monsterIndex].mMovement.GetPlayerRight());
+
+			// Animation
+			std::copy(
+				std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+				std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
+				&monsterConstants.BoneTransforms[0]);
 		}
 
-		CharacterConstants monsterConstants;
-
-		std::copy(
-			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
-			std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
-			&monsterConstants.BoneTransforms[0]);
-
 		XMStoreFloat4x4(&monsterConstants.World, XMMatrixTranspose(world));
 		XMStoreFloat4x4(&monsterConstants.TexTransform, XMMatrixTranspose(texTransform));
 
@@ -432,31 +439,6 @@ void Monster::UpdateCharacterCBs(
 		++monsterFullIndex;
 	}
 
-	// Shadow
-	UpdateCharacterShadows(mMainLight);
-	monsterFullIndex = 0;
-	for (auto& e : mRitems[(int)RenderLayer::Shadow])
-	{
-		int monsterIndex = monsterFullIndex / monsterOffset;
-
-		CharacterConstants monsterConstants;
-
-		std::copy(
-			std::begin(mSkinnedModelInst[monsterIndex]->FinalTransforms),
-			std::end(mSkinnedModelInst[monsterIndex]->FinalTransforms),
-			&monsterConstants.BoneTransforms[0]);
-
-		// TODO : player constroller
-		XMMATRIX world = XMLoadFloat4x4(&e->World);
-		XMMATRIX texTransform = XMLoadFloat4x4(&e->TexTransform);
-
-		XMStoreFloat4x4(&monsterConstants.World, XMMatrixTranspose(world));
-		XMStoreFloat4x4(&monsterConstants.TexTransform, XMMatrixTranspose(texTransform));
-
-		curMonsterCB->CopyData(e->MonsterCBIndex, monsterConstants);
-
-		++monsterFullIndex;
-	}
 
 	//UI
 	auto curUICB = mCurrFrameResource->MonsterUICB.get();
@@ -476,7 +458,7 @@ void Monster::UpdateCharacterShadows(const Light& mMainLight)
 
 		// Load the object world
 		auto& o = mRitems[(int)RenderLayer::Monster][i];
-		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World) * GetWorldTransformMatrix(monsterIndex);
+		XMMATRIX shadowWorld = XMLoadFloat4x4(&o->World);
 
 		XMVECTOR shadowPlane = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 		XMVECTOR toMainLight = -XMLoadFloat3(&mMainLight.Direction);
@@ -534,11 +516,11 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		float theta = XMVector3AngleBetweenNormals(mLook, D).m128_f32[0];
 
 		// left right check ; Left - minus / Right - plus
-		float res = XMVector3Dot(XMVector3Cross(D, mLook), mUp).m128_f32[0];
-
+		bool res = XMVector3Dot(XMVector3Cross(D, mLook), mUp).m128_f32[0] < 0 ? true : false;
+		// Rotate Monster
 		if (theta > XM_PI / 36.0f)
 		{
-			if (res > 0)
+			if (!res)
 				R = R * XMMatrixRotationY(0.03f * -theta);
 			else
 				R = R * XMMatrixRotationY(0.03f * theta);
@@ -575,6 +557,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 		{
 			float pHealth = static_cast<float>(Player.GetCharacterInfo().mHealth);
 
+			// curDeltaTime -> Current Time - Last Attack Time
 			if (curDeltaTime > 5.0f && pHealth > 0) // Hit per 5 seconds
 			{
 				HitTime[cIndex].first = gt.TotalTime();
@@ -619,7 +602,7 @@ void Monster::UpdateMonsterPosition(Character& Player, const GameTimer & gt)
 					mPosition = XMVectorSubtract(mPosition, 0.01f * Md);
 
 					// Rotate opposite direction
-					if (res > 0)
+					if (!res)
 						R = R * XMMatrixRotationY(0.1f * theta);
 					else
 						R = R * XMMatrixRotationY(0.1f * -theta);

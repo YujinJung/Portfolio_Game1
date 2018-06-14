@@ -138,7 +138,6 @@ private:
 	Player mPlayer;
 	Monster* mMonster;
 	std::vector<std::unique_ptr<Monster>> mMonstersByZone;
-	UINT mZoneIndex;
 
 	Textures mTextures;
 	Materials mMaterials;
