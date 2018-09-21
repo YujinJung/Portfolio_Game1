@@ -166,6 +166,7 @@
     <ClCompile Include="Source\Source\Common\GameTimer.cpp" />
     <ClCompile Include="Source\Source\Common\GeometryGenerator.cpp" />
     <ClCompile Include="Source\Source\Common\MathHelper.cpp" />
+    <ClCompile Include="Source\Source\Common\Utility.cpp" />
     <ClCompile Include="Source\Source\Material\Materials.cpp" />
     <ClCompile Include="Source\Source\Texture\DDSTextureLoader.cpp" />
     <ClCompile Include="Source\Source\Texture\FbxLoader.cpp" />
@@ -178,6 +179,7 @@
     <ClInclude Include="Source\Header\Camera.h" />
     <ClInclude Include="Source\Header\Character.h" />
     <ClInclude Include="Source\Header\CharacterMovement.h" />
+    <ClInclude Include="Source\Header\Common\Utility.h" />
     <ClInclude Include="Source\Header\DDSTextureLoader.h" />
     <ClInclude Include="Source\Header\PlayerUI.h" />
     <ClInclude Include="Source\Header\FbxLoader.h" />

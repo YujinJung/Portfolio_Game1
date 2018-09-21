@@ -39,7 +39,6 @@
 ![](./Resource/docs/Player/Gameover.gif)
 
 - Player가 죽게되면 Gameover 창이 뜹니다.
-- Monster를 다 죽이게 되면 ... TODO: 만들고 작성
 
 <br/>
 

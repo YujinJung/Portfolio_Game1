@@ -23,6 +23,7 @@
 #include "Materials.h"
 #include "FBXLoader.h"
 #include "TextureLoader.h"
+#include "Utility.h"
 
 #include "Portfolio_Game.h"
 
@@ -1790,9 +1791,6 @@ void PortfolioGameApp::BuildRenderItems()
 	mAllRitems.push_back(std::move(skyRitem));
 	
 	// Architecture
-	
-	
-
 	
 	// Player
 	mPlayer.BuildRenderItem(mMaterials, "playerMat0");
