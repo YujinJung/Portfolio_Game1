@@ -28,7 +28,9 @@
 
 <br>
 
-### UI
+---
+
+## UI
 ![](./Resource/docs/Player/playerUI.jpg)
 
 - Player의 체력과 스킬, 스킬 남은 시간을 알 수 있습니다.
