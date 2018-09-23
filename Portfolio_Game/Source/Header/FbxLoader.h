@@ -104,7 +104,7 @@ public:
 		fbxsdk::FbxMesh * pMesh,
 		std::vector<CharacterVertex> & outVertexVector,
 		std::vector<uint32_t> & outIndexVector, 
-		SkinnedData& outSkinnedData);
+		SkinnedData* outSkinnedData);
 
 	void GetVerticesAndIndice(
 		fbxsdk::FbxMesh * pMesh,

@@ -100,7 +100,7 @@ HRESULT FbxLoader::LoadFBX(
 				//outSkinnedData.SetAnimationName(outAnimationName);
 
 				// Get Vertices and indices info
-				GetVerticesAndIndice(pMesh, outVertexVector, outIndexVector, outSkinnedData);
+				GetVerticesAndIndice(pMesh, outVertexVector, outIndexVector, &outSkinnedData);
 
 				GetMaterials(pFbxChildNode, outMaterial);
 
@@ -889,44 +889,18 @@ void FbxLoader::GetVerticesAndIndice(
 	FbxMesh * pMesh, 
 	std::vector<CharacterVertex> & outVertexVector, 
 	std::vector<uint32_t> & outIndexVector,
-	SkinnedData& outSkinnedData)
+	SkinnedData* outSkinnedData)
 {
 	// Vertex and Index
 	std::unordered_map<std::string, std::vector<uint32_t>> IndexVector;
 	std::unordered_map<Vertex, uint32_t> IndexMapping;
 	uint32_t VertexIndex = 0;
-
-	// Material
-	FbxLayerElementArrayTemplate<int>* MaterialIndices;
-	FbxGeometryElement::EMappingMode MaterialMappingMode = FbxGeometryElement::eNone;
-	MaterialIndices = &(pMesh->GetElementMaterial()->GetIndexArray());
-	MaterialMappingMode = pMesh->GetElementMaterial()->GetMappingMode();
-
 	uint32_t tCount = pMesh->GetPolygonCount(); // Triangle
-	bool isSameCount = MaterialIndices->GetCount() == tCount;
 
 	for (uint32_t i = 0; i < tCount; ++i)
 	{
 		// For indexing by bone
 		std::string CurrBoneName = mControlPoints[pMesh->GetPolygonVertex(i, 1)]->mBoneName;
-
-		// Material
-		uint16_t MaterialIndex = MaterialIndices->GetAt(0);
-
-		if (MaterialIndices)
-		{
-			switch (MaterialMappingMode)
-			{
-			case FbxGeometryElement::eByPolygon:
-			{
-				if (isSameCount)
-				{
-					MaterialIndex = MaterialIndices->GetAt(i);
-				}
-			}
-			break;
-			}
-		}
 
 		// Vertex and Index info
 		for (int j = 0; j < 3; ++j)
@@ -989,7 +963,6 @@ void FbxLoader::GetVerticesAndIndice(
 				SkinnedVertexInfo.Pos = Temp.Pos;
 				SkinnedVertexInfo.Normal = Temp.Normal;
 				SkinnedVertexInfo.TexC = Temp.TexC;
-				SkinnedVertexInfo.MaterialIndex = MaterialIndex;
 
 				CurrCtrlPoint->SortBlendingInfoByWeight();
 
@@ -1026,7 +999,7 @@ void FbxLoader::GetVerticesAndIndice(
 		auto CurrIndexVector = IndexVector[mBoneName[i]];
 		int IndexCount = CurrIndexVector.size();
 
-		outSkinnedData.SetSubmeshOffset(IndexCount);
+		(*outSkinnedData).SetSubmeshOffset(IndexCount);
 
 		outIndexVector.insert(outIndexVector.end(), CurrIndexVector.begin(), CurrIndexVector.end());
 	}
@@ -1040,15 +1013,7 @@ void FbxLoader::GetVerticesAndIndice(
 	// Vertex and Index
 	std::unordered_map<Vertex, uint32_t> IndexMapping;
 	uint32_t VertexIndex = 0;
-
-	// Material
-	FbxLayerElementArrayTemplate<int>* MaterialIndices;
-	FbxGeometryElement::EMappingMode MaterialMappingMode = FbxGeometryElement::eNone;
-	MaterialIndices = &(pMesh->GetElementMaterial()->GetIndexArray());
-	MaterialMappingMode = pMesh->GetElementMaterial()->GetMappingMode();
-
 	int tCount = pMesh->GetPolygonCount(); // Triangle
-	bool isSameCount = MaterialIndices->GetCount() == tCount;
 
 	for (int i = 0; i < tCount; ++i)
 	{
