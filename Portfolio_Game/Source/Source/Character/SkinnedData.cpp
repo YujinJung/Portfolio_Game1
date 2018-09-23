@@ -147,11 +147,14 @@ void AnimationClip::Interpolate(float t, std::vector<XMFLOAT4X4>& boneTransforms
 void SkinnedData::Set(
 	std::vector<int>& boneHierarchy,
 	std::vector<XMFLOAT4X4>& boneOffsets,
-	std::unordered_map<std::string, AnimationClip>& animations)
+	std::unordered_map<std::string, AnimationClip>* animations)
 {
 	mBoneHierarchy = boneHierarchy;
 	mBoneOffsets = boneOffsets;
-	mAnimations = animations;
+	if (animations != nullptr)
+	{
+		mAnimations = (*animations);
+	}
 }
 void SkinnedData::SetAnimation(AnimationClip inAnimation, std::string ClipName)
 {

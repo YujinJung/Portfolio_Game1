@@ -27,7 +27,10 @@ HRESULT FbxLoader::LoadFBX(
 	std::string fileName)
 {
 	// if exported animation exist
-	if (LoadTXT(outVertexVector, outIndexVector, outSkinnedData, clipName, outMaterial, fileName)) return S_OK;
+	if (LoadMesh(fileName + clipName, outVertexVector, outIndexVector, &outMaterial) &&
+		LoadAnimationTXT(outSkinnedData, clipName, fileName) &&
+		LoadSkeleton(outSkinnedData, clipName, fileName))
+		return S_OK;
 
 	if (gFbxManager == nullptr)
 	{
@@ -108,10 +111,12 @@ HRESULT FbxLoader::LoadFBX(
 			}
 		}
 		
-		outSkinnedData.Set(mBoneHierarchy, mBoneOffsets, mAnimations);
+		outSkinnedData.Set(mBoneHierarchy, mBoneOffsets, &mAnimations);
 	}
 
-	ExportFBX(outVertexVector, outIndexVector, outSkinnedData, clipName, outMaterial, fileName);
+	ExportMesh(outVertexVector, outIndexVector, outMaterial, fileName + clipName);
+	ExportSkeleton(outSkinnedData, clipName, fileName);
+	ExportAnimation(mAnimations[clipName], fileName, clipName);
 
 	return S_OK;
 }
@@ -123,8 +128,8 @@ HRESULT FbxLoader::LoadFBX(
 	std::string fileName)
 {
 	// if exported animation exist
-	if (LoadTXT(outVertexVector, outIndexVector, outMaterial, fileName)) return S_OK;
-	if (LoadTXT(outVertexVector, outIndexVector, fileName)) return S_OK;
+	if (LoadMesh(fileName, outVertexVector, outIndexVector, &outMaterial)) return S_OK;
+	if (LoadMesh(fileName, outVertexVector, outIndexVector)) return S_OK;
 
 	if (gFbxManager == nullptr)
 	{
@@ -180,7 +185,7 @@ HRESULT FbxLoader::LoadFBX(
 		}
 	}
 
-	ExportFBX(outVertexVector, outIndexVector, outMaterial, fileName);
+	ExportMesh(outVertexVector, outIndexVector, outMaterial, fileName);
 
 	return S_OK;
 }
@@ -190,13 +195,8 @@ HRESULT FbxLoader::LoadFBX(
 	const std::string& clipName,
 	std::string fileName)
 {
-	AnimationClip animation;
 	// if exported animation exist
-	if (LoadAnimationTXT(animation, clipName, fileName))
-	{
-		outSkinnedData.SetAnimation(animation, clipName);
-		return S_OK;
-	}
+	if (LoadAnimationTXT(outSkinnedData, clipName, fileName)) return S_OK;
 
 	mBoneName = outSkinnedData.GetBoneName();
 
@@ -242,73 +242,32 @@ HRESULT FbxLoader::LoadFBX(
 			if (AttributeType == FbxNodeAttribute::eMesh)
 			{
 				// Get Animation Clip
-				GetOnlyAnimation(pFbxScene, pFbxChildNode, animation, clipName);
+				GetOnlyAnimation(pFbxScene, pFbxChildNode, outSkinnedData, clipName);
 			}
 		}
 	}
 
-	ExportAnimation(animation, fileName, clipName);
-
-	outSkinnedData.SetAnimation(animation, clipName);
+	ExportAnimation(outSkinnedData.GetAnimation(clipName), fileName, clipName);
 	return S_OK;
 }
 
-bool FbxLoader::LoadTXT(
-	std::vector<CharacterVertex>& outVertexVector,
-	std::vector<uint32_t>& outIndexVector, 
+bool FbxLoader::LoadSkeleton(
 	SkinnedData& outSkinnedData, 
 	const std::string& clipName, 
-	std::vector<Material>& outMaterial, 
 	std::string fileName)
 {
-	fileName = fileName + clipName + ".txt";
+	fileName = fileName + clipName + ".skeleton";
 	std::ifstream fileIn(fileName);
 
-	uint32_t vertexSize, indexSize;
-	uint32_t boneSize, keyframeSize;
-	uint32_t materialSize;
+	uint32_t boneSize;
 
 	std::string ignore;
 	if (fileIn)
 	{
-		fileIn >> ignore >> vertexSize;
-		fileIn >> ignore >> indexSize;
 		fileIn >> ignore >> boneSize;
-		fileIn >> ignore >> keyframeSize;
-		fileIn >> ignore >> materialSize;
 
-		if (vertexSize == 0 || indexSize == 0
-			|| boneSize == 0 || keyframeSize == 0 || materialSize == 0)
+		if (boneSize == 0)
 			return false;
-
-		// Vertex Data
-		for (uint32_t i = 0; i < vertexSize; ++i)
-		{
-			CharacterVertex vertex;
-			int temp[4];
-			fileIn >> ignore >> vertex.Pos.x >> vertex.Pos.y >> vertex.Pos.z;
-			fileIn >> ignore >> vertex.Normal.x >> vertex.Normal.y >> vertex.Normal.z;
-			fileIn >> ignore >> vertex.TexC.x >> vertex.TexC.y;
-			fileIn >> ignore >> vertex.BoneWeights.x >> vertex.BoneWeights.y >> vertex.BoneWeights.z;
-			fileIn >> ignore >> temp[0] >> temp[1] >> temp[2] >> temp[3];
-			fileIn >> ignore >> vertex.MaterialIndex;
-
-			for (int j = 0; j < 4; ++j)
-			{
-				vertex.BoneIndices[j] = temp[j];
-			}
-			// push_back
-			outVertexVector.push_back(vertex);
-		}
-
-		// Index Data
-		fileIn >> ignore;
-		for (uint32_t i = 0; i < indexSize; ++i)
-		{
-			uint32_t index;
-			fileIn >> index;
-			outIndexVector.push_back(index);
-		}
 
 		// Bone Data
 		// Bone Hierarchy
@@ -353,53 +312,9 @@ bool FbxLoader::LoadTXT(
 			outSkinnedData.SetSubmeshOffset(tempBoneSubmeshOffset);
 		}
 
-		// Animation Data
-		fileIn >> ignore;
-		AnimationClip animation;
-		for (uint32_t i = 0; i < boneSize; ++i)
-		{
-			BoneAnimation boneAnim;
-			for (uint32_t j = 0; j < keyframeSize; ++j)
-			{
-				Keyframe key;
-				fileIn >> key.TimePos;
-				fileIn >> key.Translation.x >> key.Translation.y >> key.Translation.z;
-				fileIn >> key.Scale.x >> key.Scale.y >> key.Scale.z;
-				fileIn >> key.RotationQuat.x >> key.RotationQuat.y >> key.RotationQuat.z >> key.RotationQuat.w;
-				boneAnim.Keyframes.push_back(key);
-			}
-			animation.BoneAnimations.push_back(boneAnim);
-		}
-		mAnimations[clipName] = animation;
-
 		outSkinnedData.Set(
 			boneHierarchy,
-			boneOffsets,
-			mAnimations);
-
-		// Material Data
-		fileIn >> ignore;
-		for (uint32_t i = 0; i < materialSize; ++i)
-		{
-			Material tempMaterial;
-
-			fileIn >> ignore >> tempMaterial.Name;
-			fileIn >> ignore >> tempMaterial.Ambient.x >> tempMaterial.Ambient.y >> tempMaterial.Ambient.z;
-			fileIn >> ignore >> tempMaterial.DiffuseAlbedo.x >> tempMaterial.DiffuseAlbedo.y >> tempMaterial.DiffuseAlbedo.z;
-			fileIn >> ignore >> tempMaterial.FresnelR0.x >> tempMaterial.FresnelR0.y >> tempMaterial.FresnelR0.z;
-			fileIn >> ignore >> tempMaterial.Specular.x >> tempMaterial.Specular.y >> tempMaterial.Specular.z;
-			fileIn >> ignore >> tempMaterial.Emissive.x >> tempMaterial.Emissive.y >> tempMaterial.Emissive.z;
-			fileIn >> ignore >> tempMaterial.Roughness;
-			for (int i = 0; i < 4; ++i)
-			{
-				for (int j = 0; j < 4; ++j)
-				{
-					fileIn >> tempMaterial.MatTransform.m[i][j];
-				}
-			}
-			outMaterial.push_back(tempMaterial);
-		}
-
+			boneOffsets);
 
 		return true;
 	}
@@ -407,13 +322,13 @@ bool FbxLoader::LoadTXT(
 	return false;
 }
 
-bool FbxLoader::LoadTXT(
+bool FbxLoader::LoadMesh(
+	std::string fileName,
 	std::vector<Vertex>& outVertexVector,
 	std::vector<uint32_t>& outIndexVector,
-	std::vector<Material>& outMaterial,
-	std::string fileName)
+	std::vector<Material>* outMaterial)
 {
-	fileName = fileName + ".txt";
+	fileName = fileName + ".mesh";
 	std::ifstream fileIn(fileName);
 
 	uint32_t vertexSize, indexSize;
@@ -426,8 +341,32 @@ bool FbxLoader::LoadTXT(
 		fileIn >> ignore >> indexSize;
 		fileIn >> ignore >> materialSize;
 
-		if (vertexSize == 0 || indexSize == 0	|| materialSize == 0)
+		if (vertexSize == 0 || indexSize == 0	)
 			return false;
+
+		// Material Data
+		fileIn >> ignore;
+		for (uint32_t i = 0; i < materialSize; ++i)
+		{
+			Material tempMaterial;
+
+			fileIn >> ignore >> tempMaterial.Name;
+			fileIn >> ignore >> tempMaterial.Ambient.x >> tempMaterial.Ambient.y >> tempMaterial.Ambient.z;
+			fileIn >> ignore >> tempMaterial.DiffuseAlbedo.x >> tempMaterial.DiffuseAlbedo.y >> tempMaterial.DiffuseAlbedo.z >> tempMaterial.DiffuseAlbedo.w;
+			fileIn >> ignore >> tempMaterial.FresnelR0.x >> tempMaterial.FresnelR0.y >> tempMaterial.FresnelR0.z;
+			fileIn >> ignore >> tempMaterial.Specular.x >> tempMaterial.Specular.y >> tempMaterial.Specular.z;
+			fileIn >> ignore >> tempMaterial.Emissive.x >> tempMaterial.Emissive.y >> tempMaterial.Emissive.z;
+			fileIn >> ignore >> tempMaterial.Roughness;
+			fileIn >> ignore;
+			for (int i = 0; i < 4; ++i)
+			{
+				for (int j = 0; j < 4; ++j)
+				{
+					fileIn >> tempMaterial.MatTransform.m[i][j];
+				}
+			}
+			(*outMaterial).push_back(tempMaterial);
+		}
 
 		// Vertex Data
 		for (uint32_t i = 0; i < vertexSize; ++i)
@@ -449,28 +388,88 @@ bool FbxLoader::LoadTXT(
 			fileIn >> index;
 			outIndexVector.push_back(index);
 		}
+		
+		return true;
+	}
 
-		// Material Data
-		fileIn >> ignore;
-		for (uint32_t i = 0; i < materialSize; ++i)
+	return false;
+}
+
+bool FbxLoader::LoadMesh(
+	std::string fileName,
+	std::vector<CharacterVertex>& outVertexVector,
+	std::vector<uint32_t>& outIndexVector,
+	std::vector<Material>* outMaterial)
+{
+	fileName = fileName + ".cmesh";
+	std::ifstream fileIn(fileName);
+
+	uint32_t vertexSize, indexSize;
+	uint32_t materialSize;
+
+	std::string ignore;
+	if (fileIn)
+	{
+		fileIn >> ignore >> vertexSize;
+		fileIn >> ignore >> indexSize;
+		fileIn >> ignore >> materialSize;
+
+		if (vertexSize == 0 || indexSize == 0)
+			return false;
+
+		if (outMaterial != nullptr)
 		{
-			Material tempMaterial;
-
-			fileIn >> ignore >> tempMaterial.Name;
-			fileIn >> ignore >> tempMaterial.Ambient.x >> tempMaterial.Ambient.y >> tempMaterial.Ambient.z;
-			fileIn >> ignore >> tempMaterial.DiffuseAlbedo.x >> tempMaterial.DiffuseAlbedo.y >> tempMaterial.DiffuseAlbedo.z;
-			fileIn >> ignore >> tempMaterial.FresnelR0.x >> tempMaterial.FresnelR0.y >> tempMaterial.FresnelR0.z;
-			fileIn >> ignore >> tempMaterial.Specular.x >> tempMaterial.Specular.y >> tempMaterial.Specular.z;
-			fileIn >> ignore >> tempMaterial.Emissive.x >> tempMaterial.Emissive.y >> tempMaterial.Emissive.z;
-			fileIn >> ignore >> tempMaterial.Roughness;
-			for (int i = 0; i < 4; ++i)
+			// Material Data
+			fileIn >> ignore;
+			for (uint32_t i = 0; i < materialSize; ++i)
 			{
-				for (int j = 0; j < 4; ++j)
+				Material tempMaterial;
+
+				fileIn >> ignore >> tempMaterial.Name;
+				fileIn >> ignore >> tempMaterial.Ambient.x >> tempMaterial.Ambient.y >> tempMaterial.Ambient.z;
+				fileIn >> ignore >> tempMaterial.DiffuseAlbedo.x >> tempMaterial.DiffuseAlbedo.y >> tempMaterial.DiffuseAlbedo.z >> tempMaterial.DiffuseAlbedo.w;
+				fileIn >> ignore >> tempMaterial.FresnelR0.x >> tempMaterial.FresnelR0.y >> tempMaterial.FresnelR0.z;
+				fileIn >> ignore >> static_cast<float>(tempMaterial.Specular.x) >> tempMaterial.Specular.y >> tempMaterial.Specular.z;
+				fileIn >> ignore >> tempMaterial.Emissive.x >> tempMaterial.Emissive.y >> tempMaterial.Emissive.z;
+				fileIn >> ignore >> tempMaterial.Roughness;
+				fileIn >> ignore;
+				for (int i = 0; i < 4; ++i)
 				{
-					fileIn >> tempMaterial.MatTransform.m[i][j];
+					for (int j = 0; j < 4; ++j)
+					{
+						fileIn >> tempMaterial.MatTransform.m[i][j];
+					}
 				}
+				(*outMaterial).push_back(tempMaterial);
 			}
-			outMaterial.push_back(tempMaterial);
+		}
+		
+		// Vertex Data
+		for (uint32_t i = 0; i < vertexSize; ++i)
+		{
+			CharacterVertex vertex;
+			int temp[4];
+			fileIn >> ignore >> vertex.Pos.x >> vertex.Pos.y >> vertex.Pos.z;
+			fileIn >> ignore >> vertex.Normal.x >> vertex.Normal.y >> vertex.Normal.z;
+			fileIn >> ignore >> vertex.TexC.x >> vertex.TexC.y;
+			fileIn >> ignore >> vertex.BoneWeights.x >> vertex.BoneWeights.y >> vertex.BoneWeights.z;
+			fileIn >> ignore >> temp[0] >> temp[1] >> temp[2] >> temp[3];
+
+			for (int j = 0; j < 4; ++j)
+			{
+				vertex.BoneIndices[j] = temp[j];
+			}
+			// push_back
+			outVertexVector.push_back(vertex);
+		}
+
+		// Index Data
+		fileIn >> ignore;
+		for (uint32_t i = 0; i < indexSize; ++i)
+		{
+			uint32_t index;
+			fileIn >> index;
+			outIndexVector.push_back(index);
 		}
 
 		return true;
@@ -479,12 +478,13 @@ bool FbxLoader::LoadTXT(
 	return false;
 }
 
-bool FbxLoader::LoadTXT(
+/*
+bool FbxLoader::LoadMesh(
 	std::vector<Vertex>& outVertexVector,
 	std::vector<uint32_t>& outIndexVector,
 	std::string fileName)
 {
-	fileName = fileName + ".txt";
+	fileName = fileName + ".mesh";
 	std::ifstream fileIn(fileName);
 
 	uint32_t vertexSize, indexSize;
@@ -526,15 +526,18 @@ bool FbxLoader::LoadTXT(
 
 	return false;
 }
+*/
+
 
 bool FbxLoader::LoadAnimationTXT(
-	AnimationClip& animation, 
+	SkinnedData& outSkinnedData,
 	const std::string& clipName, 
 	std::string fileName)
 {
-	fileName = fileName + clipName + ".txt";
+	fileName = fileName + clipName + ".anim";
 	std::ifstream fileIn(fileName);
 
+	AnimationClip animation;
 	uint32_t boneAnimationSize, keyframeSize;
 
 	std::string ignore;
@@ -558,6 +561,7 @@ bool FbxLoader::LoadAnimationTXT(
 			animation.BoneAnimations.push_back(boneAnim);
 		}
 
+		outSkinnedData.SetAnimation(animation, clipName);
 		return true;
 	}
 
@@ -767,11 +771,12 @@ void FbxLoader::GetAnimation(
 void FbxLoader::GetOnlyAnimation(
 	FbxScene* pFbxScene,
 	FbxNode * pFbxChildNode,
-	AnimationClip& animation, 
+	SkinnedData& outSkinnedData,
 	const std::string clipName)
 {
 	FbxMesh* pMesh = (FbxMesh*)pFbxChildNode->GetNodeAttribute();
 	FbxAMatrix geometryTransform = GetGeometryTransformation(pFbxChildNode);
+	AnimationClip animation;
 
 	// Initialize BoneAnimations
 	animation.BoneAnimations.resize(mBoneName.size());
@@ -882,6 +887,7 @@ void FbxLoader::GetOnlyAnimation(
 		animation.BoneAnimations[i] = InitBoneAnim;
 	}
 
+	outSkinnedData.SetAnimation(animation, clipName);
 }
 
 
@@ -1241,7 +1247,7 @@ void FbxLoader::ExportAnimation(
 	std::string fileName, 
 	const std::string& clipName)
 {
-	fileName = fileName + clipName + ".txt";
+	fileName = fileName + clipName + ".anim";
 	std::ofstream fileOut(fileName);
 
 	if (animation.BoneAnimations[0].Keyframes.size() == 0)
@@ -1249,111 +1255,12 @@ void FbxLoader::ExportAnimation(
 
 	if (fileOut)
 	{
-		uint32_t boneAnimationSize = animation.BoneAnimations.size();
+		uint32_t boneSize = animation.BoneAnimations.size();
 		uint32_t keyframeSize = animation.BoneAnimations[0].Keyframes.size();
-		fileOut << "BoneAnimationSize " << boneAnimationSize << "\n";
-		fileOut << "KeframeSize " << keyframeSize << "\n";
-		for (uint32_t i = 0; i < boneAnimationSize; ++i)
-		{
-			BoneAnimation bone = animation.BoneAnimations[i];
-			for (uint32_t j = 0; j < keyframeSize; ++j)
-			{
-				Keyframe key = bone.Keyframes[j];
-				fileOut << key.TimePos << "\n";
-				fileOut << key.Translation.x << " " << key.Translation.y << " " << key.Translation.z << "\n";
-				fileOut << key.Scale.x << " " << key.Scale.y << " " << key.Scale.z << "\n";
-				fileOut << key.RotationQuat.x << " " << key.RotationQuat.y << " " << key.RotationQuat.z << " " << key.RotationQuat.w << "\n";
-			}
-		}
-	}
-}
-
-void FbxLoader::ExportFBX(
-	std::vector<CharacterVertex>& outVertexVector, 
-	std::vector<uint32_t>& outIndexVector, 
-	SkinnedData& outSkinnedData, 
-	const std::string& clipName, 
-	std::vector<Material>& outMaterial, 
-	std::string fileName)
-{
-	fileName = fileName + clipName + ".txt";
-	std::ofstream fileOut(fileName);
-
-	if (outVertexVector.empty() || outIndexVector.empty() 
-		|| outMaterial.empty() || outSkinnedData.BoneCount() == 0)
-		return;
-
-	if (fileOut)
-	{
-		uint32_t vertexSize = outVertexVector.size();
-		uint32_t indexSize = outIndexVector.size();
-
-		uint32_t boneSize = outSkinnedData.BoneCount();
-		AnimationClip anim = mAnimations[clipName];
-		uint32_t keyframeSize = anim.BoneAnimations[0].Keyframes.size();
-
-		uint32_t materialSize = outMaterial.size();
-
-		fileOut << "VertexSize " << vertexSize << "\n";
-		fileOut << "IndexSize " << indexSize << "\n";
 		fileOut << "Bone " << boneSize << "\n";
 		fileOut << "KeframeSize " << keyframeSize << "\n";
-		fileOut << "MaterialSize " << materialSize << "\n";
 
-		for(auto& e : outVertexVector)
-		{
-			fileOut << "Pos " << e.Pos.x << " " << e.Pos.y << " " << e.Pos.z << "\n";
-			fileOut << "Normal " << e.Normal.x << " " << e.Normal.y << " " << e.Normal.z << "\n";
-			fileOut << "TexC " << e.TexC.x << " " << e.TexC.y << "\n";
-
-			fileOut << "BoneWeight " << e.BoneWeights.x << " " << e.BoneWeights.y << " " << e.BoneWeights.z << "\n";
-			fileOut << "BoneIndices " << (int)e.BoneIndices[0] << " " << (int)e.BoneIndices[1] << " " << (int)e.BoneIndices[2] << " " << (int)e.BoneIndices[3] << "\n";
-			fileOut << "MaterialIndex " << e.MaterialIndex << "\n";
-		}
-
-		fileOut << "Indices " << "\n";
-		for (uint32_t i = 0; i < indexSize / 3; ++i)
-		{
-			fileOut << outIndexVector[3 * i] << " " << outIndexVector[3 * i + 1] << " " << outIndexVector[3 * i + 2] << "\n";
-		}
-
-		fileOut << "BoneHierarchy" << "\n";
-		for (auto& e : outSkinnedData.GetBoneHierarchy())
-		{
-			fileOut << e << " ";
-		}
-		fileOut << "\n";
-
-		fileOut << "BoneName" << "\n";
-		for (auto& e : outSkinnedData.GetBoneName())
-		{
-			fileOut << e << " ";
-		}
-		fileOut << "\n";
-
-		fileOut << "BoneOffset " << "\n";
-		for (auto& e : outSkinnedData.GetBoneOffsets())
-		{
-			for (int i = 0; i < 4; ++i)
-			{
-				for (int j = 0; j < 4; ++j)
-				{
-					fileOut << e.m[i][j] << " ";
-				}
-			}
-			fileOut << "\n";
-		}
-
-		fileOut << "SubmeshOffset " << "\n";
-		auto & e = outSkinnedData.GetSubmeshOffset();
-		for(uint32_t i = 0; i < boneSize; ++i)
-		{
-			fileOut << e[i] << " ";
-		}
-		fileOut << "\n";
-
-		fileOut << "Animation " << "\n";
-		for (auto & e : anim.BoneAnimations)
+		for (auto& e : animation.BoneAnimations)
 		{
 			for (auto& o : e.Keyframes)
 			{
@@ -1363,6 +1270,83 @@ void FbxLoader::ExportFBX(
 				fileOut << o.RotationQuat.x << " " << o.RotationQuat.y << " " << o.RotationQuat.z << " " << o.RotationQuat.w << "\n";
 			}
 		}
+	}
+}
+
+void FbxLoader::ExportSkeleton(
+	SkinnedData& outSkinnedData, 
+	const std::string& clipName, 
+	std::string fileName)
+{
+	std::ofstream skeletonFileOut(fileName + clipName + ".skeleton");
+
+	if (outSkinnedData.BoneCount() == 0)
+		return;
+
+	if (skeletonFileOut)
+	{
+
+		uint32_t boneSize = outSkinnedData.BoneCount();
+
+		skeletonFileOut << "Bone " << boneSize << "\n";
+
+		skeletonFileOut << "BoneHierarchy" << "\n";
+		for (auto& e : outSkinnedData.GetBoneHierarchy())
+		{
+			skeletonFileOut << e << " ";
+		}
+		skeletonFileOut << "\n";
+
+		skeletonFileOut << "BoneName" << "\n";
+		for (auto& e : outSkinnedData.GetBoneName())
+		{
+			skeletonFileOut << e << " ";
+		}
+		skeletonFileOut << "\n";
+
+		skeletonFileOut << "BoneOffset " << "\n";
+		for (auto& e : outSkinnedData.GetBoneOffsets())
+		{
+			for (int i = 0; i < 4; ++i)
+			{
+				for (int j = 0; j < 4; ++j)
+				{
+					skeletonFileOut << e.m[i][j] << " ";
+				}
+			}
+			skeletonFileOut << "\n";
+		}
+
+		skeletonFileOut << "SubmeshOffset " << "\n";
+		auto & e = outSkinnedData.GetSubmeshOffset();
+		for(uint32_t i = 0; i < boneSize; ++i)
+		{
+			skeletonFileOut << e[i] << " ";
+		}
+		skeletonFileOut << "\n";
+	}
+}
+
+void FbxLoader::ExportMesh(
+	std::vector<Vertex>& outVertexVector,
+	std::vector<uint32_t>& outIndexVector,
+	std::vector<Material>& outMaterial,
+	std::string fileName)
+{
+	std::ofstream fileOut(fileName + ".mesh");
+
+	if (outVertexVector.empty() || outIndexVector.empty())
+		return;
+
+	if (fileOut)
+	{
+		uint32_t vertexSize = outVertexVector.size();
+		uint32_t indexSize = outIndexVector.size();
+		uint32_t materialSize = outMaterial.size();
+
+		fileOut << "VertexSize " << vertexSize << "\n";
+		fileOut << "IndexSize " << indexSize << "\n";
+		fileOut << "MaterialSize " << materialSize << "\n";
 
 		fileOut << "Material " << "\n";
 		for (auto & e : outMaterial)
@@ -1384,31 +1368,6 @@ void FbxLoader::ExportFBX(
 			}
 			fileOut << "\n";
 		}
-	}
-}
-
-void FbxLoader::ExportFBX(
-	std::vector<Vertex>& outVertexVector,
-	std::vector<uint32_t>& outIndexVector,
-	std::vector<Material>& outMaterial,
-	std::string fileName)
-{
-	fileName = fileName +".txt";
-	std::ofstream fileOut(fileName);
-
-	if (outVertexVector.empty() || outIndexVector.empty()
-		)
-		return;
-
-	if (fileOut)
-	{
-		uint32_t vertexSize = outVertexVector.size();
-		uint32_t indexSize = outIndexVector.size();
-		uint32_t materialSize = outMaterial.size();
-
-		fileOut << "VertexSize " << vertexSize << "\n";
-		fileOut << "IndexSize " << indexSize << "\n";
-		fileOut << "MaterialSize " << materialSize << "\n";
 
 		for (auto& e : outVertexVector)
 		{
@@ -1422,6 +1381,29 @@ void FbxLoader::ExportFBX(
 		{
 			fileOut << outIndexVector[3 * i] << " " << outIndexVector[3 * i + 1] << " " << outIndexVector[3 * i + 2] << "\n";
 		}
+	}
+}
+
+void FbxLoader::ExportMesh(
+	std::vector<CharacterVertex>& outVertexVector,
+	std::vector<uint32_t>& outIndexVector,
+	std::vector<Material>& outMaterial,
+	std::string fileName)
+{
+	std::ofstream fileOut(fileName + ".cmesh");
+
+	if (outVertexVector.empty() || outIndexVector.empty())
+		return;
+
+	if (fileOut)
+	{
+		uint32_t vertexSize = outVertexVector.size();
+		uint32_t indexSize = outIndexVector.size();
+		uint32_t materialSize = outMaterial.size();
+
+		fileOut << "VertexSize " << vertexSize << "\n";
+		fileOut << "IndexSize " << indexSize << "\n";
+		fileOut << "MaterialSize " << materialSize << "\n";
 
 		fileOut << "Material " << "\n";
 		for (auto & e : outMaterial)
@@ -1442,6 +1424,24 @@ void FbxLoader::ExportFBX(
 				}
 			}
 			fileOut << "\n";
+		}
+
+		
+		for (auto& e : outVertexVector)
+		{
+			fileOut << "Pos " << e.Pos.x << " " << e.Pos.y << " " << e.Pos.z << "\n";
+			fileOut << "Normal " << e.Normal.x << " " << e.Normal.y << " " << e.Normal.z << "\n";
+			fileOut << "TexC " << e.TexC.x << " " << e.TexC.y << "\n";
+
+			fileOut << "BoneWeight " << e.BoneWeights.x << " " << e.BoneWeights.y << " " << e.BoneWeights.z << "\n";
+			fileOut << "BoneIndices " << (int)e.BoneIndices[0] << " " << (int)e.BoneIndices[1] << " " << (int)e.BoneIndices[2] << " " << (int)e.BoneIndices[3] << "\n";
+		}
+
+
+		fileOut << "Indices " << "\n";
+		for (uint32_t i = 0; i < indexSize / 3; ++i)
+		{
+			fileOut << outIndexVector[3 * i] << " " << outIndexVector[3 * i + 1] << " " << outIndexVector[3 * i + 2] << "\n";
 		}
 	}
 }

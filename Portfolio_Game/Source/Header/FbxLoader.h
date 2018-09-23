@@ -56,30 +56,26 @@ public:
 		const std::string& clipName,
 		std::string fileName);
 
-	bool LoadTXT(
-		std::vector<CharacterVertex>& outVertexVector,
-		std::vector<uint32_t>& outIndexVector,
-		SkinnedData& outSkinnedData, 
-		const std::string& clipName, 
-		std::vector<Material>& outMaterial,
-		std::string fileName);
+	bool LoadSkeleton(SkinnedData & outSkinnedData, const std::string & clipName, std::string fileName);
 
-	bool LoadTXT(
+	bool LoadMesh(
+		std::string fileName,
 		std::vector<Vertex>& outVertexVector,
 		std::vector<uint32_t>& outIndexVector,
-		std::vector<Material>& outMaterial,
-		std::string fileName);
+		std::vector<Material>* outMaterial = nullptr);
 
-	bool LoadTXT(
+	bool LoadMesh(
+		std::string fileName, 
+		std::vector<CharacterVertex>& outVertexVector, 
+		std::vector<uint32_t>& outIndexVector, 
+		std::vector<Material>* outMaterial = nullptr);
+
+	/*bool LoadMesh(
 		std::vector<Vertex>& outVertexVector,
 		std::vector<uint32_t>& outIndexVector,
-		std::string fileName);
+		std::string fileName);*/
 
-	bool LoadAnimationTXT(
-		AnimationClip& animation,
-		const std::string& clipName, 
-		std::string fileName);
-
+	bool LoadAnimationTXT(SkinnedData & outSkinnedData, const std::string & clipName, std::string fileName);
 
 	void GetSkeletonHierarchy(
 		fbxsdk::FbxNode * pNode, 
@@ -94,11 +90,7 @@ public:
 		std::string & outAnimationName, 
 		const std::string& ClipName);
 
-	void GetOnlyAnimation(
-		fbxsdk::FbxScene* pFbxScene,
-		fbxsdk::FbxNode * pFbxChildNode,
-		AnimationClip& animation, 
-		const std::string clipName);
+	void GetOnlyAnimation(FbxScene * pFbxScene, FbxNode * pFbxChildNode, SkinnedData & outSkinnedData, const std::string clipName);
 
 	void GetVerticesAndIndice(
 		fbxsdk::FbxMesh * pMesh,
@@ -121,24 +113,17 @@ public:
 	FbxAMatrix GetGeometryTransformation(fbxsdk::FbxNode * pNode);
 
 
-	void ExportFBX(
-		std::vector<CharacterVertex>& outVertexVector,
-		std::vector<uint32_t>& outIndexVector,
+	void ExportSkeleton(
 		SkinnedData& outSkinnedData,
 		const std::string& clipName, 
-		std::vector<Material>& outMaterial, 
 		std::string fileName);
-
-	void ExportFBX(
-		std::vector<Vertex>& outVertexVector, 
-		std::vector<uint32_t>& outIndexVector,
-		std::vector<Material>& outMaterial,
-		std::string fileName);
-
+	
 	void ExportAnimation(
 		const AnimationClip& animation,
 		std::string fileName, 
 		const std::string& clipName);
+	void ExportMesh(std::vector<Vertex>& outVertexVector, std::vector<uint32_t>& outIndexVector, std::vector<Material>& outMaterial, std::string fileName);
+	void ExportMesh(std::vector<CharacterVertex>& outVertexVector, std::vector<uint32_t>& outIndexVector, std::vector<Material>& outMaterial, std::string fileName);
 
 	void clear();
 

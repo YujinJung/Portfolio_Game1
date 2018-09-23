@@ -83,7 +83,7 @@ public:
 	void Set(
 		std::vector<int>& boneHierarchy,
 		std::vector<DirectX::XMFLOAT4X4>& boneOffsets,
-		std::unordered_map<std::string, AnimationClip>& animations);
+		std::unordered_map<std::string, AnimationClip>* animations = nullptr);
 	void SetAnimation(AnimationClip inAnimation, std::string inClipName);
 	void SetAnimationName(const std::string& clipName);
 	void SetBoneName(std::string boneName);

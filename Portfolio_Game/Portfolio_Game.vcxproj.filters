@@ -64,11 +64,11 @@
     <ClCompile Include="Source\Source\UI\PlayerUI.cpp">
       <Filter>UI</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\Character\Character.cpp">
-      <Filter>Common\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Source\Source\Common\Utility.cpp">
       <Filter>Common\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Source\Source\Character\Character.cpp">
+      <Filter>Character</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -96,37 +96,13 @@
     <ClInclude Include="Source\Header\Monster.h">
       <Filter>Character\AI</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\Camera.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Header\DDSTextureLoader.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\FbxLoader.h">
       <Filter>Common\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Header\GeometryGenerator.h">
       <Filter>Common\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\Materials.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Player.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\PlayerCamera.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\PlayerController.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\SkinnedData.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Header\TextureLoader.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Textures.h">
       <Filter>Common\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Header\VertexHash.h">
@@ -138,17 +114,41 @@
     <ClInclude Include="Source\Header\Character.h">
       <Filter>Character</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\PlayerUI.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\CharacterMovement.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Source\Header\FrameResource.h">
       <Filter>Common\Source Files</Filter>
     </ClInclude>
     <ClInclude Include="Source\Header\Common\Utility.h">
       <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Camera.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\CharacterMovement.h">
+      <Filter>Character</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\PlayerCamera.h">
+      <Filter>Camera</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\PlayerController.h">
+      <Filter>Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Player.h">
+      <Filter>Character\Player</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\PlayerUI.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Materials.h">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\Textures.h">
+      <Filter>Texuture</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\FbxLoader.h">
+      <Filter>Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="Source\Header\SkinnedData.h">
+      <Filter>Common\Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
