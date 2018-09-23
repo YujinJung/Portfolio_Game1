@@ -73,16 +73,16 @@ cbuffer cbPass : register(b2)
 
 cbuffer cbPlayer : register(b3)
 {
-	float4x4 gBoneTransforms[96];
 	float4x4 gChaWorld;
 	float4x4 gChaTexTransform;
+	float4x4 gBoneTransforms[96];
 };
 
 cbuffer cbMonster : register(b4)
 {
-	float4x4 gMonsterBoneTransforms[96];
 	float4x4 gMonsterWorld;
 	float4x4 gMonsterTexTransform;
+	float4x4 gMonsterBoneTransforms[96];
 };
 
 cbuffer cbUI : register(b5)
