@@ -2,7 +2,7 @@ VertexSize 12223
 IndexSize 57567
 MaterialSize 1
 Material 
-Name ..\Resource\FBX\Architecture\Rocks\RockCluster\RockClusterTex.png
+Name ..\Resource\FBX\Architecture\Rocks\RockCluster\RockClusterTex.jpg
 Ambient 0 0 0
 Diffuse 0.8 0.8 0.8 1
 Fresnel 1 1 1

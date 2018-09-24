@@ -6,7 +6,6 @@ Textures::Textures()
 {
 }
 
-
 Textures::~Textures()
 {
 }
@@ -133,7 +132,6 @@ void Textures::BuildConstantBufferViews(int mTextureOffset)
 	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> vTex;
 	for (auto& e : mOrderTexture)
 	{
-		std::string nn = e->Name;
 		if (e->Name == "skyCubeMap")
 			continue;
 		vTex.push_back(e->Resource);

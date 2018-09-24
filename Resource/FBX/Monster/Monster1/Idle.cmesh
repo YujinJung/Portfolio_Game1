@@ -2,7 +2,7 @@ VertexSize 6925
 IndexSize 33801
 MaterialSize 1
 Material 
-Name D:\Dev\Developing\DirectX\Portfolio_Game1\Resource\FBX\Monster\Monster1\Idle.fbm/Mutant_diffuse.png
+Name ..\Resource\FBX\Monster\Monster1\Idle.fbm/Mutant_diffuse.jpg
 Ambient 0.2 0.2 0.2
 Diffuse 1 1 1 1
 Fresnel 0 0 0
