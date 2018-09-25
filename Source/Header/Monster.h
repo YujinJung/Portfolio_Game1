@@ -37,11 +37,6 @@ public:
 		const std::vector<CharacterVertex>& inVertices,
 		const std::vector<std::uint32_t>& inIndices,
 		const SkinnedData & inSkinInfo, std::string geoName) override;
-	virtual void BuildConstantBufferViews(
-		ID3D12Device * device,
-		ID3D12DescriptorHeap * mCbvHeap,
-		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
-		int mChaCbvOffset) override;
 	virtual void BuildRenderItem(
 		Materials & mMaterials,
 		std::string matrialPrefix = "") override;
@@ -58,7 +53,6 @@ private:
 	std::vector<CharacterInfo> mMonsterInfo;
 
 	SkinnedData mSkinnedInfo;
-	std::unique_ptr<MeshGeometry> mGeometry;
 	std::vector<std::unique_ptr<SkinnedModelInstance>> mSkinnedModelInst;
 
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;

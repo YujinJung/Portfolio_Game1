@@ -44,17 +44,16 @@ public:
 		const std::string& ClipName,
 		std::vector<Material>& outMaterial,
 		std::string fileName);
-
 	HRESULT LoadFBX(
 		std::vector<Vertex>& outVertexVector, 
 		std::vector<uint32_t>& outIndexVector, 
 		std::vector<Material>& outMaterial,
 		std::string fileName);
-
 	HRESULT LoadFBX(
 		SkinnedData& outSkinnedData, 
 		const std::string& clipName,
 		std::string fileName);
+
 
 	bool LoadSkeleton(SkinnedData & outSkinnedData, const std::string & clipName, std::string fileName);
 
@@ -63,19 +62,14 @@ public:
 		std::vector<Vertex>& outVertexVector,
 		std::vector<uint32_t>& outIndexVector,
 		std::vector<Material>* outMaterial = nullptr);
-
 	bool LoadMesh(
 		std::string fileName, 
 		std::vector<CharacterVertex>& outVertexVector, 
 		std::vector<uint32_t>& outIndexVector, 
 		std::vector<Material>* outMaterial = nullptr);
 
-	/*bool LoadMesh(
-		std::vector<Vertex>& outVertexVector,
-		std::vector<uint32_t>& outIndexVector,
-		std::string fileName);*/
+	bool LoadAnimation(SkinnedData & outSkinnedData, const std::string & clipName, std::string fileName);
 
-	bool LoadAnimationTXT(SkinnedData & outSkinnedData, const std::string & clipName, std::string fileName);
 
 	void GetSkeletonHierarchy(
 		fbxsdk::FbxNode * pNode, 
@@ -87,17 +81,14 @@ public:
 	void GetAnimation(
 		fbxsdk::FbxScene * pFbxScene,
 		fbxsdk::FbxNode * pFbxChildNode,
-		std::string & outAnimationName, 
-		const std::string& ClipName);
-
-	void GetOnlyAnimation(FbxScene * pFbxScene, FbxNode * pFbxChildNode, SkinnedData & outSkinnedData, const std::string clipName);
+		SkinnedData & outSkinnedData,
+		const std::string& ClipName, bool isGetOnlyAnim);
 
 	void GetVerticesAndIndice(
 		fbxsdk::FbxMesh * pMesh,
 		std::vector<CharacterVertex> & outVertexVector,
 		std::vector<uint32_t> & outIndexVector, 
 		SkinnedData* outSkinnedData);
-
 	void GetVerticesAndIndice(
 		fbxsdk::FbxMesh * pMesh,
 		std::vector<Vertex>& outVertexVector, 

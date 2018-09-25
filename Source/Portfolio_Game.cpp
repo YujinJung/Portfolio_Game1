@@ -285,7 +285,7 @@ void PortfolioGameApp::OnMouseMove(WPARAM btnState, int x, int y)
 		// Rotate Camera with Player
 		mPlayer.mCamera.AddYaw(dx);
 		if(!mCameraDetach)
-			mPlayer.UpdatePlayerPosition(PlayerMoveList::AddYaw, dx);
+			mPlayer.UpdatePlayerPosition(ePlayerMoveList::AddYaw, dx);
 	}
 
 	mLastMousePos.x = x;
@@ -354,7 +354,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 				mPlayer.SetClipName("run");
 
 				if (isForward)
-					mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 18.0f * dt);
+					mPlayer.UpdatePlayerPosition(ePlayerMoveList::Walk, 18.0f * dt);
 
 				isForward = true;
 			}
@@ -363,7 +363,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 				mPlayer.SetClipName("playerWalking");
 
 				if (isForward)
-					mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 7.0f * dt);
+					mPlayer.UpdatePlayerPosition(ePlayerMoveList::Walk, 7.0f * dt);
 
 				isForward = true;
 			}
@@ -386,7 +386,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 			mPlayer.SetClipName("WalkingBackward");
 
 			if(isBackward)
-				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, -5.0f * dt);
+				mPlayer.UpdatePlayerPosition(ePlayerMoveList::Walk, -5.0f * dt);
 			isBackward = true;
 
 			if (mPlayer.GetCurrentClip() == eClipList::Walking)
@@ -439,14 +439,14 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 	if (GetAsyncKeyState('A') & 0x8000)
 	{
 		if (!mCameraDetach)
-			mPlayer.UpdatePlayerPosition(PlayerMoveList::AddYaw, -1.0f * dt);
+			mPlayer.UpdatePlayerPosition(ePlayerMoveList::AddYaw, -1.0f * dt);
 		else
 			mPlayer.mCamera.WalkSideway(-10.0f * dt);
 	}
 	else if (GetAsyncKeyState('D') & 0x8000)
 	{
 		if (!mCameraDetach)
-			mPlayer.UpdatePlayerPosition(PlayerMoveList::AddYaw, 1.0f * dt);
+			mPlayer.UpdatePlayerPosition(ePlayerMoveList::AddYaw, 1.0f * dt);
 		else
 			mPlayer.mCamera.WalkSideway(10.0f * dt);
 	}
@@ -481,7 +481,7 @@ void PortfolioGameApp::checkCollision(
 			mPlayer.SetClipName("WalkingBackward");
 
 			if (isBackward)
-				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, -7.0f * dt);
+				mPlayer.UpdatePlayerPosition(ePlayerMoveList::Walk, -7.0f * dt);
 
 			isForward = false;
 		}
@@ -490,7 +490,7 @@ void PortfolioGameApp::checkCollision(
 			mPlayer.SetClipName("playerWalking");
 
 			if (isForward)
-				mPlayer.UpdatePlayerPosition(PlayerMoveList::Walk, 7.0f * dt);
+				mPlayer.UpdatePlayerPosition(ePlayerMoveList::Walk, 7.0f * dt);
 
 			isBackward = false;
 		}
@@ -719,88 +719,54 @@ void PortfolioGameApp::BuildTextureBufferViews()
 	mTextures.End();
 }
 
-void PortfolioGameApp::BuildConstantBufferViews()
+void PortfolioGameApp::BuildConstantBufferViews(int cbvOffset, UINT itemSize, UINT cbSize, eUploadBufferIndex e)
 {
-	// Object 
-	UINT objCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(ObjectConstants));
-	UINT objCount = (UINT)mAllRitems.size();
+	UINT CBByteSize = d3dUtil::CalcConstantBufferByteSize(cbSize);
 
-	// Need a CBV descriptor for each object for each frame resource.
 	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
 	{
-		auto objectCB = mFrameResources[frameIndex]->ObjectCB->Resource();
-		for (UINT i = 0; i < objCount; ++i)
+		auto cbResource = FrameResource::GetResourceByIndex(mFrameResources[frameIndex].get(), e);
+
+		for (UINT i = 0; i < itemSize; ++i)
 		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = objectCB->GetGPUVirtualAddress();
+			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = cbResource->GetGPUVirtualAddress();
 
 			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * objCBByteSize;
+			cbAddress += i * CBByteSize;
 
 			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mObjCbvOffset + frameIndex * objCount + i;
+			int heapIndex = cbvOffset + frameIndex * itemSize + i;
 			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
 
 			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
 			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = objCBByteSize;
+			cbvDesc.SizeInBytes = CBByteSize;
 
 			md3dDevice->CreateConstantBufferView(&cbvDesc, handle);
 		}
 	}
+}
+
+void PortfolioGameApp::BuildConstantBufferViews()
+{
+	// Object 
+	BuildConstantBufferViews(mObjCbvOffset, mAllRitems.size(), sizeof(ObjectConstants), eUploadBufferIndex::ObjectCB);
 
 	// Material 
-	mMaterials.Begin(md3dDevice.Get(), mCbvHeap.Get());
-	mMaterials.BuildConstantBufferViews(
-		mFrameResources,
-		mMatCbvOffset);
-	mMaterials.End();
-	
+	BuildConstantBufferViews(mMatCbvOffset, mMaterials.GetSize(), sizeof(MaterialConstants), eUploadBufferIndex::MaterialCB);
+
 	// Pass - 4
 	// Last three descriptors are the pass CBVs for each frame resource.
-	UINT passCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(PassConstants));
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	{
-		auto passCB = mFrameResources[frameIndex]->PassCB->Resource();
-		D3D12_GPU_VIRTUAL_ADDRESS cbAddress = passCB->GetGPUVirtualAddress();
-
-		// Offset to the pass cbv in the descriptor heap.
-		int heapIndex = mPassCbvOffset + frameIndex;
-		auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-		handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-		D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-		cbvDesc.BufferLocation = cbAddress;
-		cbvDesc.SizeInBytes = passCBByteSize;
-
-		md3dDevice->CreateConstantBufferView(&cbvDesc, handle);
-	}
+	BuildConstantBufferViews(mPassCbvOffset, 1, sizeof(PassConstants), eUploadBufferIndex::PassCB);
 
 	// Character
-	mPlayer.BuildConstantBufferViews(
-		md3dDevice.Get(),
-		mCbvHeap.Get(),
-		mFrameResources,
-		mChaCbvOffset);
-
-	mMonster->BuildConstantBufferViews(
-		md3dDevice.Get(),
-		mCbvHeap.Get(),
-		mFrameResources,
-		mMonsterCbvOffset);
+	BuildConstantBufferViews(mChaCbvOffset, mPlayer.GetAllRitemsSize(), sizeof(CharacterConstants), eUploadBufferIndex::PlayerCB);
+	BuildConstantBufferViews(mMonsterCbvOffset, mMonster->GetAllRitemsSize(), sizeof(CharacterConstants), eUploadBufferIndex::MonsterCB);
 
 	// UI
-	mPlayer.mUI.BuildConstantBufferViews(
-		md3dDevice.Get(),
-		mCbvHeap.Get(),
-		mFrameResources,
-		mUICbvOffset);
-
-	mMonster->mMonsterUI.BuildConstantBufferViews(
-		md3dDevice.Get(),
-		mCbvHeap.Get(),
-		mFrameResources,
-		mMonsterUICbvOffset);
+	BuildConstantBufferViews(mUICbvOffset, mPlayer.mUI.GetSize(), sizeof(UIConstants), eUploadBufferIndex::UICB);
+	BuildConstantBufferViews(mMonsterUICbvOffset, mMonster->mMonsterUI.GetSize(), sizeof(UIConstants), eUploadBufferIndex::MonsterUICB);
 }
 
 void PortfolioGameApp::BuildRootSignature()

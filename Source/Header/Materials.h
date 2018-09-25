@@ -26,12 +26,6 @@ public:
 		const std::vector<DirectX::XMFLOAT3>& FresnelR0, 
 		const std::vector<float>& Roughness, int MatIndex);
 
-
-	void Begin(ID3D12Device* device, ID3D12DescriptorHeap* cbvHeap);
-	void End();
-
-	void BuildConstantBufferViews(const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mMatCbvOffset);
-
 	void UpdateMaterialCB(UploadBuffer<MaterialConstants>* currMaterialCB);
 
 private:
@@ -40,6 +34,5 @@ private:
 
 	std::unordered_map<std::string, std::unique_ptr<Material>> mMaterials;
 
-	bool mInBeginEndPair;
 };
 

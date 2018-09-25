@@ -2,7 +2,6 @@
 #include "Materials.h"
 
 Materials::Materials()
-	: mInBeginEndPair(false)
 {
 }
 
@@ -55,56 +54,6 @@ void Materials::SetMaterial(
 		temp->Roughness = Roughness[i];
 
 		mMaterials[Name[i]] = std::move(temp);
-	}
-}
-
-void Materials::Begin(ID3D12Device * device, ID3D12DescriptorHeap * cbvHeap)
-{
-	if (mInBeginEndPair)
-		throw std::exception("Cannot nest Begin calls on a Material");
-
-	mDevice = device;
-	mCbvHeap = cbvHeap;
-	mInBeginEndPair = true;
-}
-
-void Materials::End()
-{
-	if (!mInBeginEndPair)
-		throw std::exception("Begin must be called before End");
-
-	mDevice = nullptr;
-	mCbvHeap = nullptr;
-	mInBeginEndPair = false;
-}
-
-void Materials::BuildConstantBufferViews(const std::vector<std::unique_ptr<FrameResource>> &mFrameResources, int mMatCbvOffset)
-{
-	UINT materialCount = GetSize();
-	UINT materialCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(MaterialConstants));
-	UINT mCbvSrvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	{
-		auto materialCB = mFrameResources[frameIndex]->MaterialCB->Resource();
-		for (UINT i = 0; i < materialCount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = materialCB->GetGPUVirtualAddress();
-
-			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * materialCBByteSize;
-
-			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mMatCbvOffset + frameIndex * materialCount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = materialCBByteSize;
-
-			mDevice->CreateConstantBufferView(&cbvDesc, handle);
-		}
 	}
 }
 

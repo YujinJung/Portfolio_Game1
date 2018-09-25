@@ -49,6 +49,7 @@ private:
 	void LoadTextures();
 	void BuildDescriptorHeaps();
 	void BuildTextureBufferViews();
+	void BuildConstantBufferViews(int mCbvOffset, UINT ItemSize, UINT ConstantsSize, eUploadBufferIndex e);
 	void BuildConstantBufferViews();
 	void BuildRootSignature();
 	void BuildShadersAndInputLayout();

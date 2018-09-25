@@ -77,6 +77,17 @@ struct UIVertex : Vertex
 	float Row;
 };
 
+enum class eUploadBufferIndex : int
+{
+	ObjectCB,
+	PlayerCB,
+	MonsterCB,
+	MaterialCB,
+	PassCB,
+	UICB,
+	MonsterUICB
+};
+
 // Stores the resources needed for the CPU to build the command lists for a frame.  
 struct FrameResource
 {
@@ -86,6 +97,7 @@ public:
     FrameResource& operator=(const FrameResource& rhs) = delete;
     ~FrameResource();
 
+	
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CmdListAlloc;
 
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
@@ -99,4 +111,29 @@ public:
     // Fence value to mark commands up to this fence point.  This lets us
     // check if these frame resources are still in use by the GPU.
     UINT64 Fence = 0;
+
+	static ID3D12Resource* GetResourceByIndex(
+		const FrameResource* mFrameResources, eUploadBufferIndex e)
+	{
+		switch (e)
+		{
+		case eUploadBufferIndex::ObjectCB:
+			return mFrameResources->ObjectCB->Resource();
+		case eUploadBufferIndex::PlayerCB:
+			return  mFrameResources->PlayerCB->Resource();
+		case eUploadBufferIndex::MonsterCB:
+			return  mFrameResources->MonsterCB->Resource();
+		case eUploadBufferIndex::MaterialCB:
+			return  mFrameResources->MaterialCB->Resource();
+		case eUploadBufferIndex::PassCB:
+			return  mFrameResources->PassCB->Resource();
+		case eUploadBufferIndex::UICB:
+			return  mFrameResources->UICB->Resource();
+		case eUploadBufferIndex::MonsterUICB:
+			return  mFrameResources->MonsterUICB->Resource();
+		default:
+			return nullptr;
+		}
+	}
+
 };

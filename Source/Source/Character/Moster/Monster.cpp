@@ -27,7 +27,6 @@ Monster::Monster()
 
 		mMonsterInfo.push_back(M);
 	}
-
 }
 Monster::~Monster()
 {
@@ -68,7 +67,7 @@ UINT Monster::GetUISize() const
 	return ret;
 }
 
-UINT Monster::GetAllRitemsSize() const 
+UINT Monster::GetAllRitemsSize() const
 {
 	return (UINT)mAllRitems.size();
 }
@@ -154,119 +153,24 @@ void Monster::BuildGeometry(
 	std::string geoName)
 {
 	const int numOfSubmesh = 65; // The largest number of bone(submesh) of the monsters
+	mSkinnedInfo = inSkinInfo;
 
 	for (UINT i = 0; i < numOfCharacter; ++i)
 	{
-		mSkinnedInfo = inSkinInfo;
-
 		auto skinnedModelInst = std::make_unique<SkinnedModelInstance>();
 		skinnedModelInst->SkinnedInfo = &mSkinnedInfo;
-		//skinnedModelInst->FinalTransforms.resize(65, MathHelper::Identity4x4());
 		skinnedModelInst->FinalTransforms.resize(mSkinnedInfo.BoneCount());
 		skinnedModelInst->TimePos = 0.0f;
 
 		mSkinnedModelInst.push_back(std::move(skinnedModelInst));
 	}
 
-	if (inVertices.size() == 0)
-	{
-		MessageBox(0, L"Fbx not found", 0, 0);
-		return;
-	}
-
-	UINT vCount = 0, iCount = 0;
-	vCount = (UINT)inVertices.size();
-	iCount = (UINT)inIndices.size();
-
-	const UINT vbByteSize = vCount * sizeof(CharacterVertex);
-	const UINT ibByteSize = iCount * sizeof(std::uint32_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = geoName;
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), inVertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), inIndices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inVertices.data(), vbByteSize, geo->VertexBufferUploader);
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inIndices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(CharacterVertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	auto vSubmeshOffset = mSkinnedInfo.GetSubmeshOffset();
-	auto boneName = mSkinnedInfo.GetBoneName();
-
-	UINT SubmeshOffsetIndex = 0;
-	for (int i = 0; i <numOfSubmesh; ++i)
-	{
-		if (i >= vSubmeshOffset.size())
-		{
-			SubmeshGeometry FbxSubmesh;
-			FbxSubmesh.IndexCount = 0;
-			FbxSubmesh.StartIndexLocation = SubmeshOffsetIndex;
-			FbxSubmesh.BaseVertexLocation = 0;
-
-			std::string SubmeshName = boneName[0] + std::to_string(i);
-			geo->DrawArgs[SubmeshName] = FbxSubmesh;
-			mSkinnedInfo.SetBoneName(SubmeshName);
-			continue;
-		}
-
-		UINT CurrSubmeshOffsetIndex = vSubmeshOffset[i];
-
-		SubmeshGeometry FbxSubmesh;
-		FbxSubmesh.IndexCount = CurrSubmeshOffsetIndex;
-		FbxSubmesh.StartIndexLocation = SubmeshOffsetIndex;
-		FbxSubmesh.BaseVertexLocation = 0;
-
-		std::string SubmeshName = boneName[i];
-		geo->DrawArgs[SubmeshName] = FbxSubmesh;
-
-		SubmeshOffsetIndex += CurrSubmeshOffsetIndex;
-	}
-
-	mGeometry = std::move(geo);
+	Character::BuildGeometry(
+		device, cmdList,
+		inVertices, inIndices,
+		mSkinnedInfo, geoName);
+	
 }
-void Monster::BuildConstantBufferViews(
-	ID3D12Device * device,
-	ID3D12DescriptorHeap * mCbvHeap,
-	const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
-	int mMonsterCbvOffset)
-{
-	UINT MonsterCount = GetAllRitemsSize();
-	UINT MonsterCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(CharacterConstants));
-	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	{
-		auto MonsterCB = mFrameResources[frameIndex]->MonsterCB->Resource();
-
-		for (UINT i = 0; i < MonsterCount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = MonsterCB->GetGPUVirtualAddress();
-
-			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * MonsterCBByteSize;
-
-			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mMonsterCbvOffset + frameIndex * MonsterCount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = MonsterCBByteSize;
-
-			device->CreateConstantBufferView(&cbvDesc, handle);
-		}
-	}
-}
-
 void Monster::BuildRenderItem(
 	Materials& mMaterials,
 	std::string matrialPrefix)
@@ -306,7 +210,7 @@ void Monster::BuildRenderItem(
 		mAttackTimes[1] = mSkinnedInfo.GetClipEndTime("MAttack2") / 2.0f;
 		mDamage = 6;
 	}
-	mBossDamage = 2 * mDamage; 
+	mBossDamage = 2 * mDamage;
 
 	for (UINT cIndex = 0; cIndex < numOfCharacter; ++cIndex)
 	{
@@ -326,7 +230,7 @@ void Monster::BuildRenderItem(
 
 		// Boss
 		float BossScale = 0.0f;
-		if (cIndex == 0) 
+		if (cIndex == 0)
 		{
 			BossScale = 3.0f;
 			monsterPos = XMVectorSet(bossX, 0.0f, bossZ, 0.0f);
@@ -343,7 +247,7 @@ void Monster::BuildRenderItem(
 			XMStoreFloat4x4(&MonsterRitem->World, XMMatrixScaling(4.0f + BossScale, 4.0f + BossScale, 4.0f + BossScale));
 			MonsterRitem->TexTransform = MathHelper::Identity4x4();
 			MonsterRitem->Mat = mMaterials.Get(MaterialName);
-			MonsterRitem->Geo = mGeometry.get();
+			MonsterRitem->Geo = GetMeshGeometry();
 			MonsterRitem->NumFramesDirty = gNumFrameResources;
 			MonsterRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 			MonsterRitem->StartIndexLocation = MonsterRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
@@ -382,14 +286,16 @@ void Monster::UpdateCharacterCBs(
 	auto curMonsterCB = mCurrFrameResource->MonsterCB.get();
 	static float time = 0.0f;
 
+
 	// Animation per 0.01s
 	//if (gt.TotalTime() - time > 0.01f)
 	//{
-		for (UINT k = 0; k < numOfCharacter; ++k)
-		{
-			mSkinnedModelInst[k]->UpdateSkinnedAnimation(mMonsterInfo[k].mClipName, gt.DeltaTime());
-		}
-		time = gt.TotalTime();
+	for (UINT k = 0; k < numOfCharacter; ++k)
+	{
+		mSkinnedModelInst[k]->UpdateSkinnedAnimation(mMonsterInfo[k].mClipName, gt.DeltaTime());
+		GetBoundingBox().Transform(mMonsterInfo[k].mBoundingBox, GetWorldTransformMatrix(k));
+	}
+	time = gt.TotalTime();
 	//}
 
 	// Character Offset : mAllsize  / numOfcharacter

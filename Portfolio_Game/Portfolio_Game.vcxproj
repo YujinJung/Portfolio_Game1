@@ -75,7 +75,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IncludePath>..\Libraries\FBX_SDK\include;..\Source\Header\;..\Source\Header\Common;$(IncludePath)</IncludePath>
+    <IncludePath>..\Libraries\FBX_SDK\include;..\Libraries\JsonCpp\json;..\Source\Header\;..\Source\Header\Common;$(IncludePath)</IncludePath>
     <SourcePath>$(VC_SourcePath);</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

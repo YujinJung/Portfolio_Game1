@@ -4,7 +4,7 @@
 #include "PlayerUI.h"
 #include "Character.h"
 
-enum PlayerMoveList
+enum class ePlayerMoveList
 {
 	Walk,
 	SideWalk,
@@ -24,11 +24,8 @@ public:
 
 public:
 	virtual int GetHealth(int i = 0) const override;
-
 	virtual CharacterInfo& GetCharacterInfo(int cIndex = 0);
-
 	virtual void Damage(int damage, DirectX::XMVECTOR Position, DirectX::XMVECTOR Look) override;
-
 	void Attack(Character* inMonster, std::string clipName);
 
 public:
@@ -49,14 +46,7 @@ public:
 		ID3D12GraphicsCommandList * cmdList,
 		const std::vector<CharacterVertex>& inVertices,
 		const std::vector<std::uint32_t>& inIndices,
-		const SkinnedData & inSkinInfo, std::string geoName) override;
-
-	virtual void BuildConstantBufferViews(
-		ID3D12Device * device,
-		ID3D12DescriptorHeap * mCbvHeap,
-		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
-		int mPlayerCbvOffset) override;
-
+		const SkinnedData & inSkinInfo, std::string geoName);
 	virtual void BuildRenderItem(
 		Materials & mMaterials,
 		std::string matrialPrefix) override;
@@ -70,15 +60,13 @@ public:
 
 	virtual void UpdateCharacterShadows(const Light & mMainLight);
 
-	void UpdatePlayerPosition(PlayerMoveList move, float velocity);
+	void UpdatePlayerPosition(ePlayerMoveList move, float velocity);
 
 	void UpdateTransformationMatrix();
 	
 private:
 	CharacterInfo mPlayerInfo;
-	
 	SkinnedData mSkinnedInfo;
-	std::unique_ptr<MeshGeometry> mGeometry;
 	std::unique_ptr<SkinnedModelInstance> mSkinnedModelInst;
 
 	std::vector<std::unique_ptr<RenderItem>> mAllRitems;
@@ -87,8 +75,7 @@ private:
 private:
 	UINT mDamage;
 	UINT mFullHealth;
-	DirectX::BoundingBox mInitBoundsBox;
-
 	bool DeathCamFinished = false;
+
 };
 

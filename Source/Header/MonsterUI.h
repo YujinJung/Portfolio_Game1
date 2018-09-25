@@ -14,12 +14,6 @@ public:
 
 	void DeleteMonsterUI(int cIndex);
 
-	void BuildConstantBufferViews(
-		ID3D12Device * device,
-		ID3D12DescriptorHeap * mCbvHeap,
-		const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
-		int mMonsterUICbvOffset);
-
 	void BuildRenderItem(
 		std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries,
 		Materials & mMaterials,

@@ -21,13 +21,6 @@ public:
 
 	void SetGameover();
 
-
-	void BuildConstantBufferViews(
-		ID3D12Device* device,
-		ID3D12DescriptorHeap* mCbvHeap,
-		const std::vector<std::unique_ptr<FrameResource>> &mFrameResources,
-		int mUICbvOffset);
-
 	void BuildGeometry(
 		ID3D12Device * device, 
 		ID3D12GraphicsCommandList * cmdList,

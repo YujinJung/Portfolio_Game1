@@ -135,104 +135,10 @@ void Player::BuildGeometry(
 	mSkinnedModelInst->FinalTransforms.resize(mSkinnedInfo.BoneCount());
 	mSkinnedModelInst->TimePos = 0.0f;
 
-	if (inVertices.size() == 0)
-	{
-		MessageBox(0, L"Fbx not found", 0, 0);
-		return;
-	}
-
-	UINT vCount = 0, iCount = 0;
-	vCount = (UINT)inVertices.size();
-	iCount = (UINT)inIndices.size();
-
-	const UINT vbByteSize = (UINT)inVertices.size() * sizeof(CharacterVertex);
-	const UINT ibByteSize = (UINT)inIndices.size() * sizeof(std::uint32_t);
-
-	auto geo = std::make_unique<MeshGeometry>();
-	geo->Name = geoName;
-
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &geo->VertexBufferCPU));
-	CopyMemory(geo->VertexBufferCPU->GetBufferPointer(), inVertices.data(), vbByteSize);
-
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &geo->IndexBufferCPU));
-	CopyMemory(geo->IndexBufferCPU->GetBufferPointer(), inIndices.data(), ibByteSize);
-
-	geo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inVertices.data(), vbByteSize, geo->VertexBufferUploader);
-	geo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(device, cmdList, inIndices.data(), ibByteSize, geo->IndexBufferUploader);
-
-	geo->VertexByteStride = sizeof(CharacterVertex);
-	geo->VertexBufferByteSize = vbByteSize;
-	geo->IndexFormat = DXGI_FORMAT_R32_UINT;
-	geo->IndexBufferByteSize = ibByteSize;
-
-	auto vSubmeshOffset = mSkinnedInfo.GetSubmeshOffset();
-	auto vBoneName = mSkinnedInfo.GetBoneName();
-
-
-	UINT SubmeshOffsetIndex = 0;
-	for (int i = 0; i < vSubmeshOffset.size(); ++i)
-	{
-		UINT CurrSubmeshOffsetIndex = vSubmeshOffset[i];
-
-		SubmeshGeometry FbxSubmesh;
-		FbxSubmesh.IndexCount = CurrSubmeshOffsetIndex;
-		FbxSubmesh.StartIndexLocation = SubmeshOffsetIndex;
-		FbxSubmesh.BaseVertexLocation = 0;
-
-		std::string SubmeshName = vBoneName[i];
-		geo->DrawArgs[SubmeshName] = FbxSubmesh;
-
-		SubmeshOffsetIndex += CurrSubmeshOffsetIndex;
-	}
-
-	BoundingBox box;
-	BoundingBox::CreateFromPoints(
-		box,
-		inVertices.size(),
-		&inVertices[0].Pos,
-		sizeof(CharacterVertex));
-	box.Extents = { 3.0f, 1.0f, 3.0f };
-	box.Center.y = 3.0f;
-
-	mInitBoundsBox = box;
-	mPlayerInfo.mBoundingBox = box;
-
-	mGeometry = std::move(geo);
-}
-
-void Player::BuildConstantBufferViews(
-	ID3D12Device * device,
-	ID3D12DescriptorHeap * mCbvHeap,
-	const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
-	int mPlayerCbvOffset)
-{
-	UINT playerCount = GetAllRitemsSize();
-	UINT playerCBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(CharacterConstants));
-	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	{
-		auto playerCB = mFrameResources[frameIndex]->PlayerCB->Resource();
-
-		for (UINT i = 0; i < playerCount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = playerCB->GetGPUVirtualAddress();
-
-			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * playerCBByteSize;
-
-			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mPlayerCbvOffset + frameIndex * playerCount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = playerCBByteSize;
-
-			device->CreateConstantBufferView(&cbvDesc, handle);
-		}
-	}
+	Character::BuildGeometry(
+		device, cmdList,
+		inVertices, inIndices,
+		mSkinnedInfo, geoName);
 }
 
 void Player::BuildRenderItem(
@@ -252,7 +158,7 @@ void Player::BuildRenderItem(
 		XMStoreFloat4x4(&PlayerRitem->World, XMMatrixScaling(4.0f, 4.0f, 4.0f));
 		PlayerRitem->TexTransform = MathHelper::Identity4x4();
 		PlayerRitem->Mat = mMaterials.Get(matrialPrefix);
-		PlayerRitem->Geo = mGeometry.get();
+		PlayerRitem->Geo = GetMeshGeometry();
 		PlayerRitem->NumFramesDirty = gNumFrameResources;
 		PlayerRitem->PrimitiveType = D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST;
 		PlayerRitem->StartIndexLocation = PlayerRitem->Geo->DrawArgs[SubmeshName].StartIndexLocation;
@@ -309,7 +215,8 @@ void Player::UpdateCharacterCBs(
 		currPlayerCB->CopyData(e->PlayerCBIndex, skinnedConstants);
 	}
 
-	mInitBoundsBox.Transform(mPlayerInfo.mBoundingBox, GetWorldTransformMatrix());
+	//mInitBoundsBox.Transform(mPlayerInfo.mBoundingBox, GetWorldTransformMatrix());
+	GetBoundingBox().Transform(mPlayerInfo.mBoundingBox, GetWorldTransformMatrix());
 
 	UpdateCharacterShadows(mMainLight);
 	for (auto& e : mRitems[(int)RenderLayer::Shadow])
@@ -365,27 +272,27 @@ void Player::UpdateCharacterShadows(const Light& mMainLight)
 	}
 }
 
-void Player::UpdatePlayerPosition(PlayerMoveList moveName, float velocity)
+void Player::UpdatePlayerPosition(ePlayerMoveList moveName, float velocity)
 {
 
 	switch (moveName)
 	{
-	case PlayerMoveList::Walk:
+	case ePlayerMoveList::Walk:
 		mPlayerInfo.mMovement.Walk(velocity);
 		break;
 
-	case PlayerMoveList::SideWalk:
+	case ePlayerMoveList::SideWalk:
 		mPlayerInfo.mMovement.SideWalk(velocity);
 		break;
 
-	case PlayerMoveList::AddYaw:
+	case ePlayerMoveList::AddYaw:
 		mPlayerInfo.mMovement.AddYaw(velocity);
 		break;
 
-	case PlayerMoveList::AddPitch:
+	case ePlayerMoveList::AddPitch:
 		mPlayerInfo.mMovement.AddPitch(velocity);
 		break;
-	case PlayerMoveList::Death:
+	case ePlayerMoveList::Death:
 
 		break;
 	}

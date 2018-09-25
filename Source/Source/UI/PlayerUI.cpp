@@ -45,41 +45,6 @@ void PlayerUI::SetGameover()
 	}
 }
 
-void PlayerUI::BuildConstantBufferViews(
-	ID3D12Device * device,
-	ID3D12DescriptorHeap * mCbvHeap,
-	const std::vector<std::unique_ptr<FrameResource>>& mFrameResources,
-	int mUICbvOffset)
-{
-	UINT UICount = GetSize();
-	UINT UICBByteSize = d3dUtil::CalcConstantBufferByteSize(sizeof(UIConstants));
-	UINT mCbvSrvDescriptorSize = device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
-	for (int frameIndex = 0; frameIndex < gNumFrameResources; ++frameIndex)
-	{
-		auto UICB = mFrameResources[frameIndex]->UICB->Resource();
-
-		for (UINT i = 0; i < UICount; ++i)
-		{
-			D3D12_GPU_VIRTUAL_ADDRESS cbAddress = UICB->GetGPUVirtualAddress();
-
-			// Offset to the ith object constant buffer in the buffer.
-			cbAddress += i * UICBByteSize;
-
-			// Offset to the object cbv in the descriptor heap.
-			int heapIndex = mUICbvOffset + frameIndex * UICount + i;
-			auto handle = CD3DX12_CPU_DESCRIPTOR_HANDLE(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
-			handle.Offset(heapIndex, mCbvSrvDescriptorSize);
-
-			D3D12_CONSTANT_BUFFER_VIEW_DESC cbvDesc;
-			cbvDesc.BufferLocation = cbAddress;
-			cbvDesc.SizeInBytes = UICBByteSize;
-
-			device->CreateConstantBufferView(&cbvDesc, handle);
-		}
-	}
-}
-
 void PlayerUI::BuildGeometry(
 	ID3D12Device * device,
 	ID3D12GraphicsCommandList* cmdList,
