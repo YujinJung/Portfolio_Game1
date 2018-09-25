@@ -8,30 +8,6 @@ Camera::Camera()
 	UpdateViewMatrix();
 }
 
-//Camera::Camera(
-//	XMFLOAT3 inPlayerPosition,
-//	XMFLOAT3 inPlayerLook,
-//	XMFLOAT3 inPlayerUp,
-//	XMFLOAT3 inPlayerRight)
-//	: mEyeRight(inPlayerRight)
-//{
-//	XMVECTOR P = XMLoadFloat3(&inPlayerPosition);
-//	XMVECTOR L = XMLoadFloat3(&inPlayerLook);
-//	XMVECTOR U = XMLoadFloat3(&inPlayerUp);
-//	XMVECTOR R = XMLoadFloat3(&inPlayerRight);
-//
-//XMVECTOR mP = XMVectorAdd(XMVectorSubtract(P, 10.0f * L), 10.0f * U);
-//	XMVECTOR mL = XMVector3Normalize(XMVectorSubtract(mP, P));
-//	XMVECTOR mU = XMVector3Normalize(XMVector3Cross(R, mL));
-//
-//	XMStoreFloat3(&mEyePosition, mP);
-//	XMStoreFloat3(&mEyeLook, mL);
-//	XMStoreFloat3(&mEyeUp, mU);
-//
-//	SetProj(0.25f*MathHelper::Pi, 1.0f, 1.0f, 1000.0f);
-//	UpdateViewMatrix();	
-//}
-
 Camera::~Camera()
 {
 }

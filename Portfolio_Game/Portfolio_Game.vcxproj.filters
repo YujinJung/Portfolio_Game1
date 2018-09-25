@@ -67,6 +67,9 @@
     <ClCompile Include="..\Source\Portfolio_Game.cpp">
       <Filter>Main</Filter>
     </ClCompile>
+    <ClCompile Include="..\Source\Source\Common\FBXGenerator.cpp">
+      <Filter>Common\Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\Source\Header\PlayerCamera.h">
@@ -146,6 +149,9 @@
     </ClInclude>
     <ClInclude Include="..\Source\Portfolio_Game.h">
       <Filter>Main</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\FBXGenerator.h">
+      <Filter>Common\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

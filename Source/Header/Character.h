@@ -2,12 +2,8 @@
 
 #include "Materials.h"
 #include "RenderItem.h"
-#include "../Common/UploadBuffer.h"
 
-struct CharacterConstants;
-struct FrameResource;
 class GameTimer;
-
 class Character
 {
 public:

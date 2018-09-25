@@ -60,16 +60,6 @@ private:
 		const std::vector<std::string>& geoName);
 
 	void BuildFbxGeometry();
-	void LoadFBXPlayer();
-	void BuildFBXTexture(
-		std::vector<Material> &outMaterial, 
-		std::string inTextureName, std::string inMaterialName);
-	void LoadFBXMonster();
-	void LoadFBXSubMonster(
-		std::vector<Material> &outMaterial, 
-		std::string& inMaterialName, std::string &FileName, 
-		bool isEvenX, bool isEvenZ);
-	void LoadFBXArchitecture();
 
 	void BuildMaterials();
 	void BuildPSOs();

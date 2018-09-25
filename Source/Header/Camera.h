@@ -1,5 +1,4 @@
-#ifndef CAMERA_H
-#define CAMERA_H
+#pragma once
 
 #include "../Common/d3dUtil.h"
 
@@ -7,12 +6,6 @@ class Camera
 {
 public:
 	Camera();
-	/*Camera(
-		DirectX::XMFLOAT3 inPlayerPosition,
-		DirectX::XMFLOAT3 inPlayerLook,
-		DirectX::XMFLOAT3 inPlayerUp,
-		DirectX::XMFLOAT3 inPlayerRight
-	);*/
 	~Camera();
 
 	void SetProj(float fovY, float aspect, float zn, float zf);
@@ -64,5 +57,3 @@ private:
 	float mNearWindowHeight = 0.0f;
 	float mFarWindowHeight = 0.0f;
 };
-
-#endif

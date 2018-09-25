@@ -76,7 +76,7 @@
     <LinkIncremental>true</LinkIncremental>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
     <IncludePath>..\Libraries\FBX_SDK\include;..\Libraries\JsonCpp\json;..\Source\Header\;..\Source\Header\Common;$(IncludePath)</IncludePath>
-    <SourcePath>$(VC_SourcePath);</SourcePath>
+    <SourcePath>$(VC_SourcePath)</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
@@ -84,7 +84,8 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IncludePath>..\Libraries\FBX_SDK\include;..\Source\Header;..\Source\Header\Common;$(IncludePath)</IncludePath>
+    <IncludePath>$(MSBuildProjectDirectory)\..\Libraries\FBX_SDK\include;$(MSBuildProjectDirectory)\..\Source\Header;$(MSBuildProjectDirectory)\..\Source\Header\Common;$(MSBuildProjectDirectory)\..\Libraries\JsonCpp\json;$(IncludePath)</IncludePath>
+    <SourcePath>$(VC_SourcePath);$(SourcePath)</SourcePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -161,6 +162,7 @@
     <ClCompile Include="..\Source\Source\Character\SkinnedData.cpp" />
     <ClCompile Include="..\Source\Source\Common\d3dApp.cpp" />
     <ClCompile Include="..\Source\Source\Common\d3dUtil.cpp" />
+    <ClCompile Include="..\Source\Source\Common\FBXGenerator.cpp" />
     <ClCompile Include="..\Source\Source\Common\FrameResource.cpp" />
     <ClCompile Include="..\Source\Source\Common\GameTimer.cpp" />
     <ClCompile Include="..\Source\Source\Common\GeometryGenerator.cpp" />
@@ -186,6 +188,7 @@
     <ClInclude Include="..\Source\Header\Common\UploadBuffer.h" />
     <ClInclude Include="..\Source\Header\Common\Utility.h" />
     <ClInclude Include="..\Source\Header\DDSTextureLoader.h" />
+    <ClInclude Include="..\Source\Header\FBXGenerator.h" />
     <ClInclude Include="..\Source\Header\FbxLoader.h" />
     <ClInclude Include="..\Source\Header\FrameResource.h" />
     <ClInclude Include="..\Source\Header\GeometryGenerator.h" />

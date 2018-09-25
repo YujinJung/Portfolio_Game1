@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../Common/d3dUtil.h"
+#include "d3dUtil.h"
 
 struct WorldTransform
 {

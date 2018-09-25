@@ -1,5 +1,5 @@
-#include "Textures.h"
 #include "TextureLoader.h"
+#include "Textures.h"
 
 Textures::Textures()
 	: mInBeginEndPair(false)
