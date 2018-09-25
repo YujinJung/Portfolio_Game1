@@ -75,7 +75,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IncludePath>..\FBX_SDK\include;.\Source\Header\;.\Source\Header\Common;$(IncludePath)</IncludePath>
+    <IncludePath>..\Libraries\FBX_SDK\include;..\Source\Header\;..\Source\Header\Common;$(IncludePath)</IncludePath>
     <SourcePath>$(VC_SourcePath);</SourcePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -84,7 +84,7 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <ExecutablePath>$(ExecutablePath)</ExecutablePath>
-    <IncludePath>..\FBX_SDK\include;.\Source\Header;.\Source\Header\Common;$(IncludePath)</IncludePath>
+    <IncludePath>..\Libraries\FBX_SDK\include;..\Source\Header;..\Source\Header\Common;$(IncludePath)</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -110,7 +110,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>..\FBX_SDK\lib\vs2015\x64\debug;..\FBX_SDK\lib\vs2015\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\Libraries\FBX_SDK\lib\vs2015\x64\debug;..\Libraries\FBX_SDK\lib\vs2015\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>libfbxsdk-md.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
@@ -146,62 +146,61 @@
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>..\FBX_SDK\lib\vs2015\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>..\Libraries\FBX_SDK\lib\vs2015\x64\release;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <AdditionalDependencies>libfbxsdk-md.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Source\Portfolio_Game.cpp" />
-    <ClCompile Include="Source\Source\Camera\Camera.cpp" />
-    <ClCompile Include="Source\Source\Camera\PlayerCamera.cpp" />
-    <ClCompile Include="Source\Source\Character\Character.cpp" />
-    <ClCompile Include="Source\Source\Character\Moster\Monster.cpp" />
-    <ClCompile Include="Source\Source\Character\Player\Player.cpp" />
-    <ClCompile Include="Source\Source\Character\Player\PlayerController.cpp" />
-    <ClCompile Include="Source\Source\Character\Player\CharacterMovement.cpp" />
-    <ClCompile Include="Source\Source\Character\SkinnedData.cpp" />
-    <ClCompile Include="Source\Source\Common\d3dApp.cpp" />
-    <ClCompile Include="Source\Source\Common\d3dUtil.cpp" />
-    <ClCompile Include="Source\Source\Common\FrameResource.cpp" />
-    <ClCompile Include="Source\Source\Common\GameTimer.cpp" />
-    <ClCompile Include="Source\Source\Common\GeometryGenerator.cpp" />
-    <ClCompile Include="Source\Source\Common\MathHelper.cpp" />
-    <ClCompile Include="Source\Source\Common\Utility.cpp" />
-    <ClCompile Include="Source\Source\Material\Materials.cpp" />
-    <ClCompile Include="Source\Source\Texture\DDSTextureLoader.cpp" />
-    <ClCompile Include="Source\Source\Texture\FbxLoader.cpp" />
-    <ClCompile Include="Source\Source\Texture\TextureLoader.cpp" />
-    <ClCompile Include="Source\Source\Texture\Textures.cpp" />
-    <ClCompile Include="Source\Source\UI\PlayerUI.cpp" />
-    <ClCompile Include="Source\Source\UI\MonsterUI.cpp" />
+    <ClCompile Include="..\Source\Portfolio_Game.cpp" />
+    <ClCompile Include="..\Source\Source\Camera\Camera.cpp" />
+    <ClCompile Include="..\Source\Source\Camera\PlayerCamera.cpp" />
+    <ClCompile Include="..\Source\Source\Character\Character.cpp" />
+    <ClCompile Include="..\Source\Source\Character\CharacterMovement.cpp" />
+    <ClCompile Include="..\Source\Source\Character\Moster\Monster.cpp" />
+    <ClCompile Include="..\Source\Source\Character\Player\Player.cpp" />
+    <ClCompile Include="..\Source\Source\Character\SkinnedData.cpp" />
+    <ClCompile Include="..\Source\Source\Common\d3dApp.cpp" />
+    <ClCompile Include="..\Source\Source\Common\d3dUtil.cpp" />
+    <ClCompile Include="..\Source\Source\Common\FrameResource.cpp" />
+    <ClCompile Include="..\Source\Source\Common\GameTimer.cpp" />
+    <ClCompile Include="..\Source\Source\Common\GeometryGenerator.cpp" />
+    <ClCompile Include="..\Source\Source\Common\MathHelper.cpp" />
+    <ClCompile Include="..\Source\Source\Common\Utility.cpp" />
+    <ClCompile Include="..\Source\Source\Material\Materials.cpp" />
+    <ClCompile Include="..\Source\Source\Texture\DDSTextureLoader.cpp" />
+    <ClCompile Include="..\Source\Source\Texture\FbxLoader.cpp" />
+    <ClCompile Include="..\Source\Source\Texture\TextureLoader.cpp" />
+    <ClCompile Include="..\Source\Source\Texture\Textures.cpp" />
+    <ClCompile Include="..\Source\Source\UI\MonsterUI.cpp" />
+    <ClCompile Include="..\Source\Source\UI\PlayerUI.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Header\Camera.h" />
-    <ClInclude Include="Source\Header\Character.h" />
-    <ClInclude Include="Source\Header\CharacterMovement.h" />
-    <ClInclude Include="Source\Header\Common\Utility.h" />
-    <ClInclude Include="Source\Header\DDSTextureLoader.h" />
-    <ClInclude Include="Source\Header\PlayerUI.h" />
-    <ClInclude Include="Source\Header\FbxLoader.h" />
-    <ClInclude Include="Source\Header\FrameResource.h" />
-    <ClInclude Include="Source\Header\GeometryGenerator.h" />
-    <ClInclude Include="Source\Header\Materials.h" />
-    <ClInclude Include="Source\Header\Monster.h" />
-    <ClInclude Include="Source\Header\Player.h" />
-    <ClInclude Include="Source\Header\PlayerCamera.h" />
-    <ClInclude Include="Source\Header\PlayerController.h" />
-    <ClInclude Include="Source\Header\RenderItem.h" />
-    <ClInclude Include="Source\Header\SkinnedData.h" />
-    <ClInclude Include="Source\Header\TextureLoader.h" />
-    <ClInclude Include="Source\Header\Textures.h" />
-    <ClInclude Include="Source\Header\VertexHash.h" />
-    <ClInclude Include="Source\Portfolio_Game.h" />
-    <ClInclude Include="Source\Header\Common\d3dApp.h" />
-    <ClInclude Include="Source\Header\Common\d3dUtil.h" />
-    <ClInclude Include="Source\Header\Common\d3dx12.h" />
-    <ClInclude Include="Source\Header\Common\GameTimer.h" />
-    <ClInclude Include="Source\Header\Common\MathHelper.h" />
-    <ClInclude Include="Source\Header\Common\UploadBuffer.h" />
+    <ClInclude Include="..\Source\Header\Camera.h" />
+    <ClInclude Include="..\Source\Header\Character.h" />
+    <ClInclude Include="..\Source\Header\CharacterMovement.h" />
+    <ClInclude Include="..\Source\Header\Common\d3dApp.h" />
+    <ClInclude Include="..\Source\Header\Common\d3dUtil.h" />
+    <ClInclude Include="..\Source\Header\Common\d3dx12.h" />
+    <ClInclude Include="..\Source\Header\Common\GameTimer.h" />
+    <ClInclude Include="..\Source\Header\Common\MathHelper.h" />
+    <ClInclude Include="..\Source\Header\Common\UploadBuffer.h" />
+    <ClInclude Include="..\Source\Header\Common\Utility.h" />
+    <ClInclude Include="..\Source\Header\DDSTextureLoader.h" />
+    <ClInclude Include="..\Source\Header\FbxLoader.h" />
+    <ClInclude Include="..\Source\Header\FrameResource.h" />
+    <ClInclude Include="..\Source\Header\GeometryGenerator.h" />
+    <ClInclude Include="..\Source\Header\Materials.h" />
+    <ClInclude Include="..\Source\Header\Monster.h" />
+    <ClInclude Include="..\Source\Header\MonsterUI.h" />
+    <ClInclude Include="..\Source\Header\Player.h" />
+    <ClInclude Include="..\Source\Header\PlayerCamera.h" />
+    <ClInclude Include="..\Source\Header\PlayerUI.h" />
+    <ClInclude Include="..\Source\Header\RenderItem.h" />
+    <ClInclude Include="..\Source\Header\SkinnedData.h" />
+    <ClInclude Include="..\Source\Header\TextureLoader.h" />
+    <ClInclude Include="..\Source\Header\Textures.h" />
+    <ClInclude Include="..\Source\Header\VertexHash.h" />
+    <ClInclude Include="..\Source\Portfolio_Game.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

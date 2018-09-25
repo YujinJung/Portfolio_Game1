@@ -1,154 +1,151 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Source\Source\Camera\PlayerCamera.cpp">
+    <ClCompile Include="..\Source\Source\Camera\Camera.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\Camera\Camera.cpp">
+    <ClCompile Include="..\Source\Source\Camera\PlayerCamera.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\Character\SkinnedData.cpp">
-      <Filter>Character</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Character\Player\Player.cpp">
-      <Filter>Character\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Character\Player\PlayerController.cpp">
-      <Filter>Character\Player</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Common\GeometryGenerator.cpp">
-      <Filter>Common\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Common\MathHelper.cpp">
-      <Filter>Common\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Common\d3dApp.cpp">
-      <Filter>Common\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Common\d3dUtil.cpp">
-      <Filter>Common\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Common\FrameResource.cpp">
-      <Filter>Common\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Common\GameTimer.cpp">
-      <Filter>Common\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Material\Materials.cpp">
-      <Filter>Material</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Texture\Textures.cpp">
-      <Filter>Texuture</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Texture\FbxLoader.cpp">
-      <Filter>Loader</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Texture\TextureLoader.cpp">
-      <Filter>Loader</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Texture\DDSTextureLoader.cpp">
-      <Filter>Loader</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Portfolio_Game.cpp">
-      <Filter>Main</Filter>
-    </ClCompile>
-    <ClCompile Include="Source\Source\Character\Moster\Monster.cpp">
+    <ClCompile Include="..\Source\Source\Character\Moster\Monster.cpp">
       <Filter>Character\AI</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\UI\MonsterUI.cpp">
-      <Filter>UI</Filter>
+    <ClCompile Include="..\Source\Source\Character\Player\Player.cpp">
+      <Filter>Character\Player</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\Character\Player\CharacterMovement.cpp">
+    <ClCompile Include="..\Source\Source\Character\CharacterMovement.cpp">
       <Filter>Character</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\UI\PlayerUI.cpp">
-      <Filter>UI</Filter>
+    <ClCompile Include="..\Source\Source\Character\SkinnedData.cpp">
+      <Filter>Character</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\Common\Utility.cpp">
+    <ClCompile Include="..\Source\Source\Character\Character.cpp">
+      <Filter>Character</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Common\FrameResource.cpp">
       <Filter>Common\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Source\Source\Character\Character.cpp">
-      <Filter>Character</Filter>
+    <ClCompile Include="..\Source\Source\Material\Materials.cpp">
+      <Filter>Material</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Texture\Textures.cpp">
+      <Filter>Texuture</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Texture\FbxLoader.cpp">
+      <Filter>Loader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Texture\TextureLoader.cpp">
+      <Filter>Loader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Texture\DDSTextureLoader.cpp">
+      <Filter>Loader</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\UI\PlayerUI.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\UI\MonsterUI.cpp">
+      <Filter>UI</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Common\GeometryGenerator.cpp">
+      <Filter>Common\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Common\GameTimer.cpp">
+      <Filter>Common\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Common\d3dApp.cpp">
+      <Filter>Common\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Common\d3dUtil.cpp">
+      <Filter>Common\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Common\MathHelper.cpp">
+      <Filter>Common\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Common\Utility.cpp">
+      <Filter>Common\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Portfolio_Game.cpp">
+      <Filter>Main</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Source\Header\Common\GameTimer.h">
-      <Filter>Common\Header Files</Filter>
+    <ClInclude Include="..\Source\Header\PlayerCamera.h">
+      <Filter>Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\Common\MathHelper.h">
-      <Filter>Common\Header Files</Filter>
+    <ClInclude Include="..\Source\Header\Camera.h">
+      <Filter>Camera</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\Common\UploadBuffer.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Common\d3dApp.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Common\d3dUtil.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Common\d3dx12.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Portfolio_Game.h">
-      <Filter>Main</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Monster.h">
+    <ClInclude Include="..\Source\Header\Monster.h">
       <Filter>Character\AI</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\DDSTextureLoader.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\GeometryGenerator.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\TextureLoader.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\VertexHash.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\RenderItem.h">
-      <Filter>Common\Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Character.h">
-      <Filter>Character</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\FrameResource.h">
-      <Filter>Common\Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Common\Utility.h">
-      <Filter>Common\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Camera.h">
-      <Filter>Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\CharacterMovement.h">
-      <Filter>Character</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\PlayerCamera.h">
-      <Filter>Camera</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\PlayerController.h">
+    <ClInclude Include="..\Source\Header\Player.h">
       <Filter>Character\Player</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\Player.h">
-      <Filter>Character\Player</Filter>
+    <ClInclude Include="..\Source\Header\CharacterMovement.h">
+      <Filter>Character</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\PlayerUI.h">
-      <Filter>UI</Filter>
+    <ClInclude Include="..\Source\Header\Character.h">
+      <Filter>Character</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\Materials.h">
-      <Filter>Material</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\Textures.h">
-      <Filter>Texuture</Filter>
-    </ClInclude>
-    <ClInclude Include="Source\Header\FbxLoader.h">
+    <ClInclude Include="..\Source\Header\FbxLoader.h">
       <Filter>Loader</Filter>
     </ClInclude>
-    <ClInclude Include="Source\Header\SkinnedData.h">
+    <ClInclude Include="..\Source\Header\TextureLoader.h">
+      <Filter>Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\DDSTextureLoader.h">
+      <Filter>Loader</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\PlayerUI.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\Textures.h">
+      <Filter>Texuture</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\Materials.h">
+      <Filter>Material</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\MonsterUI.h">
+      <Filter>UI</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\FrameResource.h">
       <Filter>Common\Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\GeometryGenerator.h">
+      <Filter>Common\Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\VertexHash.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\Common\GameTimer.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\Common\MathHelper.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\Common\UploadBuffer.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\Common\Utility.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\Common\d3dApp.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\Common\d3dUtil.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\Common\d3dx12.h">
+      <Filter>Common\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\SkinnedData.h">
+      <Filter>Character</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Header\RenderItem.h">
+      <Filter>Common\Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\Source\Portfolio_Game.h">
+      <Filter>Main</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
