@@ -7,9 +7,6 @@
     <ClCompile Include="..\Source\Source\Camera\PlayerCamera.cpp">
       <Filter>Camera</Filter>
     </ClCompile>
-    <ClCompile Include="..\Source\Source\Character\Moster\Monster.cpp">
-      <Filter>Character\AI</Filter>
-    </ClCompile>
     <ClCompile Include="..\Source\Source\Character\Player\Player.cpp">
       <Filter>Character\Player</Filter>
     </ClCompile>
@@ -69,6 +66,9 @@
     </ClCompile>
     <ClCompile Include="..\Source\Source\Common\FBXGenerator.cpp">
       <Filter>Common\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\Source\Source\Character\Monster\Monster.cpp">
+      <Filter>Character\AI</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

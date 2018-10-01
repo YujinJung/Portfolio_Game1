@@ -376,7 +376,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 		}
 		else
 		{
-			mPlayer.mCamera.Walk(10.0f * dt);
+			mPlayer.mCamera.Walk(20.0f * dt);
 		}
 	}
 	else if (GetAsyncKeyState('S') & 0x8000) 
@@ -397,7 +397,7 @@ void PortfolioGameApp::OnKeyboardInput(const GameTimer& gt)
 		}
 		else
 		{
-			mPlayer.mCamera.Walk(-10.0f * dt);
+			mPlayer.mCamera.Walk(-20.0f * dt);
 		}
 	}
 	else if(GetAsyncKeyState('1') & 0x8000)
@@ -549,7 +549,7 @@ void PortfolioGameApp::UpdateMainPassCB(const GameTimer& gt)
 	mMainPassCB.AmbientLight = { 0.25f, 0.25f, 0.35f, 1.0f };
 	mMainPassCB.FogColor = { 0.8f, 0.8f, 0.8f, 0.5f };
 	mMainPassCB.FogRange = 200.0f;
-	mMainPassCB.FogStart = 20.0f;
+	mMainPassCB.FogStart = 50.0f;
 
 	mMainPassCB.Lights[0].Direction = mMainLight.Direction;
 	mMainPassCB.Lights[0].Strength = mMainLight.Strength;
@@ -1485,11 +1485,11 @@ void PortfolioGameApp::BuildRenderItems()
 void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 {
 	// Ground
-	float z = 250.0f;
+	float z = 500.0f;
 	for (int i = 0; i < 4; ++i)
 	{
 		auto subRitem = std::make_unique<RenderItem>();
-		XMStoreFloat4x4(&subRitem->TexTransform, XMMatrixScaling(10.0f, 10.0f, 1.0f));
+		XMStoreFloat4x4(&subRitem->TexTransform, XMMatrixScaling(30.0f, 30.0f, 1.0f));
 		subRitem->ObjCBIndex = ++objCBIndex;
 		subRitem->Geo = mGeometries["shapeGeo"].get();
 		subRitem->Mat = mMaterials.Get("tundra0");
@@ -1502,14 +1502,14 @@ void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 		z *= -1.0f;
 		if (i > 1)
 		{
-			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(-250.0f, -0.1f, z));
+			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(-500.0f, -0.1f, z));
 
 			if (i == 3)
 				subRitem->Mat = mMaterials.Get("stone0");
 		}
 		else
 		{
-			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(0.5f, 1.0f, 0.5f) * XMMatrixTranslation(250.0f, -0.1f, z));
+			XMStoreFloat4x4(&subRitem->World, XMMatrixScaling(1.0f, 1.0f, 1.0f) * XMMatrixTranslation(500.0f, -0.1f, z));
 
 			if(i == 0)
 				subRitem->Mat = mMaterials.Get("ice0");
