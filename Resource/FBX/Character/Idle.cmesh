@@ -2,7 +2,7 @@ VertexSize 7605
 IndexSize 37830
 MaterialSize 1
 Material 
-Name ..\Resource\FBX\Character\Idle.fbm/Kachujin_diffuse.jpg
+Name ..\Resource\FBX\Character\Idle.fbm/Kachujin.jpg
 Ambient 0 0 0
 Diffuse 1 1 1 1
 Fresnel 0 0 0

@@ -2,7 +2,7 @@ VertexSize 7568
 IndexSize 37878
 MaterialSize 1 
 Material 
-Name ..\Resource\FBX\Monster\Monster2\Idle.fbm/bear_diffuse.jpg
+Name ..\Resource\FBX\Monster\Monster2\Idle.fbm/bear.jpg
 Ambient 0 0 0
 Diffuse 1 1 1 1
 Fresnel 0 0 0

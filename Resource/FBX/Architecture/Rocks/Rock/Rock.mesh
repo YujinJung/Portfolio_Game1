@@ -2,7 +2,7 @@ VertexSize 819
 IndexSize 4500
 MaterialSize 1
 Material 
-Name ..\Resource\FBX\Architecture\Rocks\Rock\Rock_LowPoly_Diffuse.jpg
+Name ..\Resource\FBX\Architecture\Rocks\Rock\Rock_LowPoly.jpg
 Ambient 0 0 0
 Diffuse 0.8 0.8 0.8 1
 Fresnel 0.01 0.01 0.01

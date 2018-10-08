@@ -2,7 +2,7 @@ VertexSize 9914
 IndexSize 41730
 MaterialSize 1
 Material 
-Name ..\Resource\FBX\Monster\Monster3\Idle.fbm/MAW_diffuse.jpg
+Name ..\Resource\FBX\Monster\Monster3\Idle.fbm/MAW.jpg
 Ambient 0 0 0
 Diffuse 1 1 1 1
 Fresnel 0 0 0

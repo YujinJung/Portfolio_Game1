@@ -846,7 +846,6 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 		"SKINNED", "1",
 		NULL, NULL
 	};
-
 	const D3D_SHADER_MACRO playerUIDefines[] =
 	{
 		"PLAYER", "1",
@@ -1921,9 +1920,9 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 
 		if (ri->ObjCBIndex >= 0)
 		{
-		UINT cbvIndex = mObjCbvOffset + mCurrFrameResourceIndex * (UINT)mAllRitems.size() + ri->ObjCBIndex;
-		auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-		cbvHandle.Offset(cbvIndex, mCbvSrvDescriptorSize);
+			UINT cbvIndex = mObjCbvOffset + mCurrFrameResourceIndex * (UINT)mAllRitems.size() + ri->ObjCBIndex;
+			auto cbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+			cbvHandle.Offset(cbvIndex, mCbvSrvDescriptorSize);
 			cmdList->SetGraphicsRootDescriptorTable(texOffset, cbvHandle);
 		}
 
