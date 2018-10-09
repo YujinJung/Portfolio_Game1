@@ -28,7 +28,7 @@ int Textures::GetTextureIndex(std::string Name) const
 			return result;
 		++result;
 	}
-	return result;
+	return -1;
 }
 
 void Textures::SetTexture(
@@ -118,25 +118,25 @@ void Textures::End()
 	mInBeginEndPair = false;
 }
 
-void Textures::BuildConstantBufferViews(int mTextureOffset)
+
+void Textures::BuildCBVTex2D(const int offset)
 {
 	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
 	UINT mCbvSrvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	
-	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> vTex;
-	for (auto& e : mOrderTexture)
-	{
-		if (e->Name == "skyCubeMap")
-			continue;
-		vTex.push_back(e->Resource);
-	}
 
+	std::vector<Microsoft::WRL::ComPtr<ID3D12Resource>> vTex;
+
+	for (auto& e : mOrderTexture)
+		vTex.push_back(e->Resource);
+
+	hDescriptor.Offset(offset, mCbvSrvDescriptorSize);
 	for (auto &e : vTex)
 	{
 		srvDesc.Format = e->GetDesc().Format;
@@ -145,15 +145,43 @@ void Textures::BuildConstantBufferViews(int mTextureOffset)
 
 		hDescriptor.Offset(1, mCbvSrvDescriptorSize);
 	}
+}
 
-	auto skyTex = mTextures["skyCubeMap"].get()->Resource;
-	hDescriptor = mCbvHeap->GetCPUDescriptorHandleForHeapStart();
-	hDescriptor.Offset(mTextureOffset, mCbvSrvDescriptorSize);
+void Textures::BuildCBVTexCube(const int offset)
+{
+	CD3DX12_CPU_DESCRIPTOR_HANDLE hDescriptor(mCbvHeap->GetCPUDescriptorHandleForHeapStart());
+	UINT mCbvSrvDescriptorSize = mDevice->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
 
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURECUBE;
 	srvDesc.TextureCube.MostDetailedMip = 0;
-	srvDesc.TextureCube.MipLevels = skyTex->GetDesc().MipLevels;
 	srvDesc.TextureCube.ResourceMinLODClamp = 0.0f;
+
+	auto skyTex = mTextures["skyCubeMap"].get()->Resource;
+	hDescriptor = mCbvHeap->GetCPUDescriptorHandleForHeapStart();
+	hDescriptor.Offset(offset, mCbvSrvDescriptorSize);
+
 	srvDesc.Format = skyTex->GetDesc().Format;
+	srvDesc.TextureCube.MipLevels = skyTex->GetDesc().MipLevels;
 	mDevice->CreateShaderResourceView(skyTex.Get(), &srvDesc, hDescriptor);
+}
+
+void Textures::BuildConstantBufferViews(Textures::Type texType, const int offset)
+{
+	switch (texType)
+	{
+	case Textures::Type::TWO_DIMENTION:
+		BuildCBVTex2D(offset);
+		break;
+	case Textures::Type::CUBE:
+		BuildCBVTexCube(offset);
+		break;
+	case Textures::Type::Count:
+		break;
+	default:
+		break;
+	}
+
 }

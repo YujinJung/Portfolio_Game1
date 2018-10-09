@@ -62,8 +62,13 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
 	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
+	float4 normalMap = gNormalMap.Sample(gsamAnisotropicWrap, pin.TexC);
 
-	pin.NormalW = normalize(pin.NormalW);
+	// 0.0f ~ 1.0f -> -1.0f ~ 1.0f
+	normalMap = (normalMap * 2.0f) - 1.0f;
+
+	float3 normal = mul(pin.NormalW, normalMap.xyz);
+	pin.NormalW = normalize(normal);
 
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distanceToEye = length(toEyeW);

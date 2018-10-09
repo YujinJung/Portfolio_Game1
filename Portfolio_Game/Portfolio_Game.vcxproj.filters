@@ -191,28 +191,28 @@
     <Filter Include="Character\AI">
       <UniqueIdentifier>{2664b201-90be-4b3a-b3aa-ec9774b05f01}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Shader">
+    <Filter Include="Common\Shader">
       <UniqueIdentifier>{d76bed23-29f9-4bc1-a722-27c151ea12cf}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="..\Shaders\LightingUtil.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Common\Shader</Filter>
     </FxCompile>
     <FxCompile Include="..\Shaders\Monster.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Common\Shader</Filter>
     </FxCompile>
     <FxCompile Include="..\Shaders\Sky.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Common\Shader</Filter>
     </FxCompile>
     <FxCompile Include="..\Shaders\UI.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Common\Shader</Filter>
     </FxCompile>
     <FxCompile Include="..\Shaders\Common.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Common\Shader</Filter>
     </FxCompile>
     <FxCompile Include="..\Shaders\Default.hlsl">
-      <Filter>Shader</Filter>
+      <Filter>Common\Shader</Filter>
     </FxCompile>
   </ItemGroup>
 </Project>

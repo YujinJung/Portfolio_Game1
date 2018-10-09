@@ -180,18 +180,23 @@ void PortfolioGameApp::Draw(const GameTimer& gt)
 	int passCbvIndex = mPassCbvOffset + mCurrFrameResourceIndex;
 	auto passCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 	passCbvHandle.Offset(passCbvIndex, mCbvSrvDescriptorSize);
-
+	mCommandList->SetGraphicsRootDescriptorTable(5, passCbvHandle);
 	// Object
-	mCommandList->SetGraphicsRootDescriptorTable(3, passCbvHandle);
-	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-	skyTexDescriptor.Offset(mTextureOffset, mCbvSrvDescriptorSize);
-	mCommandList->SetGraphicsRootDescriptorTable(8, skyTexDescriptor);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Opaque]);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Wall]);
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Architecture]);
+
+	// SkyTex
+	CD3DX12_GPU_DESCRIPTOR_HANDLE skyTexDescriptor(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+	//skyTexDescriptor.Offset(mTexDiffuseOffset, mCbvSrvDescriptorSize);
+	skyTexDescriptor.Offset(mTexSkyCubeOffset, mCbvSrvDescriptorSize);
+	mCommandList->SetGraphicsRootDescriptorTable(2, skyTexDescriptor);
+
+	// Sky 
 	mCommandList->SetPipelineState(mPSOs["sky"].Get());
 	DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Sky]);
 
+	
 	//// Sky
 	//mCommandList->SetPipelineState(mPSOs["sky"].Get());
 	//DrawRenderItems(mCommandList.Get(), mRitems[(int)RenderLayer::Sky]);
@@ -680,26 +685,33 @@ void PortfolioGameApp::UpdateObjectShadows(const GameTimer& gt)
 ///
 void PortfolioGameApp::BuildDescriptorHeaps()
 {
-	mObjCbvOffset = mTextures.GetSize();
+	UINT texCount = mTexDiffuse.GetSize();
+	UINT texNormalCount = mTexDiffuse.GetSize();
+	UINT texSkyCount = mTexSkyCube.GetSize();
 	UINT objCount = (UINT)mAllRitems.size();
+	UINT passCount = 1;
+	UINT matCount = mMaterials.GetSize();
 	UINT chaCount = mPlayer.GetAllRitemsSize();
 	UINT monsterCount = mMonster->GetAllRitemsSize();
-	UINT matCount = mMaterials.GetSize();
 	UINT uiCount = mPlayer.mUI.GetSize();
 	UINT monsterUICount = mMonster->GetUISize();
 	// Need a CBV descriptor for each object for each frame resource,
 	// +1 for the perPass CBV for each frame resource.
 	// +matCount for the Materials for each frame resources.
-	UINT numDescriptors = mObjCbvOffset + 1 + (objCount + chaCount + monsterCount + matCount + uiCount + monsterUICount + 1) * gNumFrameResources;
+	UINT numDescriptors = texCount + texNormalCount + texSkyCount + (objCount + passCount + matCount + chaCount + monsterCount + monsterUICount + uiCount) * gNumFrameResources;
+
 
 	// Save an offset to the start of the pass CBVs.  These are the last 3 descriptors.
-	mChaCbvOffset = objCount * gNumFrameResources + mObjCbvOffset;
-	mMonsterCbvOffset = chaCount * gNumFrameResources + mChaCbvOffset;
-	mMatCbvOffset = monsterCount * gNumFrameResources + mMonsterCbvOffset;
+	
+	mTexNormalOffset = texCount;
+	mTexSkyCubeOffset = texCount + texNormalCount;
+	mObjCbvOffset = mTexSkyCubeOffset + texSkyCount;
+	mMatCbvOffset = objCount * gNumFrameResources + mObjCbvOffset;
 	mPassCbvOffset = matCount * gNumFrameResources + mMatCbvOffset;
-	mUICbvOffset = 1 * gNumFrameResources + mPassCbvOffset;
+	mChaCbvOffset = passCount * gNumFrameResources + mPassCbvOffset;
+	mMonsterCbvOffset = chaCount * gNumFrameResources + mChaCbvOffset;
+	mUICbvOffset = monsterCount * gNumFrameResources + mMonsterCbvOffset;
 	mMonsterUICbvOffset = uiCount * gNumFrameResources + mUICbvOffset;
-	mTextureOffset = monsterUICount * gNumFrameResources + mMonsterUICbvOffset;
 
 	// mPassCbvOffset + (passSize)
 	// passSize = 1 * gNumFrameResources
@@ -714,9 +726,17 @@ void PortfolioGameApp::BuildDescriptorHeaps()
 
 void PortfolioGameApp::BuildTextureBufferViews()
 {
-	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
-	mTextures.BuildConstantBufferViews(mTextureOffset);
-	mTextures.End();
+	mTexDiffuse.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+	mTexDiffuse.BuildConstantBufferViews(Textures::Type::TWO_DIMENTION);
+	mTexDiffuse.End();
+
+	mTexNormal.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+	mTexNormal.BuildConstantBufferViews(Textures::Type::TWO_DIMENTION, mTexNormalOffset);
+	mTexNormal.End();
+
+	mTexSkyCube.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+	mTexSkyCube.BuildConstantBufferViews(Textures::Type::CUBE, mTexSkyCubeOffset);
+	mTexSkyCube.End();
 }
 
 void PortfolioGameApp::BuildConstantBufferViews(int cbvOffset, UINT itemSize, UINT cbSize, eUploadBufferIndex e)
@@ -771,31 +791,29 @@ void PortfolioGameApp::BuildConstantBufferViews()
 
 void PortfolioGameApp::BuildRootSignature()
 {
-	const int texTableNumber = 2;
+	const int texTableNumber = 3;
 	const int cbvTableNumber = 7;
 	const int tableNumber = texTableNumber + cbvTableNumber;
 
-	CD3DX12_DESCRIPTOR_RANGE cbvTable[cbvTableNumber];
 	CD3DX12_DESCRIPTOR_RANGE texTable[texTableNumber];
+	CD3DX12_DESCRIPTOR_RANGE cbvTable[cbvTableNumber];
 
-	texTable[0].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 0);
+	for (int i = 0; i < texTableNumber; ++i)
+		texTable[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, i);
 	for (int i = 0; i < cbvTableNumber; ++i)
-	{
 		cbvTable[i].Init(D3D12_DESCRIPTOR_RANGE_TYPE_CBV, 1, i);
-	}
-	texTable[1].Init(D3D12_DESCRIPTOR_RANGE_TYPE_SRV, 1, 1);
 
+	
 	// Root parameter can be a table, root descriptor or root constants.
 	// Objects, Materials, Passes
 	CD3DX12_ROOT_PARAMETER slotRootParameter[tableNumber];
 
 	// Create root CBVs.
-	slotRootParameter[0].InitAsDescriptorTable(1, &texTable[0], D3D12_SHADER_VISIBILITY_PIXEL);
-	for (int i = 1; i < cbvTableNumber + 1; ++i)
-	{
-		slotRootParameter[i].InitAsDescriptorTable(1, &cbvTable[i - 1]);
-	}
-	slotRootParameter[cbvTableNumber + 1].InitAsDescriptorTable(1, &texTable[1], D3D12_SHADER_VISIBILITY_PIXEL);
+	for (int i = 0; i < texTableNumber; ++i)
+		slotRootParameter[i].InitAsDescriptorTable(1, &texTable[i], D3D12_SHADER_VISIBILITY_PIXEL);
+	for (int i = texTableNumber; i < tableNumber; ++i)
+		slotRootParameter[i].InitAsDescriptorTable(1, &cbvTable[i - texTableNumber]);
+
 
 	auto staticSamplers = GetStaticSamplers();
 
@@ -1260,14 +1278,14 @@ void PortfolioGameApp::BuildFbxGeometry()
 
 	fbxGen.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
 
-	fbxGen.LoadFBXPlayer(mPlayer, mTextures, mMaterials);
-	fbxGen.LoadFBXMonster(mMonster, mMonstersByZone, mTextures, mMaterials);
+	fbxGen.LoadFBXPlayer(mPlayer, mTexDiffuse, mTexNormal, mMaterials);
+	fbxGen.LoadFBXMonster(mMonster, mMonstersByZone, mTexDiffuse, mTexNormal, mMaterials);
 
 	// Initialize Monster in 1 zone
 	mMonster = mMonstersByZone[1].get();
 
 	//LoadFBXArchitecture();
-	fbxGen.LoadFBXArchitecture(mGeometries, mTextures, mMaterials);
+	fbxGen.LoadFBXArchitecture(mGeometries, mTexDiffuse, mTexNormal, mMaterials);
 
 	fbxGen.End();
 }
@@ -1275,7 +1293,7 @@ void PortfolioGameApp::BuildFbxGeometry()
 
 void PortfolioGameApp::LoadTextures()
 {
-	mTextures.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+	mTexDiffuse.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
 
 	std::vector<std::string> texNames;
 	std::vector<std::wstring> texPaths;
@@ -1319,13 +1337,37 @@ void PortfolioGameApp::LoadTextures()
 	texNames.push_back("NameMawTex");
 	texPaths.push_back(L"../Resource/UI/NameMaw.png");
 
-	// Cube Map,
-	texNames.push_back("skyCubeMap");
-	texPaths.push_back(L"../Resource/Textures/snowcube1024.dds");
+	mTexDiffuse.SetTexture(texNames, texPaths);
 
-	mTextures.SetTexture(texNames, texPaths);
+	mTexDiffuse.End();
 
-	mTextures.End();
+	mTexNormal.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+
+	for (int i = 0; i < texPaths.size(); ++i)
+	{
+		std::wstring TextureNormalFileName;
+		TextureNormalFileName = texPaths[i].substr(0, texPaths[i].size() - 4);
+		TextureNormalFileName.append(L"_normal.jpg");
+
+		struct stat buffer;
+		std::string fileCheck;
+		fileCheck.assign(TextureNormalFileName.begin(), TextureNormalFileName.end());
+		if (stat(fileCheck.c_str(), &buffer) == 0)
+		{
+			mTexNormal.SetTexture(
+				texNames[i],
+				TextureNormalFileName);
+		}
+	}
+
+	mTexNormal.End();
+
+	// Cube Map
+	mTexSkyCube.Begin(md3dDevice.Get(), mCommandList.Get(), mCbvHeap.Get());
+
+	mTexSkyCube.SetTexture("skyCubeMap", L"../Resource/Textures/snowcube1024.dds");
+	
+	mTexSkyCube.End();
 }
 
 void PortfolioGameApp::BuildMaterials()
@@ -1333,110 +1375,125 @@ void PortfolioGameApp::BuildMaterials()
 	int MatIndex = mMaterials.GetSize();
 
 	std::vector<std::string> matName;
-	std::vector<int> texIndices;
 	std::vector<XMFLOAT4> diffuses;
 	std::vector<XMFLOAT3> fresnels;
 	std::vector<float> roughnesses;
+	std::vector<int> texIndices;
+	std::vector<int> texNormalIndices;
 
 	matName.push_back("bricks0");
-	texIndices.push_back(mTextures.GetTextureIndex("bricksTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.02f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("bricks3");
-	texIndices.push_back(mTextures.GetTextureIndex("bricks3Tex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("bricks3Tex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.02f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("stone0");
-	texIndices.push_back(mTextures.GetTextureIndex("stoneTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("stoneTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.05f, 0.05f));
 	roughnesses.push_back(0.3f);
 
 	matName.push_back("tundra0");
-	texIndices.push_back(mTextures.GetTextureIndex("tundraTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("tundraTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("ice0");
-	texIndices.push_back(mTextures.GetTextureIndex("iceTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("iceTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("red");
-	texIndices.push_back(mTextures.GetTextureIndex("redTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("redTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("Transparency");
-	texIndices.push_back(mTextures.GetTextureIndex("redTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("redTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("shadow0");
-	texIndices.push_back(mTextures.GetTextureIndex("redTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("redTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f));
 	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("iconPunch");
-	texIndices.push_back(mTextures.GetTextureIndex("iconPunchTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("iconPunchTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("iconKick");
-	texIndices.push_back(mTextures.GetTextureIndex("iconKickTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("iconKickTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("iconKick2");
-	texIndices.push_back(mTextures.GetTextureIndex("iconKick2Tex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("iconKick2Tex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("Gameover");
-	texIndices.push_back(mTextures.GetTextureIndex("GameoverTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("GameoverTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("NameMutant");
-	texIndices.push_back(mTextures.GetTextureIndex("NameMutantTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("NameMutantTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("NameWarrok");
-	texIndices.push_back(mTextures.GetTextureIndex("NameWarrokTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("NameWarrokTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("NameMaw");
-	texIndices.push_back(mTextures.GetTextureIndex("NameMawTex"));
+	texIndices.push_back(mTexDiffuse.GetTextureIndex("NameMawTex"));
+	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.0f);
 
-	matName.push_back("sky");
-	texIndices.push_back(mTextureOffset);
-	diffuses.push_back(XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f));
-	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
-	roughnesses.push_back(0.0f);
-
 	mMaterials.SetMaterial(
-		matName, texIndices, diffuses,
-		fresnels, roughnesses, MatIndex);
+		matName, diffuses, fresnels, roughnesses,
+		MatIndex, texIndices, texNormalIndices);
+
+	// CUBE MAP
+	mMaterials.SetMaterial(
+		"sky", XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f), XMFLOAT3(0.001f, 0.001f, 0.001f), 0.0f,
+		mMaterials.GetSize(), mTexSkyCubeOffset);
 	
 }
 
@@ -1691,7 +1748,8 @@ void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 		++objCBIndex,
 		//XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(-100.0f, -1.0f, 160.0f),
 		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(-XM_PIDIV2, 0.0f, 0.0f),
-		XMMatrixIdentity());
+		XMMatrixScaling(2.0f, 2.0f, 2.0f));
+		//XMMatrixIdentity());
 	BuildSubRitems(
 		"Architecture",
 		"Canyon2",
@@ -1699,7 +1757,8 @@ void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 		RenderLayer::Architecture,
 		++objCBIndex,
 		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, XM_PI) * XMMatrixTranslation(170.0f, 72.0f, 340.0f),
-		XMMatrixIdentity());
+		XMMatrixScaling(2.0f, 2.0f, 2.0f));
+		//XMMatrixIdentity());
 	BuildSubRitems(
 		"Architecture",
 		"Canyon1",
@@ -1707,7 +1766,8 @@ void PortfolioGameApp::BuildLandscapeRitems(UINT& objCBIndex)
 		RenderLayer::Architecture,
 		++objCBIndex,
 		XMMatrixScaling(0.2f, 0.2f, 0.2f) * XMMatrixRotationRollPitchYaw(XM_PIDIV2, 0.0f, -XM_PIDIV2) * XMMatrixTranslation(-340.0f, 72.0f, 660.0f),
-		XMMatrixIdentity());
+		XMMatrixScaling(2.0f, 2.0f, 2.0f));
+		//XMMatrixIdentity());
 
 	// The wall between the first room and the second room.
 	BuildSubRitems(
@@ -1912,11 +1972,19 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 		cmdList->IASetIndexBuffer(&ri->Geo->IndexBufferView());
 		cmdList->IASetPrimitiveTopology(ri->PrimitiveType);
 
-		const int texOffset = 1;
+		const int texOffset = 3;
 		CD3DX12_GPU_DESCRIPTOR_HANDLE tex(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
 		tex.Offset(ri->Mat->DiffuseSrvHeapIndex, mCbvSrvDescriptorSize);
 
 		cmdList->SetGraphicsRootDescriptorTable(0, tex);
+
+		if (ri->Mat->NormalSrvHeapIndex >= 0)
+		{
+			UINT normalOffset = mTexNormalOffset + ri->Mat->NormalSrvHeapIndex;
+			CD3DX12_GPU_DESCRIPTOR_HANDLE normal(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
+			normal.Offset(normalOffset, mCbvSrvDescriptorSize);
+			cmdList->SetGraphicsRootDescriptorTable(1, normal);
+		}
 
 		if (ri->ObjCBIndex >= 0)
 		{
@@ -1928,7 +1996,7 @@ void PortfolioGameApp::DrawRenderItems(ID3D12GraphicsCommandList* cmdList, const
 
 		UINT matCbvIndex = mMatCbvOffset + mCurrFrameResourceIndex * mMaterials.GetSize() + ri->Mat->MatCBIndex;
 		auto matCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-		matCbvHandle.Offset(mMatCbvOffset + mCurrFrameResourceIndex * mMaterials.GetSize() + ri->Mat->MatCBIndex, mCbvSrvDescriptorSize);
+		matCbvHandle.Offset(matCbvIndex, mCbvSrvDescriptorSize);
 
 		UINT skinnedIndex = mChaCbvOffset + mCurrFrameResourceIndex * mPlayer.GetAllRitemsSize() + ri->PlayerCBIndex;
 		auto skinCbvHandle = CD3DX12_GPU_DESCRIPTOR_HANDLE(mCbvHeap->GetGPUDescriptorHandleForHeapStart());

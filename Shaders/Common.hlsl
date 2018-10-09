@@ -15,15 +15,16 @@
 // Include structures and functions for lighting.
 #include "LightingUtil.hlsl"
 
-Texture2D    gDiffuseMap : register(t0);
-TextureCube  gCubeMap	 : register(t1);
+Texture2D			gDiffuseMap	: register(t0);
+Texture2D			gNormalMap	: register(t1);
+TextureCube		gCubeMap		: register(t2);
 
-SamplerState gsamPointWrap        : register(s0);
-SamplerState gsamPointClamp       : register(s1);
-SamplerState gsamLinearWrap       : register(s2);
-SamplerState gsamLinearClamp      : register(s3);
-SamplerState gsamAnisotropicWrap  : register(s4);
-SamplerState gsamAnisotropicClamp : register(s5);
+SamplerState	gsamPointWrap					: register(s0);
+SamplerState	gsamPointClamp				: register(s1);
+SamplerState	gsamLinearWrap				: register(s2);
+SamplerState	gsamLinearClamp			: register(s3);
+SamplerState	gsamAnisotropicWrap	: register(s4);
+SamplerState	gsamAnisotropicClamp	: register(s5);
 
 // Constant data that varies per frame.
 cbuffer cbPerObject : register(b0)

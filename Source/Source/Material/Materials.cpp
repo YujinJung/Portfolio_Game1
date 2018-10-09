@@ -20,15 +20,17 @@ Material * Materials::Get(std::string Name)
 
 void Materials::SetMaterial(
 	const std::string& Name,
-	const int& DiffuseSrvHeapIndex,
 	const DirectX::XMFLOAT4& DiffuseAlbedo,
 	const DirectX::XMFLOAT3& FresnelR0,
-	const float& Roughness, const int& MatIndex)
+	const float& Roughness, const int& MatIndex,
+	const int& DiffuseSrvHeapIndex,
+	const int& NormalSrvHeapIndex)
 {
 	auto temp = std::make_unique<Material>();
 	temp->Name = Name;
 	temp->MatCBIndex = MatIndex;
 	temp->DiffuseSrvHeapIndex = DiffuseSrvHeapIndex;
+	temp->NormalSrvHeapIndex = NormalSrvHeapIndex;
 	temp->DiffuseAlbedo = DiffuseAlbedo;
 	temp->FresnelR0 = FresnelR0;
 	temp->Roughness = Roughness;
@@ -37,10 +39,11 @@ void Materials::SetMaterial(
 }
 void Materials::SetMaterial(
 	const std::vector<std::string>& Name,
-	const std::vector<int>& DiffuseSrvHeapIndex,
 	const std::vector<DirectX::XMFLOAT4>& DiffuseAlbedo,
 	const std::vector<DirectX::XMFLOAT3>& FresnelR0,
-	const std::vector<float>& Roughness, int MatIndex)
+	const std::vector<float>& Roughness, int MatIndex,
+	const std::vector<int>& DiffuseSrvHeapIndex,
+	const std::vector<int>& NormalSrvHeapIndex)
 {
 	for (int i = 0; i < Name.size(); ++i)
 	{
@@ -48,6 +51,7 @@ void Materials::SetMaterial(
 		temp->Name = Name[i];
 		temp->MatCBIndex = MatIndex++;
 		temp->DiffuseSrvHeapIndex = DiffuseSrvHeapIndex[i];
+		temp->NormalSrvHeapIndex = NormalSrvHeapIndex[i];
 		temp->DiffuseAlbedo = DiffuseAlbedo[i];
 		temp->FresnelR0 = FresnelR0[i];
 		temp->Roughness = Roughness[i];

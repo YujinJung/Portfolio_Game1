@@ -101,10 +101,10 @@ public:
 	Microsoft::WRL::ComPtr<ID3D12CommandAllocator> CmdListAlloc;
 
     std::unique_ptr<UploadBuffer<ObjectConstants>> ObjectCB = nullptr;
-	std::unique_ptr<UploadBuffer<CharacterConstants>> PlayerCB = nullptr;
-	std::unique_ptr<UploadBuffer<CharacterConstants>> MonsterCB = nullptr;
 	std::unique_ptr<UploadBuffer<MaterialConstants>>  MaterialCB = nullptr;
     std::unique_ptr<UploadBuffer<PassConstants>> PassCB = nullptr;
+	std::unique_ptr<UploadBuffer<CharacterConstants>> PlayerCB = nullptr;
+	std::unique_ptr<UploadBuffer<CharacterConstants>> MonsterCB = nullptr;
     std::unique_ptr<UploadBuffer<UIConstants>> UICB = nullptr;
     std::unique_ptr<UploadBuffer<UIConstants>> MonsterUICB = nullptr;
 

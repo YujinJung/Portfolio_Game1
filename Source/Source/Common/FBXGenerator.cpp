@@ -34,16 +34,19 @@ void FBXGenerator::End()
 
 	mDevice = nullptr;
 	mCommandList = nullptr;
+	mCbvHeap = nullptr;
+
 	mInBeginEndPair = false;
 }
 
 void FBXGenerator::BuildFBXTexture(
 	std::vector<Material> &outMaterial,
 	std::string inTextureName, std::string inMaterialName,
-	Textures& mTextures, Materials& mMaterials)
+	Textures& mTexDiffuse, Textures& mTexturesNormal, Materials& mMaterials)
 {
 	// Begin
-	mTextures.Begin(mDevice, mCommandList, mCbvHeap);
+	mTexDiffuse.Begin(mDevice, mCommandList, mCbvHeap);
+	mTexturesNormal.Begin(mDevice, mCommandList, mCbvHeap);
 
 	// Load Texture and Material
 	int MatIndex = mMaterials.GetSize();
@@ -53,33 +56,48 @@ void FBXGenerator::BuildFBXTexture(
 		// Load Texture 
 		if (!outMaterial[i].Name.empty())
 		{
+			// Texture
 			TextureName = inTextureName;
 			TextureName.push_back(i + 48);
 			std::wstring TextureFileName;
 			TextureFileName.assign(outMaterial[i].Name.begin(), outMaterial[i].Name.end());
-
-			mTextures.SetTexture(
+			mTexDiffuse.SetTexture(
 				TextureName,
 				TextureFileName);
+
+			// Normal Map
+			std::wstring TextureNormalFileName;
+			TextureNormalFileName = TextureFileName.substr(0, TextureFileName.size() - 11);
+			TextureNormalFileName.append(L"normal.jpg");
+			struct stat buffer;
+			std::string fileCheck;
+			fileCheck.assign(TextureNormalFileName.begin(), TextureNormalFileName.end());
+			if (stat(fileCheck.c_str(), &buffer) == 0)
+			{
+				mTexturesNormal.SetTexture(
+					TextureName,
+					TextureNormalFileName);
+			}
 		}
 
 		// Load Material
 		std::string MaterialName = inMaterialName;
 		MaterialName.push_back(i + 48);
 
-		auto playerTexIndex = mTextures.GetTextureIndex(TextureName);
 		mMaterials.SetMaterial(
 			MaterialName,
-			mTextures.GetTextureIndex(TextureName),
 			outMaterial[i].DiffuseAlbedo,
 			outMaterial[i].FresnelR0,
 			outMaterial[i].Roughness,
-			MatIndex++);
+			MatIndex++,
+			mTexDiffuse.GetTextureIndex(TextureName),
+			mTexturesNormal.GetTextureIndex(TextureName));
 	}
-	mTextures.End();
+	mTexDiffuse.End();
+	mTexturesNormal.End();
 }
 
-void FBXGenerator::LoadFBXPlayer(Player& mPlayer, Textures& mTextures, Materials& mMaterials)
+void FBXGenerator::LoadFBXPlayer(Player& mPlayer, Textures& mTexDiffuse, Textures& mTexturesNormal, Materials& mMaterials)
 {
 	FbxLoader fbx;
 	std::vector<CharacterVertex> outSkinnedVertices;
@@ -103,10 +121,10 @@ void FBXGenerator::LoadFBXPlayer(Player& mPlayer, Textures& mTextures, Materials
 
 	mPlayer.BuildGeometry(mDevice, mCommandList, outSkinnedVertices, outIndices, outSkinnedInfo, "playerGeo");
 
-	BuildFBXTexture(outMaterial, "playerTex", "playerMat", mTextures, mMaterials);
+	BuildFBXTexture(outMaterial, "playerTex", "playerMat", mTexDiffuse, mTexturesNormal, mMaterials);
 }
 
-void FBXGenerator::LoadFBXMonster(Monster* mMonster, std::vector<std::unique_ptr<Monster>>& mMonstersByZone, Textures& mTextures, Materials& mMaterials)
+void FBXGenerator::LoadFBXMonster(Monster* mMonster, std::vector<std::unique_ptr<Monster>>& mMonstersByZone, Textures& mTexDiffuse, Textures& mTexturesNormal, Materials& mMaterials)
 {
 	std::vector<Material> outMaterial;
 	std::string matName = "monsterMat0";
@@ -122,8 +140,7 @@ void FBXGenerator::LoadFBXMonster(Monster* mMonster, std::vector<std::unique_ptr
 	FileName = "../Resource/FBX/Monster/Monster3/";
 	LoadFBXSubMonster(mMonstersByZone, outMaterial, matName, FileName, true, false); // right down
 
-	BuildFBXTexture(outMaterial, "monsterTex", "monsterMat", mTextures, mMaterials);
-
+	BuildFBXTexture(outMaterial, "monsterTex", "monsterMat", mTexDiffuse, mTexturesNormal, mMaterials);
 }
 
 void FBXGenerator::LoadFBXSubMonster(
@@ -169,7 +186,7 @@ void FBXGenerator::LoadFBXSubMonster(
 
 void FBXGenerator::LoadFBXArchitecture(
 	std::unordered_map<std::string, std::unique_ptr<MeshGeometry>>& mGeometries, 
-	Textures& mTextures, Materials& mMaterials)
+	Textures& mTexDiffuse, Textures& mTexturesNormal, Materials& mMaterials)
 {
 	// Architecture FBX
 	FbxLoader fbx;
@@ -259,8 +276,7 @@ void FBXGenerator::LoadFBXArchitecture(
 	archName.push_back("Leaf");
 
 	BuildArcheGeometry(archVertex, archIndex, archName, mGeometries);
-	//BuildFBXTexture(outMaterial, "archiTex", "archiMat");
-	BuildFBXTexture(outMaterial, "archiTex", "archiMat", mTextures, mMaterials);
+	BuildFBXTexture(outMaterial, "archiTex", "archiMat", mTexDiffuse, mTexturesNormal,  mMaterials);
 
 	outVertices.clear();
 	outIndices.clear();

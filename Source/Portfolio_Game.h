@@ -107,14 +107,17 @@ private:
 	float HitTime[(int)eUIList::Count];
 	float DelayTime[(int)eUIList::Count];
 
+	UINT mTexDiffuseOffset = 0;
+	//UINT mTexDiffuseOffset = 0;
+	UINT mTexNormalOffset = 0;
+	UINT mTexSkyCubeOffset = 0;
 	UINT mObjCbvOffset = 0;
-	UINT mChaCbvOffset = 0;
-	UINT mMonsterCbvOffset = 0;
 	UINT mPassCbvOffset = 0;
 	UINT mMatCbvOffset = 0;
+	UINT mChaCbvOffset = 0;
+	UINT mMonsterCbvOffset = 0;
 	UINT mUICbvOffset = 0;
 	UINT mMonsterUICbvOffset = 0;
-	UINT mTextureOffset = 0;
 
 	UINT mCbvSrvDescriptorSize = 0;
 
@@ -131,6 +134,8 @@ private:
 	std::vector<std::unique_ptr<Monster>> mMonstersByZone;
 	UINT mZoneIndex;
 
-	Textures mTextures;
+	Textures mTexDiffuse;
+	Textures mTexNormal;
+	Textures mTexSkyCube;
 	Materials mMaterials;
 };
