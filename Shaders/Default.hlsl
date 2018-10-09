@@ -9,6 +9,8 @@ struct VertexIn
 	float3 PosL    : POSITION;
 	float3 NormalL : NORMAL;
 	float2 TexC    : TEXCOORD;
+	float3 TangentL : TANGENT;
+	float3 BinormalL : BINORMAL;
 #ifdef SKINNED
 	float3 BoneWeights : WEIGHTS;
 	uint4 BoneIndices  : BONEINDICES;
@@ -21,6 +23,8 @@ struct VertexOut
 	float3 PosW    : POSITION;
 	float3 NormalW : NORMAL;
 	float2 TexC    : TEXCOORD;
+	float3 TangentW : TANGENT;
+	float3 BinormalW : BINORMAL;
 #ifdef SKINNED
 	uint4 BoneIndices : BONEINDICES;
 #endif
@@ -39,16 +43,22 @@ VertexOut VS(VertexIn vin)
 
 	float3 posL = float3(0.0f, 0.0f, 0.0f);
 	float3 normalL = float3(0.0f, 0.0f, 0.0f);
+	float3 tangentL = float3(0.0f, 0.0f, 0.0f);
+	float3 binormalL = float3(0.0f, 0.0f, 0.0f);
 	for (int i = 0; i < 4; ++i)
 	{
 		// Assume no nonuniform scaling when transforming normals, so 
 		// that we do not have to use the inverse-transpose.
 		posL += weights[i] * mul(float4(vin.PosL, 1.0f), gBoneTransforms[vin.BoneIndices[i]]).xyz;
 		normalL += weights[i] * mul(vin.NormalL, (float3x3)gBoneTransforms[vin.BoneIndices[i]]);
+		tangentL += weights[i] * mul(vin.TangentL, (float3x3)gBoneTransforms[vin.BoneIndices[i]]);
+		binormalL += weights[i] * mul(vin.BinormalL, (float3x3)gBoneTransforms[vin.BoneIndices[i]]);
 	}
 
 	vin.PosL = posL;
 	vin.NormalL = normalL;
+	vin.TangentL = tangentL;
+	vin.BinormalL = binormalL;
 
 	vout.BoneIndices = vin.BoneIndices;
 
@@ -56,6 +66,12 @@ VertexOut VS(VertexIn vin)
 	vout.PosW = posW.xyz;
 
 	vout.NormalW = mul(vin.NormalL, (float3x3)gChaWorld);
+	vout.TangentW = mul(vin.TangentL, (float3x3)gChaWorld);
+	vout.BinormalW = mul(vin.BinormalL, (float3x3)gChaWorld);
+
+	vout.NormalW = normalize(vout.NormalW);
+	vout.TangentW = normalize(vout.TangentW);
+	vout.BinormalW = normalize(vout.BinormalW);
 
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gChaTexTransform);
 #elif UI
@@ -65,6 +81,8 @@ VertexOut VS(VertexIn vin)
 
 	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
 	vout.NormalW = mul(vin.NormalL, (float3x3)gUIWorld);
+	vout.TangentW = mul(vin.TangentL, (float3x3)gUIWorld);
+	vout.BinormalW = mul(vin.BinormalL, (float3x3)gUIWorld);
 
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gUITexTransform);
@@ -75,13 +93,15 @@ VertexOut VS(VertexIn vin)
 
 	// Assumes nonuniform scaling; otherwise, need to use inverse-transpose of world matrix.
 	vout.NormalW = mul(vin.NormalL, (float3x3)gWorld);
+	vout.TangentW = mul(vin.TangentL, (float3x3)gWorld);
+	vout.BinormalW = mul(vin.BinormalL, (float3x3)gWorld);
 
 	// Output vertex attributes for interpolation across triangle.
 	float4 texC = mul(float4(vin.TexC, 0.0f, 1.0f), gTexTransform);
 #endif
 
 	vout.TexC = mul(texC, gMatTransform).xy;
-
+	
 	// Transform to homogeneous clip space.
 	vout.PosH = mul(posW, gViewProj);
 	
@@ -91,15 +111,15 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
 	float4 diffuseAlbedo = gDiffuseMap.Sample(gsamAnisotropicWrap, pin.TexC) * gDiffuseAlbedo;
+	//float4 diffuseAlbedo = float4(231.0f / 255.0f, 221.0f / 255.0f, 255.0f / 255.0f, 1.0f);
 	float4 normalMap = gNormalMap.Sample(gsamAnisotropicWrap, pin.TexC);
-
 	// 0.0f ~ 1.0f -> -1.0f ~ 1.0f
 	normalMap = (normalMap * 2.0f) - 1.0f;
 
-	//float3 normal = normalMap.xyz * pin.NormalW;
-	float3 normal = mul(pin.NormalW, normalMap.xyz);
+	
+	float3 normal =  normalMap.x * pin.TangentW + normalMap.y * pin.BinormalW +  normalMap.z * pin.NormalW;
 	pin.NormalW = normalize(normal);
-	//pin.NormalW = normalize(pin.NormalW);
+	//diffuseAlbedo = float4(pin.NormalW, 1.0f);
 
 	float3 toEyeW = gEyePosW - pin.PosW;
 	float distanceToEye = length(toEyeW);

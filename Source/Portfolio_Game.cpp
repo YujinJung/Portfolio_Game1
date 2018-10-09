@@ -892,7 +892,9 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 	{
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	mSkinnedInputLayout =
@@ -900,8 +902,10 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "WEIGHTS", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BONEINDICES", 0, DXGI_FORMAT_R8G8B8A8_UINT, 0, 68, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
 	};
 
 	mUIInputLayout =
@@ -909,7 +913,9 @@ void PortfolioGameApp::BuildShadersAndInputLayout()
 		{ "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "ROW", 0, DXGI_FORMAT_R32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 32, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "BINORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 44, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "ROW", 0, DXGI_FORMAT_R32_FLOAT, 0, 56, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
 	};
 }
 
@@ -1383,105 +1389,105 @@ void PortfolioGameApp::BuildMaterials()
 
 	matName.push_back("bricks0");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.02f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("bricks3");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("bricks3Tex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.02f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("stone0");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("stoneTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.05f, 0.05f));
 	roughnesses.push_back(0.3f);
 
 	matName.push_back("tundra0");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("tundraTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("ice0");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("iceTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("red");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("redTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("Transparency");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("redTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 0.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.1f);
 
 	matName.push_back("shadow0");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("redTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(0.0f, 0.0f, 0.0f, 0.5f));
 	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("iconPunch");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("iconPunchTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("iconKick");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("iconKickTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("iconKick2");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("iconKick2Tex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.001f, 0.001f, 0.001f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("Gameover");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("GameoverTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("NameMutant");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("NameMutantTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("NameWarrok");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("NameWarrokTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.0f);
 
 	matName.push_back("NameMaw");
 	texIndices.push_back(mTexDiffuse.GetTextureIndex("NameMawTex"));
-	texNormalIndices.push_back(mTexDiffuse.GetTextureIndex("bricksTex"));
+	texNormalIndices.push_back(mTexNormal.GetTextureIndex("bricksTex"));
 	diffuses.push_back(XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f));
 	fresnels.push_back(XMFLOAT3(0.05f, 0.02f, 0.02f));
 	roughnesses.push_back(0.0f);

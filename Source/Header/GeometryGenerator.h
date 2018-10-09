@@ -34,24 +34,29 @@ public:
             const DirectX::XMFLOAT3& p, 
             const DirectX::XMFLOAT3& n, 
             const DirectX::XMFLOAT3& t, 
+            const DirectX::XMFLOAT3& b, 
             const DirectX::XMFLOAT2& uv) :
             Position(p), 
             Normal(n), 
             TangentU(t), 
+			Binormal(b),
             TexC(uv){}
 		Vertex(
 			float px, float py, float pz, 
 			float nx, float ny, float nz,
 			float tx, float ty, float tz,
+			float bx, float by, float bz,
 			float u, float v) : 
             Position(px,py,pz), 
             Normal(nx,ny,nz),
 			TangentU(tx, ty, tz), 
+			Binormal(bx, by, bz), 
             TexC(u,v){}
 
         DirectX::XMFLOAT3 Position;
         DirectX::XMFLOAT3 Normal;
         DirectX::XMFLOAT3 TangentU;
+        DirectX::XMFLOAT3 Binormal;
         DirectX::XMFLOAT2 TexC;
 	};
 

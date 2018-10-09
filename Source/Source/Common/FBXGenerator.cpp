@@ -67,8 +67,8 @@ void FBXGenerator::BuildFBXTexture(
 
 			// Normal Map
 			std::wstring TextureNormalFileName;
-			TextureNormalFileName = TextureFileName.substr(0, TextureFileName.size() - 11);
-			TextureNormalFileName.append(L"normal.jpg");
+			TextureNormalFileName = TextureFileName.substr(0, TextureFileName.size() - 4);
+			TextureNormalFileName.append(L"_normal.jpg");
 			struct stat buffer;
 			std::string fileCheck;
 			fileCheck.assign(TextureNormalFileName.begin(), TextureNormalFileName.end());

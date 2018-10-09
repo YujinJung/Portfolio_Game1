@@ -6,6 +6,7 @@
 #include "FbxLoader.h"
 
 using namespace fbxsdk;
+using namespace DirectX;
 
 FbxLoader::FbxLoader()
 {
@@ -377,6 +378,8 @@ bool FbxLoader::LoadMesh(
 			fileIn >> ignore >> vertex.Pos.x >> vertex.Pos.y >> vertex.Pos.z;
 			fileIn >> ignore >> vertex.Normal.x >> vertex.Normal.y >> vertex.Normal.z;
 			fileIn >> ignore >> vertex.TexC.x >> vertex.TexC.y;
+			fileIn >> ignore >> vertex.Tangent.x >> vertex.Tangent.y >> vertex.Tangent.z;
+			fileIn >> ignore >> vertex.Binormal.x >> vertex.Binormal.y >> vertex.Binormal.z;
 
 			// push_back
 			outVertexVector.push_back(vertex);
@@ -454,6 +457,8 @@ bool FbxLoader::LoadMesh(
 			fileIn >> ignore >> vertex.Pos.x >> vertex.Pos.y >> vertex.Pos.z;
 			fileIn >> ignore >> vertex.Normal.x >> vertex.Normal.y >> vertex.Normal.z;
 			fileIn >> ignore >> vertex.TexC.x >> vertex.TexC.y;
+			fileIn >> ignore >> vertex.Tangent.x >> vertex.Tangent.y >> vertex.Tangent.z;
+			fileIn >> ignore >> vertex.Binormal.x >> vertex.Binormal.y >> vertex.Binormal.z;
 			fileIn >> ignore >> vertex.BoneWeights.x >> vertex.BoneWeights.y >> vertex.BoneWeights.z;
 			fileIn >> ignore >> temp[0] >> temp[1] >> temp[2] >> temp[3];
 
@@ -721,6 +726,48 @@ void FbxLoader::GetAnimation(
 	outSkinnedData.SetAnimation(animation, ClipName);
 }
 
+void FbxLoader::CalculateTangentBinormalVector(std::vector<Vertex>& vertexVector)
+{
+	// Temp Vector
+	XMVECTOR v1 = XMVectorSet(
+		vertexVector[1].Pos.x - vertexVector[0].Pos.x,
+		vertexVector[1].Pos.y - vertexVector[0].Pos.y,
+		vertexVector[1].Pos.z - vertexVector[0].Pos.z, 0.0f);
+	XMVECTOR v2 = XMVectorSet(
+		vertexVector[2].Pos.x - vertexVector[0].Pos.x,
+		vertexVector[2].Pos.y - vertexVector[0].Pos.y,
+		vertexVector[2].Pos.z - vertexVector[0].Pos.z, 0.0f);
+	XMVECTOR u1x = XMVectorReplicate(vertexVector[1].TexC.x - vertexVector[0].TexC.x);
+	XMVECTOR u1y = XMVectorReplicate(vertexVector[1].TexC.y - vertexVector[0].TexC.y);
+	XMVECTOR u2x = XMVectorReplicate(vertexVector[2].TexC.x - vertexVector[0].TexC.x);
+	XMVECTOR u2y = XMVectorReplicate(vertexVector[2].TexC.y - vertexVector[0].TexC.y);
+
+	XMVECTOR det = XMVectorSubtract(XMVectorMultiply(u1x, u2y), XMVectorMultiply(u2x, u1y));
+
+	XMVECTOR T = XMVectorDivide(XMVectorSubtract(XMVectorMultiply(v1, u2y), XMVectorMultiply(v2, u1y)), det);
+	XMVECTOR T0 = XMLoadFloat3(&vertexVector[0].Tangent);
+	XMVECTOR T1 = XMLoadFloat3(&vertexVector[0].Tangent);
+	XMVECTOR T2 = XMLoadFloat3(&vertexVector[0].Tangent);
+	T0 = XMVectorAdd(T0, T);
+	T1 = XMVectorAdd(T1, T);
+	T2 = XMVectorAdd(T2, T);
+
+	XMVECTOR B = XMVectorDivide(XMVectorSubtract(XMVectorMultiply(v2, u1x), XMVectorMultiply(v1, u1x)), det);
+	XMVECTOR B0 = XMLoadFloat3(&vertexVector[0].Binormal);
+	XMVECTOR B1 = XMLoadFloat3(&vertexVector[0].Binormal);
+	XMVECTOR B2 = XMLoadFloat3(&vertexVector[0].Binormal);
+	B0 = XMVectorAdd(B0, B);
+	B1 = XMVectorAdd(B1, B);
+	B2 = XMVectorAdd(B2, B);
+
+	XMStoreFloat3(&vertexVector[0].Tangent, T0);
+	XMStoreFloat3(&vertexVector[1].Tangent, T1);
+	XMStoreFloat3(&vertexVector[2].Tangent, T2);
+	XMStoreFloat3(&vertexVector[0].Binormal, B0);
+	XMStoreFloat3(&vertexVector[1].Binormal, B1);
+	XMStoreFloat3(&vertexVector[2].Binormal, B2);
+}
+
 void FbxLoader::GetVerticesAndIndice(
 	FbxMesh * pMesh, 
 	std::vector<CharacterVertex> & outVertexVector, 
@@ -735,6 +782,9 @@ void FbxLoader::GetVerticesAndIndice(
 
 	for (uint32_t i = 0; i < tCount; ++i)
 	{
+		std::vector<Vertex> tVertex(3);
+		std::vector<uint32_t> tIndex(3);
+
 		// For indexing by bone
 		std::string CurrBoneName = mControlPoints[pMesh->GetPolygonVertex(i, 1)]->mBoneName;
 
@@ -786,6 +836,7 @@ void FbxLoader::GetVerticesAndIndice(
 			if (lookup != IndexMapping.end())
 			{
 				IndexVector[CurrBoneName].push_back(lookup->second);
+				tIndex[j] = lookup->second;
 			}
 			else
 			{
@@ -824,10 +875,40 @@ void FbxLoader::GetVerticesAndIndice(
 					}
 				}
 
+				tIndex[j] = outVertexVector.size();
 				outVertexVector.push_back(SkinnedVertexInfo);
 			}
+
+			tVertex[j] = Temp;
 		}
 
+		// Calculate Tangent Vector and Binormal Vector
+		// http://www.terathon.com/code/tangent.html
+		int indexCounter = 0;
+		for (uint32_t i = 0; i < tCount; ++i)
+		{
+			CalculateTangentBinormalVector(tVertex);
+
+			for (int j = 0; j < 3; ++j)
+			{
+				outVertexVector[tIndex[j]].Tangent = tVertex[j].Tangent;
+				outVertexVector[tIndex[j]].Binormal = tVertex[j].Binormal;
+			}
+		}
+	}
+
+	for (uint32_t i = 0; i < outVertexVector.size(); ++i)
+	{
+		XMVECTOR N = XMLoadFloat3(&outVertexVector[i].Normal);
+		XMVECTOR T = XMVector3Normalize(XMLoadFloat3(&outVertexVector[i].Tangent));
+		XMVECTOR B = XMVector3Normalize(XMLoadFloat3(&outVertexVector[i].Binormal));
+
+		XMVECTOR T0 = XMVector3Normalize(XMVectorSubtract(T, XMVectorMultiply(N, XMVector3Dot(N, T))));
+		XMVECTOR H = XMVectorReplicate((XMVector3Dot(XMVector3Cross(N, T), B).m128_f32[0] < 0.0f) ? -1.0f : 1.0f);
+		XMVECTOR B0 = XMVectorMultiply(XMVector3Cross(N, T), H);
+
+		XMStoreFloat3(&outVertexVector[i].Tangent, T0);
+		XMStoreFloat3(&outVertexVector[i].Binormal, B0);
 	}
 
 	for (int i = 0; i < mBoneName.size(); ++i)
@@ -853,6 +934,8 @@ void FbxLoader::GetVerticesAndIndice(
 
 	for (int i = 0; i < tCount; ++i)
 	{
+		std::vector<Vertex> tVertex(3);
+		std::vector<uint32_t> tIndex(3);
 		// Vertex and Index info
 		for (int j = 0; j < 3; ++j)
 		{
@@ -901,6 +984,7 @@ void FbxLoader::GetVerticesAndIndice(
 			{
 				// Index
 				outIndexVector.push_back(lookup->second);
+				tIndex[j] = lookup->second;
 			}
 			else
 			{
@@ -909,9 +993,39 @@ void FbxLoader::GetVerticesAndIndice(
 				IndexMapping[Temp] = VertexIndex;
 
 				VertexIndex++;
+				tIndex[j] = outVertexVector.size();
 				outVertexVector.push_back(Temp);
 			}
+			tVertex[j] = Temp;
 		}
+
+		// Calculate Tangent Vector and Binormal Vector
+		// http://www.terathon.com/code/tangent.html
+		for (uint32_t i = 0; i < tCount; ++i)
+		{
+			CalculateTangentBinormalVector(tVertex);
+
+			for (int j = 0; j < 3; ++j)
+			{
+				outVertexVector[tIndex[j]].Tangent = tVertex[j].Tangent;
+				outVertexVector[tIndex[j]].Binormal = tVertex[j].Binormal;
+			}
+		}
+	}
+
+	
+	for (uint32_t i = 0; i < outVertexVector.size(); ++i)
+	{
+		XMVECTOR N = XMLoadFloat3(&outVertexVector[i].Normal);
+		XMVECTOR T = XMVector3Normalize(XMLoadFloat3(&outVertexVector[i].Tangent));
+		XMVECTOR B = XMVector3Normalize(XMLoadFloat3(&outVertexVector[i].Binormal));
+
+		XMVECTOR T0 = XMVector3Normalize(XMVectorSubtract(T, XMVectorMultiply(N, XMVector3Dot(N, T))));
+		XMVECTOR H = XMVectorReplicate((XMVector3Dot(XMVector3Cross(N, T), B).m128_f32[0] < 0.0f) ? -1.0f : 1.0f);
+		XMVECTOR B0 = XMVectorMultiply(XMVector3Cross(N, T), H);
+
+		XMStoreFloat3(&outVertexVector[i].Tangent, T0);
+		XMStoreFloat3(&outVertexVector[i].Binormal, B0);
 	}
 }
 
@@ -1204,6 +1318,8 @@ void FbxLoader::ExportMesh(
 			fileOut << "Pos " << e.Pos.x << " " << e.Pos.y << " " << e.Pos.z << "\n";
 			fileOut << "Normal " << e.Normal.x << " " << e.Normal.y << " " << e.Normal.z << "\n";
 			fileOut << "TexC " << e.TexC.x << " " << e.TexC.y << "\n";
+			fileOut << "Tangent " << e.Tangent.x << " " << e.Tangent.y << " " << e.Tangent.z << "\n";
+			fileOut << "Binormal " << e.Binormal.x << " " << e.Binormal.y << " " << e.Binormal.z << "\n";
 		}
 
 		fileOut << "Indices " << "\n";
@@ -1262,6 +1378,8 @@ void FbxLoader::ExportMesh(
 			fileOut << "Pos " << e.Pos.x << " " << e.Pos.y << " " << e.Pos.z << "\n";
 			fileOut << "Normal " << e.Normal.x << " " << e.Normal.y << " " << e.Normal.z << "\n";
 			fileOut << "TexC " << e.TexC.x << " " << e.TexC.y << "\n";
+			fileOut << "Tangent " << e.Tangent.x << " " << e.Tangent.y << " " << e.Tangent.z << "\n";
+			fileOut << "Binormal " << e.Binormal.x << " " << e.Binormal.y << " " << e.Binormal.z << "\n";
 
 			fileOut << "BoneWeight " << e.BoneWeights.x << " " << e.BoneWeights.y << " " << e.BoneWeights.z << "\n";
 			fileOut << "BoneIndices " << (int)e.BoneIndices[0] << " " << (int)e.BoneIndices[1] << " " << (int)e.BoneIndices[2] << " " << (int)e.BoneIndices[3] << "\n";

@@ -84,6 +84,8 @@ public:
 		SkinnedData & outSkinnedData,
 		const std::string& ClipName, bool isGetOnlyAnim);
 
+	void CalculateTangentBinormalVector(std::vector<Vertex>& vertexVector);
+
 	void GetVerticesAndIndice(
 		fbxsdk::FbxMesh * pMesh,
 		std::vector<CharacterVertex> & outVertexVector,
